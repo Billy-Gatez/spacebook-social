@@ -12,17 +12,18 @@ const { CloudinaryStorage } = require("multer-storage-cloudinary");
 // ====== APP ======
 const app = express();
 
+// ⭐ REQUIRED FOR RENDER TO SEND COOKIES ⭐
+app.set("trust proxy", 1);
 
 const cors = require("cors");
 
 app.use(cors({
- origin: [
-  "http://localhost:3000",
-  "https://spacebook.world",
-  "https://spacebook.netlify.app",
-  "https://spacebook-app.onrender.com"
-],
-
+  origin: [
+    "http://localhost:3000",
+    "https://spacebook.world",
+    "https://spacebook.netlify.app",
+    "https://spacebook-app.onrender.com"
+  ],
   credentials: true
 }));
 
@@ -73,12 +74,11 @@ app.use(session({
   saveUninitialized: false,
   cookie: {
     sameSite: "none",
-    secure: true
+    secure: false   // ⭐ REQUIRED FOR RENDER TO ACTUALLY SET THE COOKIE ⭐
   }
 }));
 
 app.use(express.static(path.join(__dirname, "public")));
-
 
 // ====== CLOUDINARY MULTER STORAGE ======
 const storage = new CloudinaryStorage({
@@ -135,12 +135,12 @@ app.post("/login", async (req, res) => {
   res.redirect("/feed");
 });
 
-// Home (static shell)
+// Home
 app.get("/home", requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, "public", "home.html"));
 });
 
-// Create post (with optional image)
+// Create post
 app.post("/post", requireLogin, upload.single("image"), async (req, res) => {
   const user = await User.findById(req.session.userId);
   if (!user) return res.redirect("/");
@@ -157,7 +157,7 @@ app.post("/post", requireLogin, upload.single("image"), async (req, res) => {
   res.redirect("/feed");
 });
 
-// Personalized feed (friends + self)
+// Feed
 app.get("/feed", requireLogin, async (req, res) => {
   const user = await User.findById(req.session.userId).populate("friends");
   const friendIds = user.friends.map(f => f._id);
@@ -239,12 +239,12 @@ app.post("/upload-profile-pic", requireLogin, upload.single("profilePic"), async
   res.redirect("/profile");
 });
 
-// Set top friends (Top 8)
+// Set top friends
 app.post("/set-top-friends", requireLogin, async (req, res) => {
   const user = await User.findById(req.session.userId);
   let selected = req.body.topFriends || [];
   if (!Array.isArray(selected)) selected = [selected];
-  // enforce max 8
+
   user.topFriends = selected.slice(0, 8);
   await user.save();
   res.redirect("/profile");
@@ -276,7 +276,7 @@ app.post("/remove-friend/:id", requireLogin, async (req, res) => {
   res.redirect("/profile/" + req.params.id);
 });
 
-// Your own profile (dynamic)
+// Your own profile
 app.get("/profile", requireLogin, async (req, res) => {
   const user = await User.findById(req.session.userId)
     .populate("friends")
@@ -455,7 +455,7 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
       <div class="author">${p.userName}</div>
       <div class="meta">${p.createdAt.toLocaleString()}</div>
       <p style="margin-top:6px;">${p.content || ""}</p>
-      ${p.imagePath ? `<img src="${p.imagePath}" style="max-width:100%; margin-top:8px; border-radius:6px;">` : ""}
+        ${p.imagePath ? `<img src="${p.imagePath}" style="max-width:100%; margin-top:8px; border-radius:6px;">` : ""}
     </div>
   `).join("");
 
@@ -509,18 +509,6 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
             </div>
           </div>
 
-          <div style="margin-top:10px;">
-            ${isFriend ? `
-              <form action="/remove-friend/${target._id}" method="post">
-                <button class="btn-primary" style="background:#aa0000;">Remove Friend</button>
-              </form>
-            ` : `
-              <form action="/add-friend/${target._id}" method="post">
-                <button class="btn-primary">Add Friend</button>
-              </form>
-            `}
-          </div>
-
           <hr style="margin:20px 0; border:none; border-top:1px solid #333;">
 
           <h3 style="color:#ff6a00; margin-bottom:10px;">Top Friends</h3>
@@ -552,6 +540,7 @@ app.get("/logout", (req, res) => {
   req.session.destroy(() => res.redirect("/"));
 });
 
+// ====== START SERVER ======
 app.listen(PORT, () => {
   console.log(`Spacebook running on port ${PORT}`);
 });
