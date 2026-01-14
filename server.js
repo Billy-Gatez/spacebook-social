@@ -64,13 +64,19 @@ const Post = mongoose.model("Post", postSchema);
 
 // ====== MIDDLEWARE ======
 app.use(bodyParser.urlencoded({ extended: false }));
+
 app.use(session({
   secret: "spacebook-secret",
   resave: false,
-  saveUninitialized: false
+  saveUninitialized: false,
+  cookie: {
+    sameSite: "none",
+    secure: true
+  }
 }));
 
 app.use(express.static(path.join(__dirname, "public")));
+
 
 // ====== CLOUDINARY MULTER STORAGE ======
 const storage = new CloudinaryStorage({
