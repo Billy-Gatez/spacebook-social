@@ -16,11 +16,13 @@ const app = express();
 const cors = require("cors");
 
 app.use(cors({
-  origin: [
-    "http://localhost:3000",
-    "https://spacebook.world",
-    "https://spacebook.netlify.app"
-  ],
+ origin: [
+  "http://localhost:3000",
+  "https://spacebook.world",
+  "https://spacebook.netlify.app",
+  "https://spacebook-app.onrender.com"
+],
+
   credentials: true
 }));
 
