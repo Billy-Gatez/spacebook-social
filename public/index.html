@@ -145,7 +145,7 @@
     </div>
 
     <div class="card">
-      <form action="https://spacebook-app.onrender.com/login" method="post">
+      <form id="loginForm" action="https://spacebook-app.onrender.com/login" method="post">
         <input type="email" name="email" placeholder="Email address" required>
         <input type="password" name="password" placeholder="Password" required>
         <button class="btn-primary" type="submit">Log In</button>
@@ -159,10 +159,25 @@
     </div>
   </div>
 
-  <!-- ⭐ SAFARI IFRAME COOKIE UNLOCK ⭐ -->
+  <!-- ⭐ SAFARI IFRAME COOKIE UNLOCK (GUARANTEED VERSION) ⭐ -->
   <script>
+    let safariPrimed = false;
+
     document.addEventListener("click", () => {
-      document.cookie = "spacebook-primed=1; SameSite=None; Secure";
+      if (!safariPrimed) {
+        document.cookie = "spacebook-primed=1; SameSite=None; Secure; Path=/";
+        safariPrimed = true;
+      }
+    });
+
+    // Delay form submission slightly so Safari accepts the cookie
+    document.getElementById("loginForm").addEventListener("submit", function (e) {
+      if (!safariPrimed) {
+        e.preventDefault();
+        document.cookie = "spacebook-primed=1; SameSite=None; Secure; Path=/";
+        safariPrimed = true;
+        setTimeout(() => this.submit(), 50);
+      }
     });
   </script>
 
