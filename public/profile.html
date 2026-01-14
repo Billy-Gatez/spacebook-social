@@ -4,12 +4,108 @@
   <meta charset="UTF-8">
   <title>Profile – Spacebook</title>
   <link rel="stylesheet" href="assets/css/styles.css">
+
+  <style>
+    /* Full transparency */
+    html, body {
+      background: transparent !important;
+      background-color: transparent !important;
+      margin: 0;
+      padding: 0;
+      color: #fff;
+      font-family: Arial, sans-serif;
+    }
+
+    /* Transparent navbar */
+    .navbar {
+      width: 100%;
+      padding: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: transparent !important;
+    }
+
+    .navbar a {
+      color: #ff6a00;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    /* Page wrapper */
+    .page {
+      width: 100%;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding-top: 40px;
+      background: transparent !important;
+    }
+
+    /* Glass card */
+    .card {
+      width: 100%;
+      max-width: 900px;
+      padding: 25px;
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.45) !important;
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    /* Profile header layout */
+    .profile-header {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .profile-avatar {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      border: 2px solid #ff6a00;
+      backdrop-filter: blur(4px);
+    }
+
+    .profile-info h2 {
+      margin: 0;
+      color: #ff6a00;
+    }
+
+    .profile-info p {
+      margin: 4px 0;
+      color: #ccc;
+    }
+
+    /* Posts */
+    .post {
+      padding: 15px;
+      margin-bottom: 15px;
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .post .author {
+      font-weight: bold;
+      color: #ff6a00;
+    }
+
+    .post .meta {
+      font-size: 12px;
+      color: #aaa;
+    }
+  </style>
 </head>
+
 <body>
 
   <div class="navbar">
     <div class="logo">
-      <a href="/home" style="color:#ff6a00; text-decoration:none;">Spacebook</a>
+      <a href="/home">Spacebook</a>
     </div>
     <div class="nav-links">
       <a href="/home">Home</a>
@@ -19,7 +115,7 @@
   </div>
 
   <div class="page">
-    <div class="card" style="width:100%;">
+    <div class="card">
 
       <!-- Profile Header -->
       <div class="profile-header">
@@ -34,7 +130,7 @@
         </div>
       </div>
 
-      <hr style="margin:20px 0; border:none; border-top:1px solid #333;">
+      <hr style="margin:20px 0; border:none; border-top:1px solid rgba(255,255,255,0.2);">
 
       <!-- About Section -->
       <h3 style="color:#ff6a00; margin-bottom:10px;">About</h3>
@@ -42,7 +138,7 @@
         This is your Spacebook profile. Once the backend is connected, this section will show your real data — birthday, network, interests, and more.
       </p>
 
-      <hr style="margin:20px 0; border:none; border-top:1px solid #333;">
+      <hr style="margin:20px 0; border:none; border-top:1px solid rgba(255,255,255,0.2);">
 
       <!-- Posts Section -->
       <h3 style="color:#ff6a00; margin-bottom:10px;">Your Posts</h3>

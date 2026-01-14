@@ -4,12 +4,99 @@
   <meta charset="UTF-8">
   <title>Home – Spacebook</title>
   <link rel="stylesheet" href="assets/css/styles.css">
+
+  <style>
+    /* Full transparency */
+    html, body {
+      background: transparent !important;
+      background-color: transparent !important;
+      margin: 0;
+      padding: 0;
+      color: #fff;
+      font-family: Arial, sans-serif;
+    }
+
+    /* Transparent navbar */
+    .navbar {
+      width: 100%;
+      padding: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: transparent !important;
+    }
+
+    .navbar a {
+      color: #ff6a00;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    /* Page layout */
+    .page {
+      width: 100%;
+      min-height: 100vh;
+      display: flex;
+      gap: 30px;
+      padding: 40px;
+      background: transparent !important;
+    }
+
+    /* Sidebar glass panel */
+    .sidebar .card {
+      width: 220px;
+      padding: 20px;
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.45) !important;
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .sidebar a {
+      color: #ff6a00;
+      text-decoration: none;
+    }
+
+    /* Main feed area */
+    .feed {
+      flex: 1;
+    }
+
+    .feed .card {
+      padding: 25px;
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.45) !important;
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .btn-primary {
+      display: inline-block;
+      padding: 10px 16px;
+      background: #ff6a00;
+      color: #000;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: bold;
+      transition: 0.2s;
+    }
+
+    .btn-primary:hover {
+      background: #ff8c32;
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid rgba(255,255,255,0.2);
+    }
+  </style>
 </head>
+
 <body>
 
   <div class="navbar">
     <div class="logo">
-      <a href="/feed" style="color:#ff6a00; text-decoration:none;">Spacebook</a>
+      <a href="/feed">Spacebook</a>
     </div>
     <div class="nav-links">
       <a href="/profile">Profile</a>
@@ -23,7 +110,7 @@
     <aside class="sidebar">
       <div class="card">
         <strong style="color:#ff6a00;">Navigation</strong>
-        <ul style="list-style:none; margin-top:10px; font-size:14px;">
+        <ul style="list-style:none; margin-top:10px; font-size:14px; padding-left:0;">
           <li><a href="/profile">Your Profile</a></li>
           <li><a href="/feed">Feed</a></li>
           <li><a href="#">Messages</a></li>

@@ -4,18 +4,101 @@
   <meta charset="UTF-8">
   <title>Sign Up – Spacebook</title>
   <link rel="stylesheet" href="assets/css/styles.css">
+
+  <style>
+    /* Make entire page transparent */
+    html, body {
+      background: transparent !important;
+      background-color: transparent !important;
+      margin: 0;
+      padding: 0;
+      color: #fff;
+      font-family: Arial, sans-serif;
+    }
+
+    /* Transparent navbar */
+    .navbar {
+      width: 100%;
+      padding: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: transparent !important;
+    }
+
+    .navbar a {
+      color: #ff6a00;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    /* Page wrapper */
+    .page {
+      width: 100%;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding-top: 40px;
+      background: transparent !important;
+    }
+
+    /* Glass card */
+    .card {
+      width: 100%;
+      max-width: 480px;
+      padding: 25px;
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.45) !important;
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    /* Inputs */
+    input {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 12px;
+      border-radius: 6px;
+      border: 1px solid #ff6a00;
+      background: rgba(0, 0, 0, 0.4) !important;
+      color: #fff;
+    }
+
+    input::placeholder {
+      color: #bbb;
+    }
+
+    /* Button */
+    .btn-primary {
+      width: 100%;
+      padding: 12px;
+      background: #ff6a00;
+      border: none;
+      border-radius: 6px;
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .btn-primary:hover {
+      background: #ff8c32;
+    }
+  </style>
 </head>
+
 <body>
 
   <div class="navbar">
-    <div class="logo"><a href="index.html" style="color:#ff6a00;">Spacebook</a></div>
+    <div class="logo"><a href="index.html">Spacebook</a></div>
     <div class="nav-links">
       <a href="index.html">Log In</a>
     </div>
   </div>
 
-  <div class="page" style="justify-content:center;">
-    <div class="card" style="width:100%; max-width:480px;">
+  <div class="page">
+    <div class="card">
       <h2 style="color:#ff6a00; margin-bottom:10px;">Create a Spacebook Account</h2>
       <p style="color:#ccc; margin-bottom:20px;">It’s fast and cosmic.</p>
 
@@ -32,3 +115,4 @@
 
 </body>
 </html>
+
