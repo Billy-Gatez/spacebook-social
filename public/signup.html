@@ -2,6 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+
+  <!-- ⭐ REQUIRED FOR MOBILE RESPONSIVENESS ⭐ -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Sign Up – Spacebook</title>
   <link rel="stylesheet" href="assets/css/styles.css">
 
@@ -32,14 +36,13 @@
       font-weight: bold;
     }
 
-    /* Page wrapper */
+    /* Page wrapper — MOBILE FIXED */
     .page {
       width: 100%;
-      min-height: 100vh;
+      padding: 20px 12px; /* prevents cutoff inside iframe */
       display: flex;
       justify-content: center;
       align-items: flex-start;
-      padding-top: 40px;
       background: transparent !important;
     }
 
@@ -47,14 +50,15 @@
     .card {
       width: 100%;
       max-width: 480px;
-      padding: 25px;
+      padding: 20px 18px; /* mobile-friendly padding */
+      margin-bottom: 40px; /* prevents bottom cutoff */
       border-radius: 12px;
       background: rgba(0, 0, 0, 0.45) !important;
       backdrop-filter: blur(8px);
       border: 1px solid rgba(255, 255, 255, 0.15);
     }
 
-    /* Inputs */
+    /* Inputs — MOBILE FIX: prevent iOS zoom */
     input {
       width: 100%;
       padding: 12px;
@@ -63,6 +67,7 @@
       border: 1px solid #ff6a00;
       background: rgba(0, 0, 0, 0.4) !important;
       color: #fff;
+      font-size: 16px; /* prevents iPhone auto-zoom */
     }
 
     input::placeholder {
@@ -80,6 +85,7 @@
       font-weight: bold;
       cursor: pointer;
       transition: 0.2s;
+      font-size: 16px;
     }
 
     .btn-primary:hover {
@@ -107,7 +113,7 @@
         <input type="email" name="email" placeholder="Email" required>
         <input type="password" name="password" placeholder="Password" required>
         <input type="date" name="birthday" placeholder="Birthday">
-        <input type="text" name="network" placeholder="Universe / Network (e.g. Milky Way)">
+        <input type="text" name="network" placeholder="Location">
         <button class="btn-primary" type="submit">Sign Up</button>
       </form>
     </div>
@@ -115,4 +121,3 @@
 
 </body>
 </html>
-
