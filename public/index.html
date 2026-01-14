@@ -2,7 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Spacebook – Connect Across the Universe</title>
+
+  <!-- ⭐ REQUIRED FOR MOBILE + SAFARI LAYOUT ⭐ -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Spacebook  Connect Across the Universe</title>
   <link rel="stylesheet" href="assets/css/styles.css">
 
   <style>
@@ -142,7 +146,6 @@
 
     <div class="card">
       <form action="https://spacebook-app.onrender.com/login" method="post">
-
         <input type="email" name="email" placeholder="Email address" required>
         <input type="password" name="password" placeholder="Password" required>
         <button class="btn-primary" type="submit">Log In</button>
@@ -155,6 +158,13 @@
       </a>
     </div>
   </div>
+
+  <!-- ⭐ SAFARI IFRAME COOKIE UNLOCK ⭐ -->
+  <script>
+    document.addEventListener("click", () => {
+      document.cookie = "spacebook-primed=1; SameSite=None; Secure";
+    });
+  </script>
 
 </body>
 </html>

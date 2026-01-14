@@ -61,17 +61,34 @@
     /* Inputs — MOBILE FIX: prevent iOS zoom */
     input {
       width: 100%;
-      padding: 12px;
+      height: 48px; /* ⭐ UNIFORM HEIGHT FOR ALL INPUTS ⭐ */
+      padding: 0 12px; /* reset vertical padding */
       margin-bottom: 12px;
       border-radius: 6px;
       border: 1px solid #ff6a00;
       background: rgba(0, 0, 0, 0.4) !important;
       color: #fff;
       font-size: 16px; /* prevents iPhone auto-zoom */
+      box-sizing: border-box;
+      line-height: 48px; /* vertically centers text */
     }
 
     input::placeholder {
       color: #bbb;
+    }
+
+    /* ⭐ FIX SAFARI DATE INPUT HEIGHT ⭐ */
+    input[type="date"] {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 48px !important;
+      line-height: 48px !important;
+      padding-left: 12px;
+    }
+
+    input[type="date"]::-webkit-date-and-time-value {
+      text-align: left;
+      padding-left: 4px;
     }
 
     /* Button */
