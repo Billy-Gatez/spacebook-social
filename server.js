@@ -68,15 +68,18 @@ const Post = mongoose.model("Post", postSchema);
 // ====== MIDDLEWARE ======
 app.use(bodyParser.urlencoded({ extended: false }));
 
+const isProduction = process.env.NODE_ENV === "production";
+
 app.use(session({
   secret: "spacebook-secret",
   resave: false,
   saveUninitialized: false,
   cookie: {
-    sameSite: "none",
-    secure: false   // ⭐ REQUIRED FOR RENDER TO ACTUALLY SET THE COOKIE ⭐
+    sameSite: isProduction ? "none" : "lax",
+    secure: isProduction ? true : false
   }
 }));
+
 
 app.use(express.static(path.join(__dirname, "public")));
 
