@@ -12,6 +12,18 @@ const { CloudinaryStorage } = require("multer-storage-cloudinary");
 // ====== APP ======
 const app = express();
 
+
+const cors = require("cors");
+
+app.use(cors({
+  origin: [
+    "http://localhost:3000",
+    "https://spacebook.world",
+    "https://spacebook.netlify.app"
+  ],
+  credentials: true
+}));
+
 // ====== CONFIG ======
 const MONGO_URI = "mongodb+srv://jercahill:Spacebook2026@spacebook.mpqjbcv.mongodb.net/spacebook?retryWrites=true&w=majority";
 const PORT = process.env.PORT || 3000;
