@@ -4,6 +4,7 @@ const bodyParser = require("body-parser");
 const path = require("path");
 const mongoose = require("mongoose");
 const multer = require("multer");
+const attachChessServer = require("./chess-ws");
 
 // ====== CLOUDINARY ======
 const cloudinary = require("cloudinary").v2;
@@ -1172,6 +1173,10 @@ app.get("/logout", (req, res) => {
 });
 
 // ====== START SERVER ======
-app.listen(PORT, () => {
-  console.log(`Spacebook running on port ${PORT}`);
+const server = app.listen(PORT, () => {
+  console.log("Spacebook running on port", PORT);
 });
+
+
+attachChessServer(server);
+
