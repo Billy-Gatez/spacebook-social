@@ -66,6 +66,29 @@ const postSchema = new mongoose.Schema({
 const User = mongoose.model("User", userSchema);
 const Post = mongoose.model("Post", postSchema);
 
+// ⭐⭐ GLOBAL LEADERBOARD ⭐⭐
+// Player model for ChessLink global leaderboard
+const playerSchema = new mongoose.Schema({
+  username: { type: String, unique: true, required: true },
+  emoji: { type: String, default: "♟️" },
+  color: { type: String, default: "#22c55e" },
+  rating: { type: Number, default: 1200 },
+  wins: { type: Number, default: 0 },
+  losses: { type: Number, default: 0 },
+  draws: { type: Number, default: 0 },
+  updatedAt: { type: Date, default: Date.now }
+});
+
+const Player = mongoose.model("Player", playerSchema);
+
+// Elo rating helper
+function updateElo(rA, rB, scoreA, k = 32) {
+  const expectedA = 1 / (1 + Math.pow(10, (rB - rA) / 400));
+  const newA = rA + k * (scoreA - expectedA);
+  return Math.round(newA);
+}
+
+
 // ====== MIDDLEWARE ======
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
@@ -348,6 +371,93 @@ app.post("/post", requireLogin, upload.single("image"), async (req, res) => {
 
   res.redirect("/feed");
 });
+
+// ⭐⭐ GLOBAL LEADERBOARD ROUTES ⭐⭐
+
+// Register or update a player
+app.post("/api/chess/registerPlayer", async (req, res) => {
+  try {
+    const { username, emoji, color } = req.body;
+    if (!username) return res.status(400).json({ error: "username required" });
+
+    const update = {
+      username,
+      emoji: emoji || "♟️",
+      color: color || "#22c55e",
+      updatedAt: new Date()
+    };
+
+    const player = await Player.findOneAndUpdate(
+      { username },
+      { $setOnInsert: { rating: 1200, wins: 0, losses: 0, draws: 0 }, $set: update },
+      { new: true, upsert: true }
+    );
+
+    res.json({ ok: true, player });
+  } catch (err) {
+    console.error("registerPlayer error", err);
+    res.status(500).json({ error: "server error" });
+  }
+});
+
+// Submit result of an online game
+app.post("/api/chess/submitResult", async (req, res) => {
+  try {
+    const { winner, loser, result } = req.body;
+    if (!winner || !loser || !result) {
+      return res.status(400).json({ error: "winner, loser, result required" });
+    }
+
+    const [pA, pB] = await Promise.all([
+      Player.findOne({ username: winner }) || new Player({ username: winner }),
+      Player.findOne({ username: loser }) || new Player({ username: loser })
+    ]);
+
+    if (!pA.rating) pA.rating = 1200;
+    if (!pB.rating) pB.rating = 1200;
+
+    let scoreA, scoreB;
+    if (result === "win") { scoreA = 1; scoreB = 0; }
+    else if (result === "loss") { scoreA = 0; scoreB = 1; }
+    else { scoreA = 0.5; scoreB = 0.5; }
+
+    const newRa = updateElo(pA.rating, pB.rating, scoreA);
+    const newRb = updateElo(pB.rating, pA.rating, scoreB);
+
+    pA.rating = newRa;
+    pB.rating = newRb;
+
+    if (result === "win") { pA.wins++; pB.losses++; }
+    else if (result === "loss") { pA.losses++; pB.wins++; }
+    else { pA.draws++; pB.draws++; }
+
+    pA.updatedAt = new Date();
+    pB.updatedAt = new Date();
+
+    await Promise.all([pA.save(), pB.save()]);
+
+    res.json({ ok: true, winner: pA, loser: pB });
+  } catch (err) {
+    console.error("submitResult error", err);
+    res.status(500).json({ error: "server error" });
+  }
+});
+
+// Get global leaderboard
+app.get("/api/chess/leaderboard", async (req, res) => {
+  try {
+    const players = await Player.find({})
+      .sort({ rating: -1, updatedAt: -1 })
+      .limit(100)
+      .lean();
+
+    res.json({ ok: true, players });
+  } catch (err) {
+    console.error("leaderboard error", err);
+    res.status(500).json({ error: "server error" });
+  }
+});
+
 
 // ====== EDIT / DELETE POST API ======
 
