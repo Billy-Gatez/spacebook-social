@@ -130,13 +130,14 @@ app.post("/createPage", async (req, res) => {
 
     return res.json({
       success: true,
-      url: `https://spacebook.world/pages/${safeName}`
+      url: `https://spacebook-app.onrender.com/pages/${safeName}`
     });
   } catch (err) {
     console.error("Error writing page:", err);
     return res.json({ success: false, error: err.message });
   }
 });
+
 
 // ====== CLOUDINARY MULTER STORAGE ======
 const storage = new CloudinaryStorage({
