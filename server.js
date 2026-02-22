@@ -10,6 +10,9 @@ const attachChessServer = require("./chess-ws");
 const cloudinary = require("cloudinary").v2;
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
 
+// ⭐ ADDED
+const fs = require("fs");
+
 // ====== APP ======
 const app = express();
 
@@ -67,7 +70,6 @@ const User = mongoose.model("User", userSchema);
 const Post = mongoose.model("Post", postSchema);
 
 // ⭐⭐ GLOBAL LEADERBOARD ⭐⭐
-// Player model for ChessLink global leaderboard
 const playerSchema = new mongoose.Schema({
   username: { type: String, unique: true, required: true },
   emoji: { type: String, default: "♟️" },
@@ -81,13 +83,11 @@ const playerSchema = new mongoose.Schema({
 
 const Player = mongoose.model("Player", playerSchema);
 
-// Elo rating helper
 function updateElo(rA, rB, scoreA, k = 32) {
   const expectedA = 1 / (1 + Math.pow(10, (rB - rA) / 400));
   const newA = rA + k * (scoreA - expectedA);
   return Math.round(newA);
 }
-
 
 // ====== MIDDLEWARE ======
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -106,6 +106,36 @@ app.use(session({
 }));
 
 app.use(express.static(path.join(__dirname, "public")));
+
+// ⭐ ADDED — CREATE /public/pages IF MISSING
+const pagesDir = path.join(__dirname, "public", "pages");
+if (!fs.existsSync(pagesDir)) {
+  fs.mkdirSync(pagesDir, { recursive: true });
+}
+
+// ⭐ ADDED — CREATE PAGE ROUTE
+app.post("/createPage", async (req, res) => {
+  const { filename, content } = req.body;
+
+  if (!filename || !content) {
+    return res.json({ success: false, error: "Missing filename or content" });
+  }
+
+  const safeName = filename.replace(/[^a-zA-Z0-9-_\.]/g, "");
+  const filePath = path.join(pagesDir, safeName);
+
+  try {
+    await fs.promises.writeFile(filePath, content, "utf8");
+
+    return res.json({
+      success: true,
+      url: `https://spacebook.world/pages/${safeName}`
+    });
+  } catch (err) {
+    console.error("Error writing page:", err);
+    return res.json({ success: false, error: err.message });
+  }
+});
 
 // ====== CLOUDINARY MULTER STORAGE ======
 const storage = new CloudinaryStorage({
