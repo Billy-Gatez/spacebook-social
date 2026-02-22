@@ -193,13 +193,7 @@ app.post("/login", async (req, res) => {
   res.redirect("/feed");
 });
 
-// ====== START SERVER + ATTACH CHESS WEBSOCKET ======
-const server = app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
 
-// attachChessServer must use this server (no separate port)
-attachChessServer(server);
 
 // ====== HOME (DASHBOARD) ======
 app.get("/home", requireLogin, async (req, res) => {
@@ -1321,12 +1315,12 @@ app.get("/logout", (req, res) => {
   req.session.destroy(() => res.redirect("/"));
 });
 
-// ====== START SERVER ======
+
+// ====== START SERVER (ONLY ONE VERSION) ======
 const server = app.listen(PORT, () => {
   console.log("Spacebook running on port", PORT);
 });
 
 // Attach chess WebSocket to the same server
 attachChessServer(server);
-
 
