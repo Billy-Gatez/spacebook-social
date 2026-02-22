@@ -10,13 +10,13 @@ const attachChessServer = require("./chess-ws");
 const cloudinary = require("cloudinary").v2;
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
 
-// ⭐ ADDED
+// FS FOR PAGE CREATION
 const fs = require("fs");
 
 // ====== APP ======
 const app = express();
 
-// ⭐ REQUIRED FOR RENDER TO SEND COOKIES ⭐
+// REQUIRED FOR RENDER TO SEND COOKIES
 app.set("trust proxy", 1);
 
 const cors = require("cors");
@@ -26,7 +26,8 @@ app.use(cors({
     "http://localhost:3000",
     "https://spacebook.world",
     "https://spacebook.netlify.app",
-    "https://spacebook-app.onrender.com"
+    "https://spacebook-app.onrender.com",
+    "null" // allow local file:// editor
   ],
   credentials: true
 }));
@@ -69,7 +70,7 @@ const postSchema = new mongoose.Schema({
 const User = mongoose.model("User", userSchema);
 const Post = mongoose.model("Post", postSchema);
 
-// ⭐⭐ GLOBAL LEADERBOARD ⭐⭐
+// GLOBAL LEADERBOARD
 const playerSchema = new mongoose.Schema({
   username: { type: String, unique: true, required: true },
   emoji: { type: String, default: "♟️" },
@@ -107,13 +108,13 @@ app.use(session({
 
 app.use(express.static(path.join(__dirname, "public")));
 
-// ⭐ ADDED — CREATE /public/pages IF MISSING
+// CREATE /public/pages IF MISSING
 const pagesDir = path.join(__dirname, "public", "pages");
 if (!fs.existsSync(pagesDir)) {
   fs.mkdirSync(pagesDir, { recursive: true });
 }
 
-// ⭐ ADDED — CREATE PAGE ROUTE
+// CREATE PAGE ROUTE
 app.post("/createPage", async (req, res) => {
   const { filename, content } = req.body;
 
@@ -191,6 +192,14 @@ app.post("/login", async (req, res) => {
   req.session.userId = user._id;
   res.redirect("/feed");
 });
+
+// ====== START SERVER + ATTACH CHESS WEBSOCKET ======
+const server = app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+
+// attachChessServer must use this server (no separate port)
+attachChessServer(server);
 
 // ====== HOME (DASHBOARD) ======
 app.get("/home", requireLogin, async (req, res) => {
