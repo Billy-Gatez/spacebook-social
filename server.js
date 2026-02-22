@@ -26,7 +26,8 @@ app.use(cors({
     "http://localhost:3000",
     "https://spacebook.world",
     "https://spacebook.netlify.app",
-    "https://spacebook-app.onrender.com"
+    "https://spacebook-app.onrender.com",
+    "null"   // ⭐ ADDED — allows local file testing
   ],
   credentials: true
 }));
@@ -190,6 +191,11 @@ app.post("/login", async (req, res) => {
 
   req.session.userId = user._id;
   res.redirect("/feed");
+});
+
+// ====== START SERVER ======
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
 
 // ====== HOME (DASHBOARD) ======
