@@ -114,7 +114,7 @@ if (!fs.existsSync(pagesDir)) {
   fs.mkdirSync(pagesDir, { recursive: true });
 }
 
-// CREATE PAGE ROUTE
+// CREATE PAGE ROUTE (duplicate-safe with rename prompt)
 app.post("/createPage", async (req, res) => {
   const { filename, content } = req.body;
 
@@ -122,22 +122,32 @@ app.post("/createPage", async (req, res) => {
     return res.json({ success: false, error: "Missing filename or content" });
   }
 
+  // sanitize filename
   const safeName = filename.replace(/[^a-zA-Z0-9-_\.]/g, "");
   const filePath = path.join(pagesDir, safeName);
 
   try {
+    // 🔒 PREVENT OVERWRITING — PROMPT USER TO RENAME
+    if (fs.existsSync(filePath)) {
+      return res.json({
+        success: false,
+        error: "exists"  // frontend will detect this and prompt user
+      });
+    }
+
+    // write new file
     await fs.promises.writeFile(filePath, content, "utf8");
 
     return res.json({
       success: true,
       url: `https://spacebook-app.onrender.com/pages/${safeName}`
     });
+
   } catch (err) {
     console.error("Error writing page:", err);
     return res.json({ success: false, error: err.message });
   }
 });
-
 
 // ====== CLOUDINARY MULTER STORAGE ======
 const storage = new CloudinaryStorage({
