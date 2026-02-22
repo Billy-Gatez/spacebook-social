@@ -1326,6 +1326,7 @@ const server = app.listen(PORT, () => {
   console.log("Spacebook running on port", PORT);
 });
 
-
+// Attach chess WebSocket to the same server
 attachChessServer(server);
+
 
