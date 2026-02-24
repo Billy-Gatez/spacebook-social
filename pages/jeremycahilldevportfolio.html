@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Jeremy Cahill | Spacebook Portfolio</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<style>
+:root {
+  --bg: #000;
+  --panel: #0a0a0a;
+  --panel-light: #111;
+  --text: #fefefe;
+  --text-dim: #b9b9b9;
+  --orange: #ff7a00;
+  --orange-glow: rgba(255, 122, 0, 0.55);
+  --border: rgba(255, 122, 0, 0.35);
+  --radius: 14px;
+  --transition: 0.25s ease;
+  --font: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+body {
+  margin: 0;
+  background: #000;
+  color: var(--text);
+  font-family: var(--font);
+  overflow-x: hidden;
+}
+
+#starfield {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -2;
+}
+
+.starfield-overlay {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at top, rgba(255,122,0,0.15), transparent 60%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+main {
+  max-width: 1150px;
+  margin: 0 auto;
+  padding: 32px 16px 80px;
+}
+
+.shell {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  padding: 28px;
+  box-shadow: 0 0 22px rgba(255,122,0,0.25);
+}
+
+header {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  margin-bottom: 32px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 22px;
+}
+
+@media (min-width: 900px) {
+  header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+
+.identity {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid var(--orange);
+  box-shadow: 0 0 12px var(--orange-glow);
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.identity-text h1 {
+  margin: 0;
+  font-size: 1.4rem;
+  color: var(--orange);
+  letter-spacing: 0.04em;
+}
+
+.identity-text h2 {
+  margin: 2px 0 0;
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.identity-text p {
+  margin: 4px 0 0;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+.nav-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.nav-links a {
+  text-decoration: none;
+  color: var(--text-dim);
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: #0d0d0d;
+  transition: var(--transition);
+}
+
+.nav-links a:hover {
+  color: var(--orange);
+  border-color: var(--orange);
+  box-shadow: 0 0 12px var(--orange-glow);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 22px;
+}
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+section {
+  background: var(--panel-light);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  box-shadow: 0 0 12px rgba(255,122,0,0.15);
+}
+
+section h3 {
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--orange);
+}
+
+.section-subtitle {
+  margin-bottom: 12px;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  line-height: 1.6;
+}
+
+.about-text {
+  margin-bottom: 14px;
+  color: var(--text);
+  line-height: 1.65;
+  font-size: 0.95rem;
+}
+
+.link-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.link-chip {
+  text-decoration: none;
+  font-size: 0.78rem;
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: #0f0f0f;
+  border: 1px solid rgba(255,122,0,0.35);
+  color: var(--text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: 0.25s ease;
+  white-space: nowrap;
+}
+
+.link-chip:hover {
+  border-color: var(--orange);
+  color: var(--orange);
+  box-shadow: 0 0 14px rgba(255,122,0,0.55);
+  transform: translateY(-2px);
+}
+
+a {
+  color: var(--orange);
+  text-decoration: none;
+  transition: 0.25s ease;
+}
+
+a:hover {
+  color: #ffa24a;
+  text-shadow: 0 0 8px rgba(255,122,0,0.6);
+}
+
+a:visited {
+  color: var(--orange);
+}
+
+.games-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
+}
+
+.game-card {
+  position: relative;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: #0a0a0a;
+  border: 1px solid var(--border);
+  box-shadow: 0 0 12px rgba(255,122,0,0.25);
+  transition: var(--transition);
+  cursor: pointer;
+}
+
+.game-card:hover {
+  border-color: var(--orange);
+  box-shadow: 0 0 18px var(--orange-glow);
+  transform: translateY(-3px);
+}
+
+.game-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  pointer-events: none;
+}
+
+.game-body {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  padding: 10px;
+  background: rgba(0,0,0,0.6);
+}
+
+.game-title {
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.game-meta {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+@media (max-width: 600px) {
+  .link-chip {
+    width: 100%;
+    justify-content: center;
+  }
+  .games-grid {
+    grid-template-columns: 1fr;
+  }
+  .game-card {
+    height: 220px;
+  }
+}
+</style>
+</head>
+
+<body>
+<canvas id="starfield"></canvas>
+<div class="starfield-overlay"></div>
+
+<main>
+<div class="shell">
+
+<header>
+  <div class="identity">
+    <div class="avatar">
+      <img src="https://scontent-lax3-1.xx.fbcdn.net/v/t39.30808-6/516617309_10163697328510712_3046263405765999133_n.jpg?_nc_cat=108&ccb=1-7&_nc_sid=1d70fc&_nc_ohc=ly6zvv_AcqIQ7kNvwEZQznv&_nc_oc=Adm3juZigKLIbgF9d70v3gS4hPyW1wbufzrHCgBEn1AU_87BqzGtUQAvRC4P-rwHjrdg8nnL3RxKCYekAv5kUo9n&_nc_zt=23&_nc_ht=scontent-lax3-1.xx&_nc_gid=-slMlEVqvLIgxRns-ny57g&oh=00_AftWhE7zoYx3iO9nLE1WpA45sRA6FA9zMmwliq-bV_4muQ&oe=69A24D25" />
+    </div>
+    <div class="identity-text">
+      <h1>Jeremy Cahill</h1>
+      <h2>Game Developer • Music Producer • Publisher</h2>
+      <p>Aluminati Studios Publishing · Spacebook.world</p>
+    </div>
+  </div>
+
+  <nav class="nav-links">
+    <a href="#hero">Hero</a>
+    <a href="#games">Games</a>
+    <a href="#music">Music</a>
+    <a href="#skills">Skills</a>
+    <a href="#about">About</a>
+  </nav>
+</header>
+
+<div class="grid">
+
+<div>
+
+<section id="hero">
+  <h3>Hero · Current Focus</h3>
+
+  <p class="section-subtitle">
+    My current focus is the expansion of a unified creative ecosystem that brings together game development, 
+    music production, digital publishing, worldbuilding, and the long term growth of my personal catalog. 
+    I am building a creative universe that evolves with every project I release. This includes new games, 
+    new stories, new characters, new soundscapes, and new systems that all connect back to a single creative 
+    identity. I am shaping Spacebook.world into a living archive that reflects my work as it grows and 
+    transforms, and I treat every project as a permanent part of a larger creative timeline.
+  </p>
+
+  <p class="about-text">
+    I am actively developing original story concepts, character arcs, world structures, and narrative systems 
+    inspired by the emotional depth and cinematic storytelling found in series such as Final Fantasy, The 
+    Legend of Zelda, Kingdom Hearts, and Xenoblade Chronicles. I am currently writing a complete storyline 
+    concept for a future mainline Final Fantasy entry, including lore foundations, thematic pillars, 
+    character motivations, world history, magic systems, and major narrative beats. My long term goal is to 
+    collaborate with studios such as Square Enix or Nintendo, where I can contribute to large scale creative 
+    projects that blend narrative, gameplay, music, and worldbuilding into a single cohesive experience.
+  </p>
+
+  <p class="about-text">
+    I create interactive experiences, produce original music, and publish my own catalog through Aluminati 
+    Studios Publishing. My work spans game development, audio production, web engineering, creative direction, 
+    and multi platform distribution. I build gameplay systems, interactive worlds, soundtracks, albums, and 
+    complete digital projects that all connect back to a unified creative identity. I approach every project 
+    with the mindset of a long term creator who is building a body of work that will continue to grow for 
+    decades.
+  </p>
+
+  <p class="about-text">
+    My creative process is built on exploration, iteration, and the pursuit of emotional impact. I focus on 
+    creating experiences that feel personal, intentional, and meaningful. I design systems that can expand, 
+    stories that can evolve, and worlds that can grow with time. I treat my catalog as a living organism, not 
+    a collection of isolated releases. Every game, every track, every experiment, and every idea becomes part 
+    of a larger creative universe that I am building piece by piece.
+  </p>
+
+  <p class="about-text">
+    Spacebook.world serves as the public surface of this universe. It is the central hub where my games, 
+    music, writing, and creative experiments come together in one place. It is a platform built to grow with 
+    me, reflect my evolution, and showcase the full range of my work. It is the home of my creative identity 
+    and the foundation of everything I plan to build in the future. You can explore the live version of this 
+    creative universe here:
+  </p>
+
+  <div class="link-list" style="margin-top:10px;">
+    <a class="link-chip" href="https://spacebook.world" target="_blank">
+      Visit Spacebook.world
+    </a>
+  </div>
+
+</section>
+
+<section id="games" style="margin-top:18px;">
+  <h3>Games</h3>
+  <p class="section-subtitle">Live previews. Tap to open full game.</p>
+
+  <div class="games-grid">
+
+    <div class="game-card" onclick="window.open('https://spacebook.world/spacejammin','_blank')">
+      <iframe class="game-iframe" src="https://spacebook.world/spacejammin"></iframe>
+      <div class="game-body">
+        <div class="game-title">Space Jammin</div>
+        <div class="game-meta">Rhythmic space experience</div>
+      </div>
+    </div>
+
+    <div class="game-card" onclick="window.open('https://spacebook.world/chesslink','_blank')">
+      <iframe class="game-iframe" src="https://spacebook.world/chesslink"></iframe>
+      <div class="game-body">
+        <div class="game-title">Chesslink</div>
+        <div class="game-meta">Connected chess experience</div>
+      </div>
+    </div>
+
+    <div class="game-card" onclick="window.open('https://spacebook.world/neondemonmarket','_blank')">
+      <iframe class="game-iframe" src="https://spacebook.world/neondemonmarket"></iframe>
+      <div class="game-body">
+        <div class="game-title">Neon Demon Market</div>
+        <div class="game-meta">Stylized neon world</div>
+      </div>
+    </div>
+
+    <div class="game-card" onclick="window.open('https://spacebook.world/dragonchaos','_blank')">
+      <iframe class="game-iframe" src="https://spacebook.world/dragonchaos"></iframe>
+      <div class="game-body">
+        <div class="game-title">Dragon Chaos</div>
+        <div class="game-meta">Action driven chaos</div>
+      </div>
+    </div>
+
+    <div class="game-card" onclick="window.open('https://spacebook.world/GLOOM','_blank')">
+      <iframe class="game-iframe" src="https://spacebook.world/GLOOM"></iframe>
+      <div class="game-body">
+        <div class="game-title">GLOOM</div>
+        <div class="game-meta">Atmospheric experience</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+</div>
+
+<div>
+
+<section id="skills">
+  <h3>Skills</h3>
+  <p class="section-subtitle">Technical and creative disciplines</p>
+
+  <ul>
+    <li>Unreal Engine and Unity development</li>
+    <li>Gameplay systems and worldbuilding</li>
+    <li>Full stack web engineering</li>
+    <li>Music production and audio design</li>
+    <li>Publishing, metadata, and catalog management</li>
+  </ul>
+</section>
+
+<section id="music" style="margin-top:18px;">
+  <h3>Music</h3>
+  <p class="section-subtitle">Jeremy Sunshine and Lil Papa Bean</p>
+
+  <div class="music-layout">
+
+    <div class="music-block">
+      <h4>Jeremy Sunshine</h4>
+      <div class="link-list">
+        <a class="link-chip" href="https://www.reverbnation.com/jeremysunshine" target="_blank">ReverbNation</a>
+        <a class="link-chip" href="https://music.amazon.com/artists/B0046758O6/jeremy-sunshine" target="_blank">Amazon</a>
+        <a class="link-chip" href="https://music.apple.com/us/artist/jeremy-sunshine/396836248" target="_blank">Apple Music</a>
+        <a class="link-chip" href="https://open.spotify.com/artist/7azDS8GkTRYBRaTe9Bsqsy" target="_blank">Spotify</a>
+        <a class="link-chip" href="https://www.youtube.com/channel/UCN_4kv7BqE8dn0Z3R67hOPA" target="_blank">YouTube</a>
+        <a class="link-chip" href="https://www.instagram.com/overlitnightmare/" target="_blank">Instagram</a>
+        <a class="link-chip" href="https://soundcloud.com/the-way-the-light" target="_blank">SoundCloud</a>
+      </div>
+    </div>
+
+    <div class="music-block">
+      <h4>Lil Papa Bean</h4>
+      <div class="link-list">
+        <a class="link-chip" href="https://www.tiktok.com/@lilpapabean" target="_blank">TikTok</a>
+        <a class="link-chip" href="https://x.com/LILPAPABEAN" target="_blank">X</a>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section id="about" style="margin-top:18px;">
+  <h3>About · Professional Identity</h3>
+
+  <p class="about-text">
+    I’m a multidisciplinary creator working at the intersection of game development, music production,
+    and digital publishing. My work spans Unreal Engine, Unity, full‑stack web development, and
+    multi‑platform music distribution, all unified under Aluminati Studios Publishing.
+  </p>
+
+  <p class="about-text">
+    I build interactive experiences, design gameplay systems, and release original music under two
+    identities: <strong>Jeremy Sunshine</strong> and <strong>Lil Papa Bean</strong>. Across both, I manage
+    the full lifecycle of my work: creation, production, metadata, distribution, and long‑term catalog
+    preservation.
+  </p>
+
+  <p class="about-text">
+    My focus is long‑term authorship: creating a body of work that outlives any single platform.
+    Spacebook.world is the live surface of that catalog: a place where my games, music, and creative
+    experiments evolve in real time.
+  </p>
+
+  <p class="about-text">
+    You can explore my professional background and ongoing work here:
+  </p>
+
+  <div class="link-list" style="margin-top:10px;">
+    <a class="link-chip" href="https://www.linkedin.com/in/aluminatirecords/" target="_blank">
+      LinkedIn Profile
+    </a>
+  </div>
+</section>
