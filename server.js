@@ -300,31 +300,22 @@ app.get("/view", async (req, res) => {
 
   const url = `https://raw.githubusercontent.com/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}/main/pages/${page}.html`;
 
-  res.send(`
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>Viewing ${page}</title>
-      <style>
-        body, html {
-          margin: 0;
-          padding: 0;
-          height: 100%;
-        }
-        iframe {
-          width: 100%;
-          height: 100%;
-          border: none;
-        }
-      </style>
-    </head>
-    <body>
-      <iframe src="${url}"></iframe>
-    </body>
-    </html>
-  `);
-});
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      return res.send("Page not found on GitHub.");
+    }
 
+    const html = await response.text();
+
+    // Serve the HTML directly so the browser renders it normally
+    res.send(html);
+
+  } catch (err) {
+    console.error("VIEW ERROR:", err);
+    res.send("Error loading page.");
+  }
+});
 
 
 // ====== HOME (DASHBOARD) ======
