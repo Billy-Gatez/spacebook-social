@@ -108,13 +108,11 @@ app.use(session({
 
 app.use(express.static(path.join(__dirname, "public")));
 
-// CREATE /public/pages IF MISSING
-const pagesDir = path.join(__dirname, "public", "pages");
-if (!fs.existsSync(pagesDir)) {
-  fs.mkdirSync(pagesDir, { recursive: true });
-}
 
-// CREATE PAGE ROUTE (duplicate-safe with rename prompt)
+
+import fetch from "node-fetch";
+
+// SAVE PAGE TO GITHUB
 app.post("/createPage", async (req, res) => {
   const { filename, content } = req.body;
 
@@ -123,31 +121,57 @@ app.post("/createPage", async (req, res) => {
   }
 
   // sanitize filename
-  const safeName = filename.replace(/[^a-zA-Z0-9-_\.]/g, "");
-  const filePath = path.join(pagesDir, safeName);
+  const safeName = filename.replace(/[^a-zA-Z0-9._]/g, "");
+  const path = `pages/${safeName}`;
+
+  const url = `https://api.github.com/repos/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}/contents/${path}`;
+
+  const encoded = Buffer.from(content).toString("base64");
 
   try {
-    // 🔒 PREVENT OVERWRITING — PROMPT USER TO RENAME
-    if (fs.existsSync(filePath)) {
+    // CHECK IF FILE EXISTS ON GITHUB
+    const check = await fetch(url, {
+      headers: {
+        "Authorization": `Bearer ${process.env.GITHUB_TOKEN}`,
+        "Accept": "application/vnd.github+json"
+      }
+    });
+
+    if (check.status === 200) {
       return res.json({
         success: false,
-        error: "exists"  // frontend will detect this and prompt user
+        error: "exists"
       });
     }
 
-    // write new file
-    await fs.promises.writeFile(filePath, content, "utf8");
+    // CREATE FILE ON GITHUB
+    const response = await fetch(url, {
+      method: "PUT",
+      headers: {
+        "Authorization": `Bearer ${process.env.GITHUB_TOKEN}`,
+        "Content-Type": "application/json",
+        "Accept": "application/vnd.github+json"
+      },
+      body: JSON.stringify({
+        message: `Create ${path}`,
+        content: encoded
+      })
+    });
+
+    const data = await response.json();
 
     return res.json({
       success: true,
-      url: `https://spacebook-app.onrender.com/pages/${safeName}`
+      url: `https://raw.githubusercontent.com/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}/main/${path}`
     });
 
   } catch (err) {
-    console.error("Error writing page:", err);
+    console.error("GitHub Save Error:", err);
     return res.json({ success: false, error: err.message });
   }
 });
+
+
 
 // ====== CLOUDINARY MULTER STORAGE ======
 const storage = new CloudinaryStorage({
