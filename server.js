@@ -241,9 +241,9 @@ app.post("/createPage", async (req, res) => {
 
   // sanitize filename
   const safeName = filename.replace(/[^a-zA-Z0-9._]/g, "");
-  const path = `pages/${safeName}`;
+  const filePath = `pages/${safeName}`; // FIXED: no more path overwrite
 
-  const url = `https://api.github.com/repos/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}/contents/${path}`;
+  const url = `https://api.github.com/repos/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}/contents/${filePath}`;
 
   const encoded = Buffer.from(content).toString("base64");
 
@@ -272,16 +272,17 @@ app.post("/createPage", async (req, res) => {
         "Accept": "application/vnd.github+json"
       },
       body: JSON.stringify({
-        message: `Create ${path}`,
+        message: `Create ${filePath}`,
         content: encoded
       })
     });
 
     const data = await response.json();
 
+    // Return ONLY the viewer URL
     return res.json({
       success: true,
-      url: `https://raw.githubusercontent.com/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}/main/${path}`
+      url: `https://spacebook-app.onrender.com/view?page=${safeName.replace(".html","")}`
     });
 
   } catch (err) {
@@ -289,6 +290,7 @@ app.post("/createPage", async (req, res) => {
     return res.json({ success: false, error: err.message });
   }
 });
+
 
 
 // =============================
