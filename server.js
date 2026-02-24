@@ -229,6 +229,103 @@ app.post("/login", async (req, res) => {
 });
 
 
+// =============================
+// SAVE PAGE TO GITHUB (PERMANENT)
+// =============================
+app.post("/createPage", async (req, res) => {
+  const { filename, content } = req.body;
+
+  if (!filename || !content) {
+    return res.json({ success: false, error: "Missing filename or content" });
+  }
+
+  // sanitize filename
+  const safeName = filename.replace(/[^a-zA-Z0-9._]/g, "");
+  const path = `pages/${safeName}`;
+
+  const url = `https://api.github.com/repos/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}/contents/${path}`;
+
+  const encoded = Buffer.from(content).toString("base64");
+
+  try {
+    // CHECK IF FILE EXISTS ON GITHUB
+    const check = await fetch(url, {
+      headers: {
+        "Authorization": `Bearer ${process.env.GITHUB_TOKEN}`,
+        "Accept": "application/vnd.github+json"
+      }
+    });
+
+    if (check.status === 200) {
+      return res.json({
+        success: false,
+        error: "exists"
+      });
+    }
+
+    // CREATE FILE ON GITHUB
+    const response = await fetch(url, {
+      method: "PUT",
+      headers: {
+        "Authorization": `Bearer ${process.env.GITHUB_TOKEN}`,
+        "Content-Type": "application/json",
+        "Accept": "application/vnd.github+json"
+      },
+      body: JSON.stringify({
+        message: `Create ${path}`,
+        content: encoded
+      })
+    });
+
+    const data = await response.json();
+
+    return res.json({
+      success: true,
+      url: `https://raw.githubusercontent.com/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}/main/${path}`
+    });
+
+  } catch (err) {
+    console.error("GitHub Save Error:", err);
+    return res.json({ success: false, error: err.message });
+  }
+});
+
+
+// =============================
+// VIEW PAGE (RENDERS THE HTML)
+// =============================
+app.get("/view", async (req, res) => {
+  const page = req.query.page;
+  if (!page) return res.send("Missing ?page=name");
+
+  const url = `https://raw.githubusercontent.com/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}/main/pages/${page}.html`;
+
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Viewing ${page}</title>
+      <style>
+        body, html {
+          margin: 0;
+          padding: 0;
+          height: 100%;
+        }
+        iframe {
+          width: 100%;
+          height: 100%;
+          border: none;
+        }
+      </style>
+    </head>
+    <body>
+      <iframe src="${url}"></iframe>
+    </body>
+    </html>
+  `);
+});
+
+
 
 // ====== HOME (DASHBOARD) ======
 app.get("/home", requireLogin, async (req, res) => {
