@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MOONCRAFT Beta</title>
+<style>
+    body {
+        font-family: system-ui, sans-serif;
+        background: #0b0e14;
+        color: #e6e6e6;
+        margin: 0;
+        padding: 0;
+        line-height: 1.6;
+    }
+    header {
+        background: #11141c;
+        padding: 40px 20px;
+        text-align: center;
+        border-bottom: 2px solid #1f2330;
+    }
+    h1 {
+        margin: 0;
+        font-size: 2.8rem;
+        color: #7dd3fc;
+        letter-spacing: 1px;
+    }
+    h2 {
+        color: #a5f3fc;
+        border-bottom: 1px solid #1f2330;
+        padding-bottom: 6px;
+        margin-top: 40px;
+    }
+    h3 {
+        color: #bae6fd;
+        margin-top: 25px;
+    }
+    .container {
+        max-width: 900px;
+        margin: auto;
+        padding: 20px;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 15px 0;
+        background: #11141c;
+    }
+    th, td {
+        border: 1px solid #1f2330;
+        padding: 10px;
+        text-align: left;
+    }
+    th {
+        background: #1a1f2b;
+        color: #7dd3fc;
+    }
+    tr:nth-child(even) {
+        background: #141821;
+    }
+    code {
+        background: #1a1f2b;
+        padding: 2px 6px;
+        border-radius: 4px;
+        color: #7dd3fc;
+    }
+    footer {
+        text-align: center;
+        padding: 30px;
+        color: #64748b;
+        font-size: 0.9rem;
+    }
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>MOONCRAFT: Beta Reference Guide</h1>
+</header>
+
+<div class="container">
+
+<h2>Overview</h2>
+<p>
+MOONCRAFT is a browser-based 3D survival game set on the lunar surface. You begin stranded near a damaged landing pod with a cracked suit and rapidly draining oxygen. Hostile alien creatures roam the terrain. Your mission is to mine resources, craft equipment, build shelters, and survive as long as possible.  
+The entire game runs from a single HTML file in any modern browser.
+</p>
+
+<h2>System Requirements</h2>
+<ul>
+    <li>Chrome 120+, Edge 120+, or Firefox 122+</li>
+    <li>No installation or server required after initial load</li>
+    <li>Three.js loads once from CDN and is cached</li>
+    <li>Safari not recommended (pointer lock issues)</li>
+</ul>
+
+<h2>Getting Started</h2>
+<ol>
+    <li>Visit provided link at <code>mhttps://spacebook-app.onrender.com/view?page=betamooncraft</code></li>
+    <li>Open the file in a supported browser</li>
+    <li>Select a world slot and click <strong>Play</strong> or <strong>New</strong></li>
+    <li>Click the game canvas to activate mouse look</li>
+</ol>
+
+<h2>Controls</h2>
+
+<h3>Movement</h3>
+<table>
+<tr><th>Input</th><th>Action</th></tr>
+<tr><td>W A S D</td><td>Move</td></tr>
+<tr><td>Space</td><td>Jump</td></tr>
+<tr><td>F (hold)</td><td>Sprint</td></tr>
+<tr><td>Shift</td><td>Fly downward (Creative Mode)</td></tr>
+</table>
+
+<h3>Combat & Interaction</h3>
+<table>
+<tr><th>Input</th><th>Action</th></tr>
+<tr><td>Left Click (block)</td><td>Mine block</td></tr>
+<tr><td>Left Click (air)</td><td>Fire Space Ray</td></tr>
+<tr><td>Right Click</td><td>Place block</td></tr>
+<tr><td>R</td><td>Fire Space Ray manually</td></tr>
+<tr><td>Mouse Wheel</td><td>Cycle hotbar</td></tr>
+<tr><td>1–7</td><td>Select hotbar slot</td></tr>
+</table>
+
+<h3>Interface</h3>
+<table>
+<tr><th>Input</th><th>Action</th></tr>
+<tr><td>Escape</td><td>Pause / Resume</td></tr>
+<tr><td>C</td><td>Open Fabricator</td></tr>
+<tr><td>G</td><td>Toggle Creative Mode</td></tr>
+<tr><td>V</td><td>Toggle third-person camera</td></tr>
+<tr><td>Ctrl + S</td><td>Save world</td></tr>
+</table>
+
+<h2>World & Terrain</h2>
+<p>
+Each world is procedurally generated with regolith plains, basalt ridges, craters, ice deposits, and ore veins.  
+A landing pad made of Plating marks the spawn point at world origin.
+</p>
+
+<h2>Blocks & Resources</h2>
+<table>
+<tr><th>Block</th><th>Appearance</th><th>Use</th></tr>
+<tr><td>Regolith</td><td>Grey-blue</td><td>General building</td></tr>
+<tr><td>Basalt</td><td>Dark grey</td><td>Craft Plating</td></tr>
+<tr><td>Ice</td><td>Light cyan</td><td>Craft Glass</td></tr>
+<tr><td>Glass</td><td>Transparent cyan</td><td>Building</td></tr>
+<tr><td>Neon Ore</td><td>Magenta</td><td>Energy crafting</td></tr>
+<tr><td>Energy Block</td><td>Bright cyan</td><td>Advanced construction</td></tr>
+<tr><td>Plating</td><td>Silver</td><td>Durable building</td></tr>
+<tr><td>Crystal</td><td>Purple</td><td>Advanced crafting</td></tr>
+<tr><td>Anomaly</td><td>Orange</td><td>Rarest material</td></tr>
+</table>
+
+<h2>Fabricator</h2>
+<p>Press <strong>C</strong> to open the Fabricator. Recipes unlock automatically as you discover materials.</p>
+
+<table>
+<tr><th>Recipe</th><th>Ingredients</th><th>Output</th></tr>
+<tr><td>Glass Panel</td><td>4 Ice</td><td>4 Glass</td></tr>
+<tr><td>Plating</td><td>3 Basalt</td><td>2 Plating</td></tr>
+<tr><td>Energy Block</td><td>2 Neon, 1 Energy</td><td>3 Energy</td></tr>
+<tr><td>Crystal Slab</td><td>3 Crystal</td><td>6 Glass</td></tr>
+<tr><td>Anomaly Lens</td><td>2 Crystal, 2 Energy</td><td>1 Anomaly</td></tr>
+<tr><td>Regolith Pack</td><td>8 Regolith</td><td>16 Regolith</td></tr>
+<tr><td>Ice Bricks</td><td>2 Ice, 1 Basalt</td><td>4 Ice</td></tr>
+<tr><td>Reinforced Plating</td><td>2 Plating, 1 Neon</td><td>4 Plating</td></tr>
+</table>
+
+<h2>Alien Enemies</h2>
+<p>
+Aliens spawn continuously in Survival Mode. They pursue the player, deal melee damage, and fire red projectiles from range.
+</p>
+
+<ul>
+    <li>Pursue within ~20 blocks</li>
+    <li>Deal melee damage up close</li>
+    <li>Fire projectiles from 3–16 blocks</li>
+    <li>Require 4 Space Ray hits to defeat</li>
+    <li>Drop oxygen and occasional ore</li>
+</ul>
+
+<p><strong>Alien Swarm:</strong> Spawns four additional aliens at once.</p>
+
+<h2>Space Ray</h2>
+<p>
+Your primary weapon. Fires automatically when left-clicking in open air or manually with <code>R</code>.  
+Projectiles deal damage and knockback. Aliens drop oxygen when defeated.
+</p>
+
+<h2>Survival Statistics</h2>
+<table>
+<tr><th>Stat</th><th>Description</th></tr>
+<tr><td>HP</td><td>Health</td></tr>
+<tr><td>O2</td><td>Oxygen supply</td></tr>
+<tr><td>Temp</td><td>Temperature hazard</td></tr>
+<tr><td>Rad</td><td>Radiation level</td></tr>
+<tr><td>Time</td><td>Lunar time (24h cycle)</td></tr>
+</table>
+
+<p>Death occurs when HP or O2 reaches zero.</p>
+
+<h2>World Saves</h2>
+<ul>
+    <li>Three save slots available</li>
+    <li>Slots show last save date and mode</li>
+    <li>Save with <code>Ctrl+S</code> or pause menu</li>
+    <li>Saves stored in <code>localStorage</code></li>
+</ul>
+
+<h2>Creative Mode</h2>
+<ul>
+    <li>No damage</li>
+    <li>Infinite oxygen</li>
+    <li>Unlimited blocks</li>
+    <li>All recipes unlocked</li>
+    <li>No alien spawns</li>
+</ul>
+
+<h2>Random Events</h2>
+<table>
+<tr><th>Event</th><th>Effect</th></tr>
+<tr><td>Moonquake</td><td>Terrain shakes</td></tr>
+<tr><td>Solar Flare</td><td>Instant 4 HP damage</td></tr>
+<tr><td>Alien Swarm</td><td>Four aliens spawn</td></tr>
+</table>
+
+<h2>Mobile Controls</h2>
+<table>
+<tr><th>Control</th><th>Action</th></tr>
+<tr><td>Left joystick</td><td>Move</td></tr>
+<tr><td>Right drag</td><td>Look</td></tr>
+<tr><td>JMP</td><td>Jump</td></tr>
+<tr><td>RUN</td><td>Sprint</td></tr>
+<tr><td>Ray</td><td>Fire Space Ray</td></tr>
+<tr><td>PLC</td><td>Place block</td></tr>
+<tr><td>Arrows</td><td>Cycle hotbar</td></tr>
+<tr><td>3RD / 1ST</td><td>Toggle camera</td></tr>
+</table>
+
+<h2>Survival Tips</h2>
+<ul>
+    <li>Mine Basalt early and build a perimeter wall</li>
+    <li>Stay mobile to avoid alien swarms</li>
+    <li>Kill aliens regularly to maintain oxygen</li>
+    <li>Save often | no autosave</li>
+    <li>Anomaly ore is extremely rare</li>
+    <li>The Space Ray outranges alien projectiles</li>
+</ul>
+
+</div>
+
+<footer>
+    MOONCRAFT v0.5 | Single HTML file. Built with Three.js.
+</footer>
+
+</body>
+</html>
