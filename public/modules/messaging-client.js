@@ -62,7 +62,7 @@ async function loadConversations() {
 function filterConvs(query) {
   const q = query.toLowerCase();
   const filtered = allConversations.filter(c => {
-    const others = c.participants.filter(p => p._id !== currentUser.id);
+    const others = c.participants.filter(p => p._id?.toString() !== currentUser.id?.toString());
     const name = c.type === "group" ? c.name : (others[0]?.name || "");
     return name.toLowerCase().includes(q);
   });
@@ -76,7 +76,7 @@ function renderConvList(convs) {
     return;
   }
   el.innerHTML = convs.map(c => {
-    const others = c.participants.filter(p => p._id !== currentUser.id);
+    const others = c.participants.filter(p => p._id?.toString() !== currentUser.id?.toString());
     const name = c.type === "group" ? (c.name || "Group") : (others[0]?.name || "Unknown");
     const pic = others[0]?.profilePic || "/assets/img/default-avatar.png";
     const otherId = others[0]?._id;
@@ -94,7 +94,7 @@ function renderConvList(convs) {
 }
 
 async function checkPresence(conv) {
-  const others = conv.participants.filter(p => p._id !== currentUser.id);
+  const others = conv.participants.filter(p => p._id?.toString() !== currentUser.id?.toString());
   for (const p of others) {
     const data = await fetch(`/api/presence/${p._id}`, { credentials: "include" }).then(r => r.json()).catch(() => ({ online: false }));
     const dot = document.querySelector(`.online-dot[data-uid="${p._id}"]`);
@@ -132,11 +132,10 @@ async function openConv(convId, name, pic) {
 
 function appendMessage(msg) {
   const feed = document.getElementById("chat-messages");
-  // Remove empty state if present
   const empty = feed.querySelector(".empty-state");
   if (empty) empty.remove();
 
-  const isMine = msg.senderId === currentUser.id || msg.senderId?.toString() === currentUser.id?.toString();
+  const isMine = msg.senderId?.toString() === currentUser.id?.toString();
   const row = document.createElement("div");
   row.id = `msg-${msg._id}`;
   row.className = `msg-row ${isMine ? "mine" : "theirs"}`;
