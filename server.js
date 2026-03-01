@@ -489,6 +489,7 @@ app.get("/home", requireLogin, async (req, res) => {
             </ul>
           </div>
 
+
           <div class="card" style="margin-top:20px;">
             <strong style="color:#ff6a00;">Suggested Friends</strong>
             <div class="friend-grid" style="margin-top:10px;">
@@ -808,7 +809,7 @@ app.get("/feed", requireLogin, async (req, res) => {
     <body>
       <div class="navbar">
         <div class="logo"><a href="/feed" style="color:#ff6a00;">Spacebook</a></div>
-            <div class="nav-links">
+           
          <div class="nav-links">
           <a href="/home">Home</a>
           <a href="/feed">Feed</a>
