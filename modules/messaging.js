@@ -108,6 +108,22 @@ module.exports = function attachMessaging(app, server, _mongoose, requireLogin, 
     });
   });
 
+  // ── REST API ──────────────────────────────────────────────
+
+  app.get("/api/session-user", requireLogin, async (req, res) => {
+    const User = _mongoose.models.User;
+    const user = await User.findById(req.session.userId).lean();
+    if (!user) return res.status(401).json({ error: "Not logged in" });
+    res.json({ id: user._id, name: user.name, profilePic: user.profilePic || "/assets/img/default-avatar.png" });
+  });
+
+  app.get("/api/friends", requireLogin, async (req, res) => {
+    const User = _mongoose.models.User;
+    const user = await User.findById(req.session.userId).populate("friends", "name profilePic").lean();
+    if (!user) return res.status(401).json({ error: "Not logged in" });
+    res.json(user.friends);
+  });
+
   app.post("/api/conversations/dm", requireLogin, async (req, res) => {
     const me = req.session.userId;
     const { targetId } = req.body;
@@ -159,7 +175,34 @@ module.exports = function attachMessaging(app, server, _mongoose, requireLogin, 
     } catch { res.json({ title: url, html: "", thumbnail: "" }); }
   });
 
+  // ── DELETE conversation + all its messages ──
+  app.delete("/api/conversations/:id", requireLogin, async (req, res) => {
+    const me = req.session.userId.toString();
+    const conv = await Conversation.findById(req.params.id);
+    if (!conv) return res.status(404).json({ error: "Not found" });
+    if (!conv.participants.map(p => p.toString()).includes(me))
+      return res.status(403).json({ error: "Not authorized" });
+    await Message.deleteMany({ conversationId: conv._id });
+    await conv.deleteOne();
+    io.to(req.params.id).emit("conversation_deleted", { conversationId: req.params.id });
+    res.json({ success: true });
+  });
+
+  // ── DELETE a single message ──
+  app.delete("/api/messages/:id", requireLogin, async (req, res) => {
+    const me = req.session.userId.toString();
+    const msg = await Message.findById(req.params.id);
+    if (!msg) return res.status(404).json({ error: "Not found" });
+    if (msg.senderId.toString() !== me)
+      return res.status(403).json({ error: "Not authorized" });
+    const convId = msg.conversationId.toString();
+    await msg.deleteOne();
+    io.to(convId).emit("message_deleted", { messageId: req.params.id });
+    res.json({ success: true });
+  });
+
   app.get("/messages", requireLogin, (req, res) => {
     res.sendFile(path.join(__dirname, "../public", "messaging.html"));
   });
+
 };
