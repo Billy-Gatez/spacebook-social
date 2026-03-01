@@ -5,6 +5,7 @@ const path = require("path");
 const mongoose = require("mongoose");
 const multer = require("multer");
 const attachChessServer = require("./chess-ws");
+const attachStories = require("./modules/stories"); // adjust path if folder is different
 
 // ====== CLOUDINARY ======
 const cloudinary = require("cloudinary").v2;
@@ -151,6 +152,10 @@ const storage = new CloudinaryStorage({
   }
 });
 const upload = multer({ storage });
+
+// Attach stories routes (must be after requireLogin, cloudinary, upload)
+attachStories(app, null, mongoose, requireLogin, cloudinary, upload);
+
 
 // ====== ROUTES ======
 
