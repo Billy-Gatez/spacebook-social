@@ -1531,54 +1531,50 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
   const isFriend = viewer.friends.some(f => f._id.toString() === target._id.toString());
 
   const topFriendsHtml = target.topFriends.map(f => {
-  const pic = f.profilePic || "/assets/img/default-avatar.png";
-  return '<div class="friend-tile">' +
-    '<div style="width:60px;height:60px;border-radius:8px;background:#111 url(\'' + pic + '\') center/cover no-repeat;margin-bottom:4px;border:1px solid rgba(255,106,0,0.3);"></div>' +
-    '<div style="font-size:12px;"><a href="/profile/' + f._id + '" style="color:#ff6a00;">' + f.name + '</a></div>' +
+    const pic = f.profilePic || "/assets/img/default-avatar.png";
+    return '<div class="friend-tile">' +
+      '<div style="width:60px;height:60px;border-radius:8px;background:#111 url(\'' + pic + '\') center/cover no-repeat;margin-bottom:4px;border:1px solid rgba(255,106,0,0.3);"></div>' +
+      '<div style="font-size:12px;"><a href="/profile/' + f._id + '" style="color:#ff6a00;">' + f.name + '</a></div>' +
+      '</div>';
+  }).join("");
+
+  const friendsGridHtml = target.friends.map(f => {
+    const pic = f.profilePic || "/assets/img/default-avatar.png";
+    return '<div class="friend-tile">' +
+      '<div style="width:60px;height:60px;border-radius:8px;background:#111 url(\'' + pic + '\') center/cover no-repeat;margin-bottom:4px;border:1px solid rgba(255,106,0,0.3);"></div>' +
+      '<div style="font-size:12px;"><a href="/profile/' + f._id + '" style="color:#ff6a00;">' + f.name + '</a></div>' +
+      '</div>';
+  }).join("");
+
+  const postsHtml = posts.map(p => {
+    const imgHtml = p.imagePath ? '<img class="post-image" src="' + p.imagePath + '" style="max-width:100%;margin-top:8px;border-radius:6px;">' : "";
+    const reactBtns = ["❤️","🔥","😂","🤝","🚀"].map(e =>
+      '<button class="react-pill" data-emoji="' + e + '" data-post-id="' + p._id + '">' + e +
+      '<span class="rpill-count" id="rp-' + p._id + '-' + e.codePointAt(0) + '">0</span></button>'
+    ).join("");
+    return '<div class="post-card" data-post-id="' + p._id + '">' +
+      '<div class="post">' +
+        '<div class="author" style="color:#ff6a00;">' + p.userName + '</div>' +
+        '<div class="meta">' + p.createdAt.toLocaleString() + '</div>' +
+        '<p class="post-content" style="margin-top:6px;">' + (p.content || "") + '</p>' +
+        '<div class="post-image-wrapper">' + imgHtml + '</div>' +
+      '</div>' +
+      '<div class="post-reactions" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">' + reactBtns + '</div>' +
+      '<div style="margin-top:8px;">' +
+        '<button class="btn-secondary comment-toggle-btn" data-post-id="' + p._id + '" style="font-size:12px;padding:4px 10px;">💬 Comments</button>' +
+      '</div>' +
+      '<div class="comment-section" id="cs-' + p._id + '" style="display:none;margin-top:10px;">' +
+        '<div class="comment-list" id="cl-' + p._id + '" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;max-height:200px;overflow-y:auto;"></div>' +
+        '<div style="display:flex;gap:8px;">' +
+          '<input class="comment-input" data-post-id="' + p._id + '" type="text" placeholder="Write a comment..." maxlength="300" style="flex:1;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:6px 10px;font-size:13px;" onkeydown="if(event.key===\'Enter\') submitPostComment(\'' + p._id + '\', this)"/>' +
+          '<button class="btn-primary" style="font-size:12px;padding:6px 10px;" onclick="submitPostComment(\'' + p._id + '\', document.querySelector(\'.comment-input[data-post-id=&quot;' + p._id + '&quot;]\'))">Post</button>' +
+        '</div>' +
+      '</div>' +
     '</div>';
-}).join("");
+  }).join("");
 
-const friendsGridHtml = target.friends.map(f => {
-  const pic = f.profilePic || "/assets/img/default-avatar.png";
-  return '<div class="friend-tile">' +
-    '<div style="width:60px;height:60px;border-radius:8px;background:#111 url(\'' + pic + '\') center/cover no-repeat;margin-bottom:4px;border:1px solid rgba(255,106,0,0.3);"></div>' +
-    '<div style="font-size:12px;"><a href="/profile/' + f._id + '" style="color:#ff6a00;">' + f.name + '</a></div>' +
-    '</div>';
-}).join("");
+  const targetPic = target.profilePic || "/assets/img/default-avatar.png";
 
-
- const postsHtml = posts.map(p => {
-  const imgHtml = p.imagePath ? '<img class="post-image" src="' + p.imagePath + '" style="max-width:100%;margin-top:8px;border-radius:6px;">' : "";
-  return '<div class="post-card" data-post-id="' + p._id + '">' +
-    '<div class="post">' +
-      '<div class="author" style="color:#ff6a00;">' + p.userName + '</div>' +
-      '<div class="meta">' + p.createdAt.toLocaleString() + '</div>' +
-      '<p class="post-content" style="margin-top:6px;">' + (p.content || "") + '</p>' +
-      '<div class="post-image-wrapper">' + imgHtml + '</div>' +
-    '</div>' +
-
-      <div class="post-reactions" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
-        ${["❤️","🔥","😂","🤝","🚀"].map(e => `
-          <button class="react-pill" data-emoji="${e}" data-post-id="${p._id}">${e}
-            <span class="rpill-count" id="rp-${p._id}-${e.codePointAt(0)}">0</span>
-          </button>`).join("")}
-      </div>
-      <div style="margin-top:8px;">
-        <button class="btn-secondary comment-toggle-btn" data-post-id="${p._id}" style="font-size:12px;padding:4px 10px;">💬 Comments</button>
-      </div>
-      <div class="comment-section" id="cs-${p._id}" style="display:none;margin-top:10px;">
-        <div class="comment-list" id="cl-${p._id}" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;max-height:200px;overflow-y:auto;"></div>
-        <div style="display:flex;gap:8px;">
-          <input class="comment-input" data-post-id="${p._id}" type="text" placeholder="Write a comment..." maxlength="300"
-            style="flex:1;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:6px 10px;font-size:13px;"
-            onkeydown="if(event.key==='Enter') submitPostComment('${p._id}', this)"/>
-          <button class="btn-primary" style="font-size:12px;padding:6px 10px;"
-            onclick="submitPostComment('${p._id}', document.querySelector('.comment-input[data-post-id=\\'${p._id}\\']'))">Post</button>
-        </div>
-      </div>
-    </div>`).join("");
-
-const targetPic = target.profilePic || "/assets/img/default-avatar.png";
 
 
 
