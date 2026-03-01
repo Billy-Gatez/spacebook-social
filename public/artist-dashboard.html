@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Spacebook · Artist Dashboard</title>
+<link rel="stylesheet" href="/styles.css"/>
+<style>
+  .artist-page { max-width: 900px; margin: 30px auto; padding: 0 16px; }
+  .artist-header { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; }
+  .artist-header h1 { color: #ff6a00; font-size: 28px; }
+  .verified-badge { background: linear-gradient(135deg,#ff6a00,#ee0979); color: #fff; font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 20px; }
+  .artist-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media(max-width:640px){ .artist-grid { grid-template-columns: 1fr; } }
+  .section-card { background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 18px; }
+  .section-card h3 { color: #ff6a00; margin-bottom: 14px; font-size: 16px; }
+  .show-item { background: #0d0d0d; border: 1px solid #222; border-radius: 6px; padding: 10px 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+  .show-item .show-info .venue { font-weight: 700; color: #f2f2f2; }
+  .show-item .show-info .date { font-size: 12px; color: #888; margin-top: 2px; }
+  .show-item .show-info .city { font-size: 12px; color: #aaa; }
+  .track-item { background: #0d0d0d; border: 1px solid #222; border-radius: 6px; padding: 8px 12px; margin-bottom: 6px; display: flex; align-items: center; gap: 10px; }
+  .track-item .t-title { flex: 1; font-size: 13px; color: #f2f2f2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .track-item .t-platform { font-size: 11px; color: #888; }
+  .del-btn { background: none; border: none; color: #e55; cursor: pointer; font-size: 16px; padding: 0 4px; }
+  .fan-msg-item { background: #0d0d0d; border: 1px solid #222; border-radius: 6px; padding: 10px 12px; margin-bottom: 6px; }
+  .fan-msg-item .fm-from { color: #ff6a00; font-weight: 700; font-size: 13px; }
+  .fan-msg-item .fm-text { color: #ccc; font-size: 13px; margin-top: 4px; }
+  .fan-msg-item .fm-time { color: #666; font-size: 11px; margin-top: 4px; }
+  .stat-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 20px; }
+  .stat-box { background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 14px; text-align: center; }
+  .stat-box .stat-num { font-size: 28px; font-weight: 700; color: #ff6a00; }
+  .stat-box .stat-label { font-size: 12px; color: #888; margin-top: 4px; }
+  .tip-link { display: inline-block; background: linear-gradient(135deg,#ff6a00,#ee0979); color: #fff; padding: 10px 20px; border-radius: 6px; font-weight: 700; margin-top: 8px; font-size: 14px; }
+  .enable-panel { text-align: center; padding: 60px 20px; }
+  .enable-panel h2 { color: #ff6a00; margin-bottom: 10px; }
+  .enable-panel p { color: #888; margin-bottom: 24px; }
+</style>
+</head>
+<body>
+<nav class="navbar">
+  <a class="logo" href="/feed">Spacebook</a>
+  <div class="nav-links">
+    <a href="/feed">Feed</a>
+    <a href="/profile">Profile</a>
+    <a href="/messages">Messages</a>
+    <a href="/artist-dashboard" style="color:#ff6a00">Artist</a>
+    <a href="/logout">Logout</a>
+  </div>
+</nav>
+
+<div class="artist-page">
+
+  <!-- Not an artist yet -->
+  <div id="enable-panel" class="enable-panel" style="display:none">
+    <h2>🎤 Enable Artist Mode</h2>
+    <p>Show your music, list your shows, and connect with fans.</p>
+    <div class="section-card" style="max-width:440px;margin:0 auto;text-align:left">
+      <input type="text" id="en-genre" placeholder="Genre (e.g. Hip-Hop, House, R&B)"/>
+      <textarea id="en-bio" placeholder="Artist bio…" style="height:80px"></textarea>
+      <input type="text" id="en-sc" placeholder="SoundCloud profile URL"/>
+      <input type="text" id="en-sp" placeholder="Spotify profile URL (optional)"/>
+      <input type="text" id="en-tip" placeholder="Tip/support link (Cash App, PayPal, etc.)"/>
+      <button class="btn-primary" onclick="enableArtistMode()">Enable Artist Mode</button>
+    </div>
+  </div>
+
+  <!-- Artist dashboard -->
+  <div id="artist-dashboard" style="display:none">
+    <div class="artist-header">
+      <div>
+        <h1 id="dash-name">Artist Dashboard</h1>
+        <div id="dash-genre" style="color:#888;font-size:13px"></div>
+      </div>
+      <span id="dash-verified" class="verified-badge" style="display:none">✓ Verified</span>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat-box">
+        <div class="stat-num" id="stat-tracks">0</div>
+        <div class="stat-label">Tracks</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num" id="stat-shows">0</div>
+        <div class="stat-label">Shows</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num" id="stat-msgs">0</div>
+        <div class="stat-label">Fan Messages</div>
+      </div>
+    </div>
+
+    <div class="artist-grid">
+
+      <!-- Tracks -->
+      <div class="section-card">
+        <h3>🎵 Tracks</h3>
+        <div id="tracks-list"></div>
+        <div style="margin-top:12px;border-top:1px solid #222;padding-top:12px">
+          <input type="text" id="import-url" placeholder="SoundCloud track URL"/>
+          <button class="btn-primary" onclick="importTrack()" style="margin-top:6px">Import Track</button>
+        </div>
+      </div>
+
+      <!-- Shows -->
+      <div class="section-card">
+        <h3>🎤 Upcoming Shows</h3>
+        <div id="shows-list"></div>
+        <div style="margin-top:12px;border-top:1px solid #222;padding-top:12px">
+          <input type="text" id="show-venue" placeholder="Venue name"/>
+          <input type="text" id="show-city" placeholder="City"/>
+          <input type="date" id="show-date"/>
+          <input type="text" id="show-ticket" placeholder="Ticket URL (optional)"/>
+          <button class="btn-primary" onclick="addShow()" style="margin-top:6px">Add Show</button>
+        </div>
+      </div>
+
+      <!-- Fan Messages -->
+      <div class="section-card">
+        <h3>💌 Fan Messages</h3>
+        <div id="fan-msgs-list"></div>
+      </div>
+
+      <!-- Profile & Tip -->
+      <div class="section-card">
+        <h3>⚙️ Settings</h3>
+        <input type="text" id="edit-genre" placeholder="Genre"/>
+        <textarea id="edit-bio" placeholder="Bio…" style="height:70px"></textarea>
+        <input type="text" id="edit-sc" placeholder="SoundCloud profile URL"/>
+        <input type="text" id="edit-sp" placeholder="Spotify profile URL"/>
+        <input type="text" id="edit-tip" placeholder="Tip/support link"/>
+        <button class="btn-primary" onclick="saveSettings()">Save Settings</button>
+        <div id="tip-section" style="margin-top:14px;border-top:1px solid #222;padding-top:14px">
+          <div style="font-size:13px;color:#888;margin-bottom:6px">Your tip link:</div>
+          <a id="tip-link-display" class="tip-link" href="#" target="_blank">💸 Support Me</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="/modules/artist-client.js"></script>
+</body>
+</html>

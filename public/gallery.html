@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Spacebook · Gallery</title>
+<link rel="stylesheet" href="/styles.css"/>
+<style>
+  .gallery-page { max-width: 1100px; margin: 30px auto; padding: 0 16px; }
+  .gallery-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .album-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 18px; }
+  .album-card { background: #1a1a1a; border: 1px solid #333; border-radius: 8px; overflow: hidden; cursor: pointer; transition: transform .18s, box-shadow .18s; }
+  .album-card:hover { transform: scale(1.025); box-shadow: 0 0 20px rgba(255,106,0,.25); }
+  .album-cover { width: 100%; height: 150px; object-fit: cover; background: #222; display: block; }
+  .album-info { padding: 10px 12px; }
+  .album-name { font-weight: 700; color: #ff6a00; font-size: 14px; }
+  .album-count { font-size: 12px; color: #888; margin-top: 2px; }
+  .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin-top: 14px; }
+  .photo-thumb { position: relative; border-radius: 6px; overflow: hidden; aspect-ratio: 1; cursor: pointer; }
+  .photo-thumb img { width: 100%; height: 100%; object-fit: cover; transition: opacity .15s; display: block; }
+  .photo-thumb:hover img { opacity: .8; }
+  .photo-del { position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,.75); color: #fff; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 12px; cursor: pointer; display: none; line-height: 22px; text-align: center; padding: 0; }
+  .photo-thumb:hover .photo-del { display: block; }
+  .drop-zone { border: 2px dashed #ff6a00; border-radius: 8px; padding: 36px; text-align: center; color: #888; margin-top: 14px; cursor: pointer; transition: background .2s; }
+  .drop-zone.drag-over { background: rgba(255,106,0,.08); color: #ff6a00; }
+  .media-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.92); z-index: 1000; align-items: center; justify-content: center; }
+  .media-overlay.open { display: flex; }
+  .media-overlay .close-x { position: absolute; top: 16px; right: 22px; font-size: 28px; cursor: pointer; color: #fff; }
+  .media-overlay img, .media-overlay video { max-width: 90vw; max-height: 84vh; border-radius: 8px; }
+  .view-back { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+<nav class="navbar">
+  <a class="logo" href="/feed">Spacebook</a>
+  <div class="nav-links">
+    <a href="/feed">Feed</a>
+    <a href="/profile">Profile</a>
+    <a href="/messages">Messages</a>
+    <a href="/stories">Stories</a>
+    <a href="/gallery" style="color:#ff6a00">Gallery</a>
+    <a href="/logout">Logout</a>
+  </div>
+</nav>
+
+<div class="gallery-page">
+  <div class="gallery-header">
+    <h2 style="color:#ff6a00">My Gallery</h2>
+    <button class="btn-primary" style="width:auto;padding:10px 18px" onclick="createAlbum()">+ New Album</button>
+  </div>
+
+  <div id="album-grid-view">
+    <div id="album-grid" class="album-grid"></div>
+  </div>
+
+  <div id="album-detail-view" style="display:none">
+    <div class="view-back">
+      <button class="btn-secondary" onclick="backToAlbums()">← All Albums</button>
+      <h3 id="album-detail-name" style="color:#ff6a00"></h3>
+      <button class="btn-secondary" style="margin-left:auto;color:#e55;border-color:#e55" onclick="deleteCurrentAlbum()">Delete Album</button>
+    </div>
+    <div class="drop-zone" id="drop-zone" onclick="document.getElementById('photo-file-input').click()">
+      Drag &amp; drop photos here, or <strong style="color:#ff6a00">click to upload</strong>
+      <input type="file" id="photo-file-input" multiple accept="image/*,video/*" style="display:none" onchange="handlePhotoUpload(event)"/>
+    </div>
+    <div id="photo-grid" class="photo-grid"></div>
+  </div>
+</div>
+
+<div id="media-overlay" class="media-overlay">
+  <span class="close-x" onclick="closeMediaOverlay()">✕</span>
+  <div id="media-overlay-content"></div>
+</div>
+
+<script src="/modules/gallery-client.js"></script>
+</body>
+</html>

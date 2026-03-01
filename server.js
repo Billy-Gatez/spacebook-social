@@ -1441,10 +1441,35 @@ app.get("/logout", (req, res) => {
 });
 
 
-// ====== START SERVER (ONLY ONE VERSION) ======
-const server = app.listen(PORT, () => {
+// ====== START SERVER ======
+const http = require("http");
+const { Server: SocketIOServer } = require("socket.io");
+
+const attachMessaging  = require("./modules/messaging");
+const attachGallery    = require("./modules/gallery");
+const attachStories    = require("./modules/stories");
+const attachSoundCloud = require("./modules/soundcloud");
+const attachThemes     = require("./modules/themes");
+const attachPlaylists  = require("./modules/playlists");
+const attachArtist     = require("./modules/artist");
+const attachSocial     = require("./modules/social");
+
+const server = http.createServer(app);
+
+attachChessServer(server);
+attachMessaging(app, server, mongoose, requireLogin, cloudinary);
+attachGallery(app, mongoose, requireLogin, cloudinary, upload);
+attachStories(app, server, mongoose, requireLogin, cloudinary, upload);
+attachSoundCloud(app, mongoose, requireLogin);
+attachThemes(app, mongoose, requireLogin);
+attachPlaylists(app, server, mongoose, requireLogin);
+attachArtist(app, mongoose, requireLogin, cloudinary, upload);
+attachSocial(app, mongoose, requireLogin, cloudinary, upload);
+
+server.listen(PORT, () => {
   console.log("Spacebook running on port", PORT);
 });
+
 
 // Attach chess WebSocket to the same server
 attachChessServer(server);

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Spacebook · Stories</title>
+<link rel="stylesheet" href="/styles.css"/>
+<style>
+  .stories-page { max-width: 860px; margin: 30px auto; padding: 0 16px; }
+  .story-bar { display: flex; gap: 14px; overflow-x: auto; padding: 4px 0 12px; scrollbar-width: thin; }
+  .story-bubble { display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; min-width: 68px; }
+  .story-ring { width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg,#ff6a00,#ee0979); padding: 3px; flex-shrink: 0; }
+  .story-ring.seen { background: #444; }
+  .story-ring img { width: 100%; height: 100%; border-radius: 50%; border: 2px solid #0d0d0d; object-fit: cover; }
+  .story-bubble span { font-size: 11px; color: #ccc; text-align: center; max-width: 68px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .add-story-circle { width: 60px; height: 60px; border-radius: 50%; background: #111; border: 2px dashed #ff6a00; display: flex; align-items: center; justify-content: center; font-size: 26px; color: #ff6a00; flex-shrink: 0; }
+  .create-panel { background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 20px; margin-top: 20px; display: none; }
+  .create-panel h3 { color: #ff6a00; margin-bottom: 14px; }
+  .type-btns { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .type-btn { padding: 8px 16px; border-radius: 20px; border: 1px solid #333; background: #0d0d0d; color: #f2f2f2; cursor: pointer; font-size: 13px; }
+  .type-btn.active { background: #ff6a00; color: #000; border-color: #ff6a00; }
+  .color-row { display: flex; gap: 14px; margin-bottom: 12px; align-items: center; }
+  .color-row label { font-size: 12px; color: #888; display: flex; flex-direction: column; gap: 4px; }
+  .color-row input[type=color] { width: 48px; height: 36px; padding: 2px; border-radius: 4px; border: 1px solid #333; background: #0d0d0d; cursor: pointer; margin-bottom: 0; }
+  .archive-section { margin-top: 30px; }
+  .archive-section h3 { color: #ff6a00; cursor: pointer; margin-bottom: 10px; }
+  .archive-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+  .archive-thumb { aspect-ratio: 1; border-radius: 6px; overflow: hidden; border: 1px solid #333; }
+  .archive-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .archive-text { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 12px; text-align: center; padding: 8px; }
+
+  /* Story Viewer */
+  .story-viewer { display: none; position: fixed; inset: 0; background: #000; z-index: 2000; flex-direction: column; }
+  .story-viewer.open { display: flex; }
+  .sv-progress { display: flex; gap: 4px; padding: 10px 14px 6px; }
+  .sv-prog-bar { flex: 1; height: 3px; background: rgba(255,255,255,.25); border-radius: 2px; overflow: hidden; }
+  .sv-prog-bar .fill { height: 100%; background: #ff6a00; width: 0%; }
+  .sv-body { flex: 1; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .sv-body img, .sv-body video { max-height: 80vh; max-width: 100vw; object-fit: contain; border-radius: 6px; }
+  .sv-text-card { font-size: 28px; font-weight: 700; text-align: center; padding: 48px 32px; width: 100%; min-height: 60vh; display: flex; align-items: center; justify-content: center; }
+  .sv-meta { position: absolute; top: 10px; left: 14px; display: flex; align-items: center; gap: 10px; z-index: 2; }
+  .sv-meta img { width: 36px; height: 36px; border-radius: 50%; border: 2px solid #ff6a00; object-fit: cover; }
+  .sv-name { color: #f2f2f2; font-weight: 700; font-size: 14px; }
+  .sv-time { color: #aaa; font-size: 11px; }
+  .sv-close { position: absolute; top: 10px; right: 14px; font-size: 24px; cursor: pointer; color: #fff; z-index: 3; }
+  .sv-nav-prev { position: absolute; left: 0; top: 0; bottom: 0; width: 38%; cursor: pointer; z-index: 1; }
+  .sv-nav-next { position: absolute; right: 0; top: 0; bottom: 0; width: 38%; cursor: pointer; z-index: 1; }
+  .sv-reactions { position: absolute; bottom: 70px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 3; }
+  .sv-reactions button { font-size: 24px; background: rgba(0,0,0,.55); border: none; border-radius: 50%; width: 46px; height: 46px; cursor: pointer; transition: transform .15s; }
+  .sv-reactions button:hover { transform: scale(1.2); }
+</style>
+</head>
+<body>
+<nav class="navbar">
+  <a class="logo" href="/feed">Spacebook</a>
+  <div class="nav-links">
+    <a href="/feed">Feed</a>
+    <a href="/profile">Profile</a>
+    <a href="/messages">Messages</a>
+    <a href="/stories" style="color:#ff6a00">Stories</a>
+    <a href="/gallery">Gallery</a>
+    <a href="/logout">Logout</a>
+  </div>
+</nav>
+
+<div class="stories-page">
+  <div class="story-bar" id="story-bar">
+    <div class="story-bubble" onclick="toggleCreatePanel()">
+      <div class="add-story-circle">+</div>
+      <span>Your Story</span>
+    </div>
+  </div>
+
+  <div class="create-panel" id="create-panel">
+    <h3>Create a Story</h3>
+    <div class="type-btns">
+      <button class="type-btn active" onclick="setStoryType('text',this)">✏️ Text</button>
+      <button class="type-btn" onclick="setStoryType('photo',this)">📷 Photo</button>
+      <button class="type-btn" onclick="setStoryType('video',this)">🎥 Video</button>
+    </div>
+    <div id="text-inputs">
+      <textarea id="story-text" placeholder="What's on your mind?" style="height:90px"></textarea>
+      <div class="color-row">
+        <label>Background <input type="color" id="story-bg" value="#1a1a1a"/></label>
+        <label>Text Color <input type="color" id="story-fg" value="#f2f2f2"/></label>
+      </div>
+    </div>
+    <div id="media-inputs" style="display:none">
+      <input type="file" id="story-media-file" accept="image/*,video/*" style="margin-bottom:10px"/>
+    </div>
+    <button class="btn-primary" onclick="submitStory()">Post Story</button>
+    <button class="btn-secondary" style="margin-left:10px" onclick="toggleCreatePanel()">Cancel</button>
+  </div>
+
+  <div class="archive-section">
+    <h3 onclick="toggleArchive()">📁 Story Archive ▾</h3>
+    <div id="archive-grid" class="archive-grid" style="display:none"></div>
+  </div>
+</div>
+
+<!-- Story Viewer -->
+<div class="story-viewer" id="story-viewer">
+  <div class="sv-progress" id="sv-progress"></div>
+  <div class="sv-body" id="sv-body">
+    <div class="sv-nav-prev" onclick="prevStory()"></div>
+    <div class="sv-nav-next" onclick="nextStory()"></div>
+    <div class="sv-meta">
+      <img id="sv-avatar" src="" alt=""/>
+      <div>
+        <div class="sv-name" id="sv-name"></div>
+        <div class="sv-time" id="sv-time"></div>
+      </div>
+    </div>
+    <span class="sv-close" onclick="closeStoryViewer()">✕</span>
+  </div>
+  <div class="sv-reactions">
+    <button onclick="reactStory('🔥')">🔥</button>
+    <button onclick="reactStory('❤️')">❤️</button>
+    <button onclick="reactStory('😂')">😂</button>
+    <button onclick="reactStory('🤝')">🤝</button>
+    <button onclick="reactStory('🚀')">🚀</button>
+  </div>
+</div>
+
+<script src="/modules/stories-client.js"></script>
+</body>
+</html>

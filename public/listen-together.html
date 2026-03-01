@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Spacebook · Listen Together</title>
+<link rel="stylesheet" href="/styles.css"/>
+<style>
+  .lt-page { max-width: 1000px; margin: 30px auto; padding: 0 16px; }
+  .lt-layout { display: grid; grid-template-columns: 320px 1fr; gap: 20px; margin-top: 20px; }
+  .lt-sidebar { display: flex; flex-direction: column; gap: 16px; }
+  .pl-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 6px; cursor: pointer; border: 1px solid #222; transition: background .15s; }
+  .pl-item:hover, .pl-item.active { background: #1a1a1a; border-color: #ff6a00; }
+  .pl-name { font-weight: 700; font-size: 14px; color: #ff6a00; }
+  .pl-meta { font-size: 12px; color: #888; }
+  .track-list { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+  .track-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 6px; border: 1px solid #222; cursor: pointer; font-size: 13px; transition: background .15s; }
+  .track-item:hover { background: #1a1a1a; }
+  .track-item.playing { border-color: #ff6a00; background: rgba(255,106,0,.07); }
+  .track-num { color: #888; min-width: 20px; text-align: center; font-size: 12px; }
+  .track-title { flex: 1; color: #f2f2f2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .track-by { font-size: 11px; color: #888; }
+  .player-area { background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 20px; }
+  .player-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .player-header h3 { color: #ff6a00; }
+  .now-playing { font-size: 13px; color: #888; margin-bottom: 10px; }
+  .now-playing span { color: #ff6a00; font-weight: 700; }
+  .sc-embed-wrap { width: 100%; min-height: 166px; border-radius: 6px; overflow: hidden; margin-bottom: 14px; }
+  .sc-embed-wrap iframe { width: 100%; border: none; }
+  .player-controls { display: flex; gap: 12px; align-items: center; justify-content: center; margin-bottom: 14px; }
+  .ctrl-btn { background: #0d0d0d; border: 1px solid #333; color: #f2f2f2; border-radius: 50%; width: 44px; height: 44px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: border-color .15s; }
+  .ctrl-btn:hover, .ctrl-btn.active { border-color: #ff6a00; color: #ff6a00; }
+  .ctrl-btn.play-btn { width: 54px; height: 54px; font-size: 22px; background: #ff6a00; color: #000; border-color: #ff6a00; }
+  .participants-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .part-avatar { width: 30px; height: 30px; border-radius: 50%; border: 2px solid #ff6a00; object-fit: cover; }
+  .room-chat { background: #0d0d0d; border: 1px solid #222; border-radius: 6px; height: 200px; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+  .room-chat-msg { font-size: 13px; }
+  .room-chat-msg .rc-name { color: #ff6a00; font-weight: 700; margin-right: 4px; }
+  .room-chat-input { display: flex; gap: 8px; }
+  .room-chat-input input { flex: 1; margin-bottom: 0; font-size: 13px; }
+  .reaction-burst { position: fixed; pointer-events: none; font-size: 32px; z-index: 9999; animation: burst .9s ease-out forwards; }
+  @keyframes burst { 0%{opacity:1;transform:translateY(0) scale(1)} 100%{opacity:0;transform:translateY(-120px) scale(1.6)} }
+  .room-reactions { display: flex; gap: 10px; margin-bottom: 10px; }
+  .room-reactions button { background: #1a1a1a; border: 1px solid #333; border-radius: 20px; padding: 5px 12px; font-size: 18px; cursor: pointer; }
+  .room-reactions button:hover { border-color: #ff6a00; }
+  .new-pl-form { background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 16px; }
+  .new-pl-form h4 { color: #ff6a00; margin-bottom: 10px; }
+  .add-track-form { margin-top: 12px; padding-top: 12px; border-top: 1px solid #222; }
+  .add-track-form h4 { color: #ff6a00; margin-bottom: 8px; font-size: 14px; }
+</style>
+</head>
+<body>
+<nav class="navbar">
+  <a class="logo" href="/feed">Spacebook</a>
+  <div class="nav-links">
+    <a href="/feed">Feed</a>
+    <a href="/profile">Profile</a>
+    <a href="/messages">Messages</a>
+    <a href="/stories">Stories</a>
+    <a href="/gallery">Gallery</a>
+    <a href="/listen-together" style="color:#ff6a00">Listen</a>
+    <a href="/logout">Logout</a>
+  </div>
+</nav>
+
+<div class="lt-page">
+  <h2 style="color:#ff6a00">Listen Together 🎵</h2>
+
+  <div class="lt-layout">
+    <div class="lt-sidebar">
+
+      <div class="new-pl-form">
+        <h4>+ New Playlist</h4>
+        <input type="text" id="new-pl-name" placeholder="Playlist name" style="margin-bottom:8px"/>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#aaa;margin-bottom:10px">
+          <input type="checkbox" id="new-pl-collab" style="width:auto;margin:0"/> Collaborative
+        </label>
+        <button class="btn-primary" onclick="createPlaylist()" style="padding:8px">Create</button>
+      </div>
+
+      <div>
+        <div style="font-weight:700;color:#ff6a00;margin-bottom:8px">My Playlists</div>
+        <div id="pl-list"></div>
+      </div>
+
+    </div>
+
+    <div>
+      <div class="player-area" id="player-area" style="display:none">
+        <div class="player-header">
+          <h3 id="pl-title">Playlist</h3>
+          <button class="btn-secondary" style="padding:6px 12px;font-size:13px" onclick="startListenRoom()">🔴 Start Room</button>
+        </div>
+
+        <div class="now-playing">Now playing: <span id="now-playing-title">—</span></div>
+        <div class="sc-embed-wrap" id="sc-embed-wrap">
+          <div style="color:#888;text-align:center;padding:40px;font-size:13px">Select a track to play</div>
+        </div>
+
+        <div class="player-controls">
+          <button class="ctrl-btn" onclick="prevTrack()" title="Previous">⏮</button>
+          <button class="ctrl-btn play-btn" id="play-btn" onclick="togglePlay()">▶</button>
+          <button class="ctrl-btn" onclick="nextTrack()" title="Next">⏭</button>
+        </div>
+
+        <div id="room-panel" style="display:none">
+          <div style="font-size:13px;color:#888;margin-bottom:8px">Room: <span id="room-id-display" style="color:#ff6a00"></span>
+            <button class="btn-secondary" style="padding:2px 8px;font-size:12px;margin-left:8px" onclick="copyRoomLink()">Copy Link</button>
+          </div>
+          <div style="font-size:12px;color:#888;margin-bottom:6px">Listening together:</div>
+          <div class="participants-row" id="participants-row"></div>
+          <div class="room-reactions">
+            <button onclick="sendRoomReaction('🔥')">🔥</button>
+            <button onclick="sendRoomReaction('❤️')">❤️</button>
+            <button onclick="sendRoomReaction('🎵')">🎵</button>
+            <button onclick="sendRoomReaction('🚀')">🚀</button>
+            <button onclick="sendRoomReaction('😭')">😭</button>
+          </div>
+          <div class="room-chat" id="room-chat"></div>
+          <div class="room-chat-input">
+            <input type="text" id="room-chat-input" placeholder="Chat…" onkeydown="if(event.key==='Enter')sendRoomChat()"/>
+            <button class="btn-secondary" style="padding:8px 14px" onclick="sendRoomChat()">→</button>
+          </div>
+        </div>
+
+        <div class="add-track-form">
+          <h4>+ Add Track</h4>
+          <input type="text" id="track-url-input" placeholder="SoundCloud URL" style="margin-bottom:6px"/>
+          <input type="text" id="track-title-input" placeholder="Track title" style="margin-bottom:8px"/>
+          <button class="btn-primary" onclick="addTrack()" style="padding:8px">Add</button>
+        </div>
+
+        <div class="track-list" id="track-list" style="margin-top:14px"></div>
+      </div>
+
+      <div id="no-pl-msg" style="color:#888;text-align:center;padding:60px;font-size:15px">
+        Create or select a playlist to get started 🎧
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/modules/playlists-client.js"></script>
+</body>
+</html>
