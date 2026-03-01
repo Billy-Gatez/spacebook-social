@@ -2030,17 +2030,26 @@ app.get("/api/friends", requireLogin, async (req, res) => {
 const attachGallery = require("./modules/gallery");
 attachGallery(app, mongoose, requireLogin, cloudinary, upload);
 
-const attachMessages = require("./modules/messaging");
-attachMessages(app, mongoose, requireLogin);
+try {
+  const attachMessages = require("./modules/messaging");
+  attachMessages(app, server, mongoose, requireLogin, cloudinary);
+} catch(e) { console.warn("messaging module not found, skipping"); }
 
-const attachStories = require("./modules/stories");
-attachStories(app, mongoose, requireLogin, cloudinary, upload);
+try {
+  const attachStories = require("./modules/stories");
+  attachStories(app, mongoose, requireLogin, cloudinary, upload);
+} catch(e) { console.warn("stories module not found, skipping"); }
 
-const attachArtist = require("./modules/artist");
-attachArtist(app, mongoose, requireLogin, cloudinary, upload);
+try {
+  const attachArtist = require("./modules/artist");
+  attachArtist(app, mongoose, requireLogin, cloudinary, upload);
+} catch(e) { console.warn("artist module not found, skipping"); }
 
-const attachListenTogether = require("./modules/listen-together");
-attachListenTogether(app, mongoose, requireLogin);
+try {
+  const attachListenTogether = require("./modules/listen-together");
+  attachListenTogether(app, mongoose, requireLogin);
+} catch(e) { console.warn("listen-together module not found, skipping"); }
+
 
 // ====== START SERVER ======
 const server = app.listen(PORT, () => {
