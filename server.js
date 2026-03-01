@@ -371,80 +371,159 @@ app.get("/home", requireLogin, async (req, res) => {
       <title>Home – Spacebook</title>
       <link rel="stylesheet" href="/assets/css/styles.css">
       <style>
-        html, body {
-          background: transparent !important;
-          margin: 0;
-          padding: 0;
-          color: #fff;
-          font-family: Arial, sans-serif;
-        }
-        .navbar {
-          width: 100%;
-          padding: 20px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          background: transparent !important;
-        }
-        .navbar a {
-          color: #ff6a00;
-          text-decoration: none;
-          font-weight: bold;
-        }
-        .page {
-          width: 100%;
-          min-height: 100vh;
-          display: flex;
-          gap: 30px;
-          padding: 40px;
-          background: transparent !important;
-        }
-        .sidebar .card, .feed .card {
-          border-radius: 12px;
-          background: rgba(0, 0, 0, 0.45);
-          backdrop-filter: blur(8px);
-          border: 1px solid rgba(255, 255, 255, 0.15);
-          padding: 20px;
-        }
-        .profile-summary {
-          display:flex;
-          align-items:center;
-          gap:16px;
-        }
-        .profile-summary-avatar {
-          width:64px;
-          height:64px;
-          border-radius:50%;
-          background:#111 url('${pic}') center/cover no-repeat;
-          border:2px solid #ff6a00;
-        }
-        .friend-grid {
-          display:flex;
-          flex-wrap:wrap;
-          gap:10px;
-        }
-        .friend-tile {
-          width:80px;
-          text-align:center;
-        }
-        .btn-primary {
-          display:inline-block;
-          padding:8px 14px;
-          background:#ff6a00;
-          color:#000;
-          border-radius:6px;
-          text-decoration:none;
-          font-weight:bold;
-          border:none;
-          cursor:pointer;
-          transition:0.2s;
-        }
-        .btn-primary:hover {
-          background:#ff8c32;
-        }
-      </style>
+  html, body {
+    background: #000 !important;
+    margin: 0;
+    padding: 0;
+    color: #fff;
+    font-family: Arial, sans-serif;
+    overflow-x: hidden;
+  }
+  #starfield {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: -1;
+    background: #000;
+  }
+  .navbar {
+    width: 100%;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: transparent !important;
+  }
+  .navbar a {
+    color: #ff6a00;
+    text-decoration: none;
+    font-weight: bold;
+  }
+  .page {
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    gap: 30px;
+    padding: 40px;
+    background: transparent !important;
+  }
+  .sidebar .card, .feed .card {
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 20px;
+  }
+  .profile-summary {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .profile-summary-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: #111 url('${pic}') center/cover no-repeat;
+    border: 2px solid #ff6a00;
+  }
+  .friend-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .friend-tile {
+    width: 80px;
+    text-align: center;
+  }
+  .btn-primary {
+    display: inline-block;
+    padding: 8px 14px;
+    background: #ff6a00;
+    color: #000;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  .btn-primary:hover {
+    background: #ff8c32;
+  }
+</style>
+
     </head>
-    <body>
+   <body>
+<canvas id="starfield"></canvas>
+<script>
+  const canvas = document.getElementById("starfield");
+  const ctx = canvas.getContext("2d");
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  window.addEventListener("resize", () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  });
+
+  const stars = Array.from({ length: 200 }, () => ({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    r: Math.random() * 1.5 + 0.3,
+    alpha: Math.random(),
+    speed: Math.random() * 0.3 + 0.1
+  }));
+
+  const shootingStars = [];
+
+  function spawnShootingStar() {
+    shootingStars.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height * 0.5,
+      len: Math.random() * 120 + 80,
+      speed: Math.random() * 8 + 6,
+      angle: Math.PI / 4,
+      alpha: 1
+    });
+  }
+
+  setInterval(spawnShootingStar, 2500);
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    stars.forEach(s => {
+      s.alpha += s.speed * 0.02 * (Math.random() > 0.5 ? 1 : -1);
+      s.alpha = Math.max(0.1, Math.min(1, s.alpha));
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,255,255,${s.alpha})`;
+      ctx.fill();
+    });
+
+    for (let i = shootingStars.length - 1; i >= 0; i--) {
+      const s = shootingStars[i];
+      ctx.beginPath();
+      ctx.moveTo(s.x, s.y);
+      ctx.lineTo(s.x - Math.cos(s.angle) * s.len, s.y - Math.sin(s.angle) * s.len);
+      const grad = ctx.createLinearGradient(s.x, s.y, s.x - Math.cos(s.angle) * s.len, s.y - Math.sin(s.angle) * s.len);
+      grad.addColorStop(0, `rgba(255,150,50,${s.alpha})`);
+      grad.addColorStop(1, "rgba(255,150,50,0)");
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      s.x += Math.cos(s.angle) * s.speed;
+      s.y += Math.sin(s.angle) * s.speed;
+      s.alpha -= 0.015;
+      if (s.alpha <= 0) shootingStars.splice(i, 1);
+    }
+
+    requestAnimationFrame(draw);
+  }
+  draw();
+</script>
+
       <div class="navbar">
         <div class="logo">
           <a href="/feed" style="color:#ff6a00;">Spacebook</a>
