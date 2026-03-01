@@ -1139,11 +1139,18 @@ app.get("/profile", requireLogin, async (req, res) => {
         <div class="logo">
           <a href="/feed" style="color:#ff6a00; text-decoration:none;">Spacebook</a>
         </div>
-        <div class="nav-links">
-          <a href="/home">Home</a>
+       <div class="nav-links">
           <a href="/feed">Feed</a>
+          <a href="/profile">Profile</a>
+          <a href="/messages">Messages</a>
+          <a href="/gallery">Gallery</a>
+          <a href="/stories">Stories</a>
+          <a href="/listen-together">Listen Together</a>
+          <a href="/artist-dashboard">Artist</a>
+          <a href="/activity">Activity</a>
           <a href="/logout">Log Out</a>
         </div>
+
       </div>
 
       <div class="page">
