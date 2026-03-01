@@ -55,12 +55,8 @@ const userSchema = new mongoose.Schema({
   birthday: String,
   network: String,
   profilePic: String,
-status: { type: String, default: "" },
-
   friends: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   topFriends: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }]
-
-
 });
 
 const postSchema = new mongoose.Schema({
@@ -73,7 +69,6 @@ const postSchema = new mongoose.Schema({
 
 const User = mongoose.model("User", userSchema);
 const Post = mongoose.model("Post", postSchema);
-
 
 // GLOBAL LEADERBOARD
 const playerSchema = new mongoose.Schema({
@@ -988,11 +983,6 @@ app.post("/set-top-friends", requireLogin, async (req, res) => {
   res.redirect("/profile");
 });
 
-app.post("/api/status", requireLogin, async (req, res) => {
-  await User.findByIdAndUpdate(req.session.userId, { status: req.body.status });
-  res.redirect("/profile");
-});
-
 // Add friend (Hybrid: instant)
 app.post("/add-friend/:id", requireLogin, async (req, res) => {
   const viewer = await User.findById(req.session.userId);
@@ -1019,6 +1009,7 @@ app.post("/remove-friend/:id", requireLogin, async (req, res) => {
   res.redirect("/profile/" + req.params.id);
 });
 
+// Your own profile
 app.get("/profile", requireLogin, async (req, res) => {
   const user = await User.findById(req.session.userId)
     .populate("friends")
@@ -1028,19 +1019,23 @@ app.get("/profile", requireLogin, async (req, res) => {
 
   const topFriendsHtml = (user.topFriends || []).map(f => `
     <div class="friend-tile">
-      <a href="/profile/${f._id}" style="text-decoration:none;">
-        <div class="friend-avatar" style="width:60px;height:60px;border-radius:8px;background:#111 url('${f.profilePic || "/assets/img/default-avatar.png"}') center/cover no-repeat;margin-bottom:4px;"></div>
-        <div style="font-size:12px;color:#ff6a00;">${f.name}</div>
-      </a>
+      <div class="friend-avatar" style="
+        width:60px; height:60px; border-radius:8px;
+        background:#111 url('${f.profilePic || "/assets/img/default-avatar.png"}') center/cover no-repeat;
+        margin-bottom:4px;
+      "></div>
+      <div style="font-size:12px;">${f.name}</div>
     </div>
   `).join("");
 
   const friendsGridHtml = (user.friends || []).map(f => `
     <div class="friend-tile">
-      <a href="/profile/${f._id}" style="text-decoration:none;">
-        <div class="friend-avatar" style="width:60px;height:60px;border-radius:8px;background:#111 url('${f.profilePic || "/assets/img/default-avatar.png"}') center/cover no-repeat;margin-bottom:4px;"></div>
-        <div style="font-size:12px;color:#ff6a00;">${f.name}</div>
-      </a>
+      <div class="friend-avatar" style="
+        width:60px; height:60px; border-radius:8px;
+        background:#111 url('${f.profilePic || "/assets/img/default-avatar.png"}') center/cover no-repeat;
+        margin-bottom:4px;
+      "></div>
+      <div style="font-size:12px;"><a href="/profile/${f._id}" style="color:#ff6a00;">${f.name}</a></div>
     </div>
   `).join("");
 
@@ -1051,28 +1046,34 @@ app.get("/profile", requireLogin, async (req, res) => {
         <div class="meta">${p.createdAt.toLocaleString()}</div>
         <p class="post-content" style="margin-top:6px;">${p.content || ""}</p>
         <div class="post-image-wrapper">
-          ${p.imagePath ? `<img class="post-image" src="${p.imagePath}" style="max-width:100%;margin-top:8px;border-radius:6px;">` : ""}
+          ${p.imagePath ? `<img class="post-image" src="${p.imagePath}" style="max-width:100%; margin-top:8px; border-radius:6px;">` : ""}
         </div>
-        <div class="post-actions" style="margin-top:8px;font-size:13px;">
+        <div class="post-actions" style="margin-top:8px; font-size:13px;">
           <button class="btn-secondary edit-post-btn" type="button">Edit</button>
           <button class="btn-secondary delete-post-btn" type="button" style="margin-left:6px;">Delete</button>
         </div>
       </div>
+
       <div class="post-editor" id="editor-${p._id}">
         <form class="post-editor-form" data-post-id="${p._id}">
-          <label style="font-size:13px;color:#ccc;">Edit your post</label>
-          <textarea name="content" class="post-editor-text" style="width:100%;min-height:80px;margin-top:4px;">${p.content || ""}</textarea>
+          <label style="font-size:13px; color:#ccc;">Edit your post</label>
+          <textarea name="content" class="post-editor-text" style="width:100%; min-height:80px; margin-top:4px;">${p.content || ""}</textarea>
+
           <div class="editor-image-section" style="margin-top:8px;">
             <div class="current-image-preview">
-              ${p.imagePath ? `<img src="${p.imagePath}" class="editor-image" style="max-width:100%;border-radius:6px;margin-bottom:6px;">` : "<p style='font-size:12px;color:#777;'>No image attached.</p>"}
+              ${p.imagePath ? `<img src="${p.imagePath}" class="editor-image" style="max-width:100%; border-radius:6px; margin-bottom:6px;">` : "<p style='font-size:12px; color:#777;'>No image attached.</p>"}
             </div>
-            <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:4px;">
+            <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:4px;">
               <button type="button" class="btn-secondary delete-image-btn" style="font-size:12px;">Delete Image</button>
-              <label class="btn-secondary" style="font-size:12px;cursor:pointer;">Replace Image<input type="file" name="image" accept="image/*" style="display:none;"></label>
+              <label class="btn-secondary" style="font-size:12px; cursor:pointer;">
+                Replace Image
+                <input type="file" name="image" accept="image/*" style="display:none;">
+              </label>
               <input type="hidden" name="deleteImage" value="false">
             </div>
           </div>
-          <div style="margin-top:10px;display:flex;gap:8px;">
+
+          <div style="margin-top:10px; display:flex; gap:8px;">
             <button type="submit" class="btn-primary" style="flex:0 0 auto;">Save Changes</button>
             <button type="button" class="btn-secondary cancel-edit-btn" style="flex:0 0 auto;">Cancel</button>
           </div>
@@ -1082,7 +1083,7 @@ app.get("/profile", requireLogin, async (req, res) => {
   `).join("");
 
   const topFriendsSelector = (user.friends || []).map(f => `
-    <label style="display:block;font-size:13px;margin-bottom:4px;">
+    <label style="display:block; font-size:13px; margin-bottom:4px;">
       <input type="checkbox" name="topFriends" value="${f._id}"
         ${user.topFriends.some(tf => tf._id.toString() === f._id.toString()) ? "checked" : ""}>
       ${f.name}
@@ -1099,22 +1100,56 @@ app.get("/profile", requireLogin, async (req, res) => {
       <title>Profile – Spacebook</title>
       <link rel="stylesheet" href="/assets/css/styles.css">
       <style>
-        .top-friends-bar { display:flex; flex-wrap:wrap; gap:10px; }
-        .friend-tile { width:70px; text-align:center; }
-        .post-card { margin-bottom:16px; }
-        .post-editor { margin-top:8px; border-radius:12px; background:rgba(0,0,0,0.55); backdrop-filter:blur(10px); border:1px solid rgba(255,106,0,0.6); padding:12px; max-height:0; opacity:0; overflow:hidden; transition:max-height 0.25s ease, opacity 0.2s ease; }
-        .post-editor.open { max-height:500px; opacity:1; }
-        .btn-secondary { padding:6px 10px; background:rgba(255,255,255,0.08); border-radius:6px; border:none; color:#ff6a00; cursor:pointer; font-weight:bold; text-decoration:none; transition:0.2s; }
-        .btn-secondary:hover { background:rgba(255,255,255,0.18); }
-        .status-box { background:rgba(0,0,0,0.3); border:1px solid #ff6a00; border-radius:8px; padding:10px 14px; margin-bottom:14px; display:flex; align-items:center; gap:10px; }
-        .status-box input { background:transparent; border:none; color:#f2f2f2; font-size:14px; outline:none; flex:1; margin:0; }
-        .status-box input::placeholder { color:#666; }
+        .top-friends-bar {
+          display:flex;
+          flex-wrap:wrap;
+          gap:10px;
+        }
+        .friend-tile {
+          width:70px;
+          text-align:center;
+        }
+        .post-card {
+          margin-bottom:16px;
+        }
+        .post-editor {
+          margin-top:8px;
+          border-radius:12px;
+          background: rgba(0, 0, 0, 0.55);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 106, 0, 0.6);
+          padding: 12px;
+          max-height:0;
+          opacity:0;
+          overflow:hidden;
+          transition:max-height 0.25s ease, opacity 0.2s ease;
+        }
+        .post-editor.open {
+          max-height:500px;
+          opacity:1;
+        }
+        .btn-secondary {
+          padding:6px 10px;
+          background:rgba(255,255,255,0.08);
+          border-radius:6px;
+          border:none;
+          color:#ff6a00;
+          cursor:pointer;
+          font-weight:bold;
+          text-decoration:none;
+          transition:0.2s;
+        }
+        .btn-secondary:hover {
+          background:rgba(255,255,255,0.18);
+        }
       </style>
     </head>
     <body>
       <div class="navbar">
-        <div class="logo"><a href="/feed" style="color:#ff6a00;text-decoration:none;">Spacebook</a></div>
-        <div class="nav-links">
+        <div class="logo">
+          <a href="/feed" style="color:#ff6a00; text-decoration:none;">Spacebook</a>
+        </div>
+       <div class="nav-links">
           <a href="/feed">Feed</a>
           <a href="/profile">Profile</a>
           <a href="/messages">Messages</a>
@@ -1125,67 +1160,58 @@ app.get("/profile", requireLogin, async (req, res) => {
           <a href="/activity">Activity</a>
           <a href="/logout">Log Out</a>
         </div>
+
       </div>
 
       <div class="page">
         <div class="card" style="width:100%;">
 
           <div class="profile-header">
-            <div class="profile-avatar" style="background-image:url('${pic}');background-size:cover;background-position:center;"></div>
+            <div class="profile-avatar"
+                 style="background-image:url('${pic}'); background-size:cover; background-position:center;">
+            </div>
+
             <div class="profile-info">
               <h2>${user.name}</h2>
               <p>${user.network || "Unknown network"}</p>
-              ${user.status ? `<p style="margin-top:6px;color:#ff6a00;font-style:italic;">"${user.status}"</p>` : `<p style="margin-top:6px;color:#ccc;">"Exploring the universe via Spacebook."</p>`}
+              <p style="margin-top:6px; color:#ccc;">
+                “Exploring the universe via Spacebook.”
+              </p>
             </div>
           </div>
 
-          <!-- Status Update -->
-          <div style="margin-top:16px;">
-            <form action="/api/status" method="post" style="display:flex;gap:8px;align-items:center;">
-              <div class="status-box" style="flex:1;">
-                <input type="text" name="status" placeholder="✏️ Set your status…" maxlength="100" value="${user.status || ''}">
-              </div>
-              <button class="btn-primary" style="padding:8px 14px;white-space:nowrap;">Set Status</button>
-            </form>
-          </div>
-
-          <form action="/upload-profile-pic" method="post" enctype="multipart/form-data" style="margin-top:16px;">
-            <label style="color:#ccc;font-size:14px;">Update profile picture</label>
+          <form action="/upload-profile-pic" method="post" enctype="multipart/form-data" style="margin-top:20px;">
+            <label style="color:#ccc; font-size:14px;">Update profile picture</label>
             <input type="file" name="profilePic" accept="image/*">
             <button class="btn-primary" style="margin-top:10px;">Upload</button>
           </form>
 
-          <hr style="margin:20px 0;border:none;border-top:1px solid #333;">
+          <hr style="margin:20px 0; border:none; border-top:1px solid #333;">
 
-          <h3 style="color:#ff6a00;margin-bottom:10px;">Top Friends</h3>
+          <h3 style="color:#ff6a00; margin-bottom:10px;">Top Friends</h3>
           <div class="top-friends-bar">
-            ${topFriendsHtml || "<p style='color:#ccc;font-size:13px;'>No top friends yet. Pick some below.</p>"}
+            ${topFriendsHtml || "<p style='color:#ccc; font-size:13px;'>No top friends yet. Pick some below.</p>"}
           </div>
 
-          <!-- Vaporware Player -->
-          <div style="margin-top:20px;border-radius:12px;overflow:hidden;border:1px solid #ff6a00;box-shadow:0 0 12px rgba(255,106,0,0.2);">
-            <iframe src="https://spacebook.world/vaporware" width="100%" height="120" frameborder="0" scrolling="no" allow="autoplay" style="display:block;"></iframe>
-          </div>
+          <hr style="margin:20px 0; border:none; border-top:1px solid #333;">
 
-          <hr style="margin:20px 0;border:none;border-top:1px solid #333;">
-
-          <h3 style="color:#ff6a00;margin-bottom:10px;">Your Friends</h3>
-          <div style="display:flex;flex-wrap:wrap;gap:10px;">
-            ${friendsGridHtml || "<p style='color:#ccc;font-size:13px;'>No friends yet.</p>"}
+          <h3 style="color:#ff6a00; margin-bottom:10px;">Your Friends</h3>
+          <div style="display:flex; flex-wrap:wrap; gap:10px;">
+            ${friendsGridHtml || "<p style='color:#ccc; font-size:13px;'>No friends yet.</p>"}
           </div>
 
           <form action="/set-top-friends" method="post" style="margin-top:20px;">
-            <h4 style="color:#ff6a00;margin-bottom:8px;">Select Top 8 Friends</h4>
-            <div style="max-height:200px;overflow-y:auto;border:1px solid #333;padding:10px;border-radius:6px;">
-              ${topFriendsSelector || "<p style='color:#ccc;font-size:13px;'>Add some friends first.</p>"}
+            <h4 style="color:#ff6a00; margin-bottom:8px;">Select Top 8 Friends</h4>
+            <div style="max-height:200px; overflow-y:auto; border:1px solid #333; padding:10px; border-radius:6px;">
+              ${topFriendsSelector || "<p style='color:#ccc; font-size:13px;'>Add some friends first.</p>"}
             </div>
             <button class="btn-primary" style="margin-top:10px;">Save Top Friends</button>
           </form>
 
-          <hr style="margin:20px 0;border:none;border-top:1px solid #333;">
+          <hr style="margin:20px 0; border:none; border-top:1px solid #333;">
 
-          <h3 style="color:#ff6a00;margin-bottom:10px;">Your Posts</h3>
-          ${postsHtml || "<p style='color:#ccc;font-size:13px;'>You haven't posted yet.</p>"}
+          <h3 style="color:#ff6a00; margin-bottom:10px;">Your Posts</h3>
+          ${postsHtml || "<p style='color:#ccc; font-size:13px;'>You haven't posted yet.</p>"}
 
         </div>
       </div>
@@ -1196,24 +1222,50 @@ app.get("/profile", requireLogin, async (req, res) => {
           const deleteBtn = e.target.closest(".delete-post-btn");
           const cancelBtn = e.target.closest(".cancel-edit-btn");
           const deleteImageBtn = e.target.closest(".delete-image-btn");
-          if (editBtn) { const card = editBtn.closest(".post-card"); const editor = card.querySelector(".post-editor"); if (editor) editor.classList.toggle("open"); }
-          if (cancelBtn) { const editor = cancelBtn.closest(".post-editor"); editor.classList.remove("open"); }
+
+          if (editBtn) {
+            const card = editBtn.closest(".post-card");
+            const editor = card.querySelector(".post-editor");
+            if (editor) {
+              editor.classList.toggle("open");
+            }
+          }
+
+          if (cancelBtn) {
+            const editor = cancelBtn.closest(".post-editor");
+            editor.classList.remove("open");
+          }
+
           if (deleteBtn) {
             const card = deleteBtn.closest(".post-card");
             const postId = card.getAttribute("data-post-id");
-            if (!postId || !confirm("Delete this post?")) return;
-            fetch("/delete-post/" + postId, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({}) })
-              .then(r => r.json()).then(data => { if (data.success) card.remove(); else alert("Error deleting post"); })
-              .catch(() => alert("Error deleting post"));
+            if (!postId) return;
+            if (!confirm("Delete this post?")) return;
+
+            fetch("/delete-post/" + postId, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({})
+            }).then(r => r.json()).then(data => {
+              if (data.success) {
+                card.remove();
+              } else {
+                alert("Error deleting post");
+              }
+            }).catch(() => alert("Error deleting post"));
           }
+
           if (deleteImageBtn) {
             const form = deleteImageBtn.closest(".post-editor-form");
             const deleteInput = form.querySelector("input[name='deleteImage']");
             const preview = form.querySelector(".current-image-preview");
             deleteInput.value = "true";
-            if (preview) preview.innerHTML = "<p style='font-size:12px;color:#777;'>Image will be removed.</p>";
+            if (preview) {
+              preview.innerHTML = "<p style='font-size:12px; color:#777;'>Image will be removed.</p>";
+            }
           }
         });
+
         document.addEventListener("change", function(e) {
           const fileInput = e.target.closest("input[type='file'][name='image']");
           if (fileInput) {
@@ -1223,27 +1275,47 @@ app.get("/profile", requireLogin, async (req, res) => {
             const preview = form.querySelector(".current-image-preview");
             if (fileInput.files && fileInput.files[0]) {
               const reader = new FileReader();
-              reader.onload = function(ev) { if (preview) preview.innerHTML = "<img src='" + ev.target.result + "' style='max-width:100%;border-radius:6px;margin-bottom:6px;'>"; };
+              reader.onload = function(ev) {
+                if (preview) {
+                  preview.innerHTML = "<img src='" + ev.target.result + "' style='max-width:100%; border-radius:6px; margin-bottom:6px;'>";
+                }
+              };
               reader.readAsDataURL(fileInput.files[0]);
             }
           }
         });
+
         document.addEventListener("submit", function(e) {
           const form = e.target.closest(".post-editor-form");
           if (!form) return;
           e.preventDefault();
+
           const postId = form.getAttribute("data-post-id");
           const card = form.closest(".post-card");
           const contentEl = card.querySelector(".post-content");
           const imageWrapper = card.querySelector(".post-image-wrapper");
-          fetch("/edit-post/" + postId, { method:"POST", body:new FormData(form) })
-            .then(r => r.json()).then(data => {
-              if (!data.success) { alert("Error saving changes"); return; }
-              if (contentEl) contentEl.textContent = data.content || "";
-              if (imageWrapper) imageWrapper.innerHTML = data.imagePath ? "<img class='post-image' src='" + data.imagePath + "' style='max-width:100%;margin-top:8px;border-radius:6px;'>" : "";
-              const editor = card.querySelector(".post-editor");
-              if (editor) editor.classList.remove("open");
-            }).catch(() => alert("Error saving changes"));
+
+          const formData = new FormData(form);
+
+          fetch("/edit-post/" + postId, {
+            method: "POST",
+            body: formData
+          }).then(r => r.json()).then(data => {
+            if (!data.success) {
+              alert("Error saving changes");
+              return;
+            }
+            if (contentEl) contentEl.textContent = data.content || "";
+            if (imageWrapper) {
+              if (data.imagePath) {
+                imageWrapper.innerHTML = "<img class='post-image' src='" + data.imagePath + "' style='max-width:100%; margin-top:8px; border-radius:6px;'>";
+              } else {
+                imageWrapper.innerHTML = "";
+              }
+            }
+            const editor = card.querySelector(".post-editor");
+            if (editor) editor.classList.remove("open");
+          }).catch(() => alert("Error saving changes"));
         });
       </script>
     </body>
@@ -1251,29 +1323,40 @@ app.get("/profile", requireLogin, async (req, res) => {
   `);
 });
 
+// Other user's profile
 app.get("/profile/:id", requireLogin, async (req, res) => {
-  const viewer = await User.findById(req.session.userId).populate("friends").populate("topFriends");
-  const target = await User.findById(req.params.id).populate("friends").populate("topFriends");
+  const viewer = await User.findById(req.session.userId)
+    .populate("friends")
+    .populate("topFriends");
+  const target = await User.findById(req.params.id)
+    .populate("friends")
+    .populate("topFriends");
+
   if (!target) return res.redirect("/feed");
 
   const posts = await Post.find({ userId: target._id }).sort({ createdAt: -1 });
+
   const isFriend = viewer.friends.some(f => f._id.toString() === target._id.toString());
 
   const topFriendsHtml = (target.topFriends || []).map(f => `
     <div class="friend-tile">
-      <a href="/profile/${f._id}" style="text-decoration:none;">
-        <div class="friend-avatar" style="width:60px;height:60px;border-radius:8px;background:#111 url('${f.profilePic || "/assets/img/default-avatar.png"}') center/cover no-repeat;margin-bottom:4px;"></div>
-        <div style="font-size:12px;color:#ff6a00;">${f.name}</div>
-      </a>
+      <div class="friend-avatar" style="
+        width:60px; height:60px; border-radius:8px;
+        background:#111 url('${f.profilePic || "/assets/img/default-avatar.png"}') center/cover no-repeat;
+        margin-bottom:4px;
+      "></div>
+      <div style="font-size:12px;">${f.name}</div>
     </div>
   `).join("");
 
   const friendsGridHtml = (target.friends || []).map(f => `
     <div class="friend-tile">
-      <a href="/profile/${f._id}" style="text-decoration:none;">
-        <div class="friend-avatar" style="width:60px;height:60px;border-radius:8px;background:#111 url('${f.profilePic || "/assets/img/default-avatar.png"}') center/cover no-repeat;margin-bottom:4px;"></div>
-        <div style="font-size:12px;color:#ff6a00;">${f.name}</div>
-      </a>
+      <div class="friend-avatar" style="
+        width:60px; height:60px; border-radius:8px;
+        background:#111 url('${f.profilePic || "/assets/img/default-avatar.png"}') center/cover no-repeat;
+        margin-bottom:4px;
+      "></div>
+      <div style="font-size:12px;"><a href="/profile/${f._id}" style="color:#ff6a00;">${f.name}</a></div>
     </div>
   `).join("");
 
@@ -1284,7 +1367,7 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
         <div class="meta">${p.createdAt.toLocaleString()}</div>
         <p class="post-content" style="margin-top:6px;">${p.content || ""}</p>
         <div class="post-image-wrapper">
-          ${p.imagePath ? `<img class="post-image" src="${p.imagePath}" style="max-width:100%;margin-top:8px;border-radius:6px;">` : ""}
+          ${p.imagePath ? `<img class="post-image" src="${p.imagePath}" style="max-width:100%; margin-top:8px; border-radius:6px;">` : ""}
         </div>
       </div>
     </div>
@@ -1300,14 +1383,23 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
       <title>${target.name} – Spacebook</title>
       <link rel="stylesheet" href="/assets/css/styles.css">
       <style>
-        .top-friends-bar { display:flex; flex-wrap:wrap; gap:10px; }
-        .friend-tile { width:70px; text-align:center; }
+        .top-friends-bar {
+          display:flex;
+          flex-wrap:wrap;
+          gap:10px;
+        }
+        .friend-tile {
+          width:70px;
+          text-align:center;
+        }
       </style>
     </head>
     <body>
       <div class="navbar">
-        <div class="logo"><a href="/feed" style="color:#ff6a00;text-decoration:none;">Spacebook</a></div>
-        <div class="nav-links">
+        <div class="logo">
+          <a href="/feed" style="color:#ff6a00; text-decoration:none;">Spacebook</a>
+        </div>
+          <div class="nav-links">
           <a href="/feed">Feed</a>
           <a href="/profile">Profile</a>
           <a href="/messages">Messages</a>
@@ -1324,50 +1416,49 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
         <div class="card" style="width:100%;">
 
           <div class="profile-header">
-            <div class="profile-avatar" style="background-image:url('${pic}');background-size:cover;background-position:center;"></div>
+            <div class="profile-avatar"
+                 style="background-image:url('${pic}'); background-size:cover; background-position:center;">
+            </div>
+
             <div class="profile-info">
               <h2>${target.name}</h2>
               <p>${target.network || "Unknown network"}</p>
-              ${target.status ? `<p style="margin-top:6px;color:#ff6a00;font-style:italic;">"${target.status}"</p>` : `<p style="margin-top:6px;color:#ccc;">"Exploring the universe via Spacebook."</p>`}
+              <p style="margin-top:6px; color:#ccc;">
+                “Exploring the universe via Spacebook.”
+              </p>
             </div>
           </div>
 
-          <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;">
+          <div style="margin-top:16px;">
             ${isFriend ? `
               <form action="/remove-friend/${target._id}" method="post">
-                <button class="btn-primary" style="background:#222;color:#ff6a00;border:1px solid #ff6a00;">Remove Friend</button>
+                <button class="btn-primary" style="background:#222; color:#ff6a00; border:1px solid #ff6a00;">Remove Friend</button>
               </form>
             ` : `
               <form action="/add-friend/${target._id}" method="post">
                 <button class="btn-primary">Add Friend</button>
               </form>
             `}
-            <a href="/messages?dm=${target._id}" class="btn-primary" style="background:#1a1a1a;color:#ff6a00;border:1px solid #ff6a00;padding:8px 14px;">💬 Message</button>
           </div>
 
-          <hr style="margin:20px 0;border:none;border-top:1px solid #333;">
+          <hr style="margin:20px 0; border:none; border-top:1px solid #333;">
 
-          <h3 style="color:#ff6a00;margin-bottom:10px;">Top Friends</h3>
+          <h3 style="color:#ff6a00; margin-bottom:10px;">Top Friends</h3>
           <div class="top-friends-bar">
-            ${topFriendsHtml || "<p style='color:#ccc;font-size:13px;'>No top friends yet.</p>"}
+            ${topFriendsHtml || "<p style='color:#ccc; font-size:13px;'>No top friends yet.</p>"}
           </div>
 
-          <!-- Vaporware Player -->
-          <div style="margin-top:20px;border-radius:12px;overflow:hidden;border:1px solid #ff6a00;box-shadow:0 0 12px rgba(255,106,0,0.2);">
-            <iframe src="https://spacebook.world/vaporware" width="100%" height="120" frameborder="0" scrolling="no" allow="autoplay" style="display:block;"></iframe>
+          <hr style="margin:20px 0; border:none; border-top:1px solid #333;">
+
+          <h3 style="color:#ff6a00; margin-bottom:10px;">Friends</h3>
+          <div style="display:flex; flex-wrap:wrap; gap:10px;">
+            ${friendsGridHtml || "<p style='color:#ccc; font-size:13px;'>No friends yet.</p>"}
           </div>
 
-          <hr style="margin:20px 0;border:none;border-top:1px solid #333;">
+          <hr style="margin:20px 0; border:none; border-top:1px solid #333;">
 
-          <h3 style="color:#ff6a00;margin-bottom:10px;">Friends</h3>
-          <div style="display:flex;flex-wrap:wrap;gap:10px;">
-            ${friendsGridHtml || "<p style='color:#ccc;font-size:13px;'>No friends yet.</p>"}
-          </div>
-
-          <hr style="margin:20px 0;border:none;border-top:1px solid #333;">
-
-          <h3 style="color:#ff6a00;margin-bottom:10px;">Posts</h3>
-          ${postsHtml || "<p style='color:#ccc;font-size:13px;'>No posts yet.</p>"}
+          <h3 style="color:#ff6a00; margin-bottom:10px;">Posts</h3>
+          ${postsHtml || "<p style='color:#ccc; font-size:13px;'>No posts yet.</p>"}
 
         </div>
       </div>
@@ -1375,6 +1466,7 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
     </html>
   `);
 });
+
 // Logout
 app.get("/logout", (req, res) => {
   req.session.destroy(() => res.redirect("/"));
