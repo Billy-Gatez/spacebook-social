@@ -450,9 +450,14 @@ app.get("/home", requireLogin, async (req, res) => {
           <a href="/feed" style="color:#ff6a00;">Spacebook</a>
         </div>
         <div class="nav-links">
-          <a href="/home">Home</a>
-          <a href="/profile">Profile</a>
           <a href="/feed">Feed</a>
+          <a href="/profile">Profile</a>
+          <a href="/messages">Messages</a>
+          <a href="/gallery">Gallery</a>
+          <a href="/stories">Stories</a>
+          <a href="/listen-together">Listen Together</a>
+          <a href="/artist-dashboard">Artist</a>
+          <a href="/activity">Activity</a>
           <a href="/logout">Log Out</a>
         </div>
       </div>
@@ -472,9 +477,12 @@ app.get("/home", requireLogin, async (req, res) => {
             <ul style="list-style:none; margin-top:10px; font-size:14px; padding-left:0;">
               <li><a href="/profile" style="color:#ff6a00;">Your Profile</a></li>
               <li><a href="/feed" style="color:#ff6a00;">Feed</a></li>
-              <li><a href="#">Messages</a></li>
-              <li><a href="#">Friends</a></li>
-              <li><a href="#">Groups</a></li>
+              <li><a href="/messages" style="color:#ff6a00;">Messages</a></li>
+              <li><a href="/gallery" style="color:#ff6a00;">Gallery</a></li>
+              <li><a href="/stories" style="color:#ff6a00;">Stories</a></li>
+              <li><a href="/listen-together" style="color:#ff6a00;">Listen Together</a></li>
+              <li><a href="/artist-dashboard" style="color:#ff6a00;">Artist</a></li>
+              <li><a href="/activity" style="color:#ff6a00;">Activity</a></li>
             </ul>
           </div>
 
@@ -493,7 +501,7 @@ app.get("/home", requireLogin, async (req, res) => {
               Share what's happening in your universe.
             </p>
             <form action="/post" method="post" enctype="multipart/form-data" style="margin-top:10px;">
-              <textarea name="content" placeholder="What’s happening in your universe?" style="width:100%; min-height:80px;"></textarea>
+              <textarea name="content" placeholder="What's happening in your universe?" style="width:100%; min-height:80px;"></textarea>
               <label style="color:#ccc; font-size:14px; margin-top:6px; display:block;">
                 Upload an image (optional)
               </label>
@@ -529,6 +537,7 @@ app.post("/post", requireLogin, upload.single("image"), async (req, res) => {
 
   res.redirect("/feed");
 });
+
 
 // ⭐⭐ GLOBAL LEADERBOARD ROUTES ⭐⭐
 
