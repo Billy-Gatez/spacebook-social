@@ -1938,10 +1938,7 @@ app.post("/api/story-react", requireLogin, async (req, res) => {
   }
 });
 
-// ====== MESSAGES ======
-app.get("/messages", requireLogin, (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "messages.html"));
-});
+
 
 // ====== STORIES ======
 app.get("/stories", requireLogin, (req, res) => {
@@ -2026,6 +2023,15 @@ app.get("/api/friends", requireLogin, async (req, res) => {
   }
 });
 
+
+// ====== START SERVER ======
+const server = app.listen(PORT, () => {
+  console.log("Spacebook running on port " + PORT);
+});
+
+// ====== ATTACH CHESS WEBSOCKET ======
+attachChessServer(server);
+
 // ====== ATTACH MODULES ======
 const attachGallery = require("./modules/gallery");
 attachGallery(app, mongoose, requireLogin, cloudinary, upload);
@@ -2049,13 +2055,4 @@ try {
   const attachListenTogether = require("./modules/listen-together");
   attachListenTogether(app, mongoose, requireLogin);
 } catch(e) { console.warn("listen-together module not found, skipping"); }
-
-
-// ====== START SERVER ======
-const server = app.listen(PORT, () => {
-  console.log("Spacebook running on port " + PORT);
-});
-
-// ====== ATTACH CHESS WEBSOCKET ======
-attachChessServer(server);
 
