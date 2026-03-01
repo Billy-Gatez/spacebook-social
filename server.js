@@ -1480,7 +1480,9 @@ app.get("/profile", requireLogin, async (req, res) => {
   `);
 });
 
-// ====== OTHER USER'S PROFILE ======
+
+
+// ======== OTHER USER'S PROFILE ======
 app.get("/profile/:id", requireLogin, async (req, res) => {
   const viewer = await User.findById(req.session.userId).populate("friends").populate("topFriends");
   const target = await User.findById(req.params.id).populate("friends").populate("topFriends");
