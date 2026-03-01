@@ -449,7 +449,8 @@ app.get("/home", requireLogin, async (req, res) => {
         <div class="logo">
           <a href="/feed" style="color:#ff6a00;">Spacebook</a>
         </div>
-        <div class="nav-links">
+     <div class="nav-links">
+          <a href="/home">Home</a>
           <a href="/feed">Feed</a>
           <a href="/profile">Profile</a>
           <a href="/messages">Messages</a>
@@ -460,6 +461,8 @@ app.get("/home", requireLogin, async (req, res) => {
           <a href="/activity">Activity</a>
           <a href="/logout">Log Out</a>
         </div>
+
+
       </div>
 
       <div class="page">
@@ -806,6 +809,8 @@ app.get("/feed", requireLogin, async (req, res) => {
       <div class="navbar">
         <div class="logo"><a href="/feed" style="color:#ff6a00;">Spacebook</a></div>
             <div class="nav-links">
+         <div class="nav-links">
+          <a href="/home">Home</a>
           <a href="/feed">Feed</a>
           <a href="/profile">Profile</a>
           <a href="/messages">Messages</a>
@@ -816,6 +821,7 @@ app.get("/feed", requireLogin, async (req, res) => {
           <a href="/activity">Activity</a>
           <a href="/logout">Log Out</a>
         </div>
+
       </div>
 
       <div class="page">
@@ -1150,6 +1156,7 @@ app.get("/profile", requireLogin, async (req, res) => {
           <a href="/feed" style="color:#ff6a00; text-decoration:none;">Spacebook</a>
         </div>
        <div class="nav-links">
+          <a href="/home">Home</a>
           <a href="/feed">Feed</a>
           <a href="/profile">Profile</a>
           <a href="/messages">Messages</a>
@@ -1160,6 +1167,7 @@ app.get("/profile", requireLogin, async (req, res) => {
           <a href="/activity">Activity</a>
           <a href="/logout">Log Out</a>
         </div>
+
 
       </div>
 
@@ -1399,7 +1407,8 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
         <div class="logo">
           <a href="/feed" style="color:#ff6a00; text-decoration:none;">Spacebook</a>
         </div>
-          <div class="nav-links">
+        <div class="nav-links">
+          <a href="/home">Home</a>
           <a href="/feed">Feed</a>
           <a href="/profile">Profile</a>
           <a href="/messages">Messages</a>
@@ -1410,6 +1419,7 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
           <a href="/activity">Activity</a>
           <a href="/logout">Log Out</a>
         </div>
+
       </div>
 
       <div class="page">
