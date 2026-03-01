@@ -54,7 +54,8 @@ const userSchema = new mongoose.Schema({
   password: String,
   birthday: String,
   network: String,
-  profilePic: String,
+bio: { type: String, default: "" },
+profilePic: String,
   friends: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   topFriends: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }]
 });
@@ -1164,7 +1165,7 @@ app.get("/profile", requireLogin, async (req, res) => {
     </head>
     <body>
       <canvas id="starfield"></canvas>
-      <script>
+            <script>
         const canvas = document.getElementById("starfield");
         const ctx = canvas.getContext("2d");
         canvas.width = window.innerWidth; canvas.height = window.innerHeight;
@@ -1203,10 +1204,21 @@ app.get("/profile", requireLogin, async (req, res) => {
         <div class="card">
           <div class="profile-header">
             <div class="profile-avatar"></div>
-            <div>
+            <div style="flex:1;min-width:0;">
               <h2 style="margin:0;color:#ff6a00;">${user.name}</h2>
               <p style="margin:4px 0;color:#aaa;">${user.network || "Unknown network"}</p>
-              <p style="margin:4px 0;color:#ccc;font-size:13px;">"Exploring the universe via Spacebook."</p>
+              <p style="margin:4px 0;color:#ccc;font-size:13px;">
+                <span id="bio-text">${user.bio || "Exploring the universe via Spacebook."}</span>
+                <button onclick="editBio()" style="background:none;border:none;color:#ff6a00;cursor:pointer;font-size:12px;margin-left:6px;">✏️ Edit</button>
+              </p>
+              <div id="bio-editor" style="display:none;margin-top:8px;">
+                <input id="bio-input" type="text" maxlength="150" value="${user.bio || ""}"
+                  style="width:100%;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:6px 10px;font-size:13px;box-sizing:border-box;"/>
+                <div style="margin-top:6px;display:flex;gap:8px;">
+                  <button onclick="saveBio()" class="btn-primary" style="font-size:12px;padding:5px 12px;">Save</button>
+                  <button onclick="cancelBio()" class="btn-secondary" style="font-size:12px;padding:5px 12px;">Cancel</button>
+                </div>
+              </div>
             </div>
           </div>
           <form action="/upload-profile-pic" method="post" enctype="multipart/form-data" style="margin-top:16px;">
@@ -1237,7 +1249,7 @@ app.get("/profile", requireLogin, async (req, res) => {
 
         <div class="card">
           <h3 style="color:#ff6a00;margin-bottom:10px;">📷 Gallery</h3>
-          <div id="profile-own-gallery" class="gallery-grid">
+          <div id="profile-own-gallery" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;">
             <p style="color:#888;font-size:13px;">Loading...</p>
           </div>
           <a href="/gallery" style="display:inline-block;margin-top:12px;color:#ff6a00;font-size:13px;">View full gallery →</a>
@@ -1277,9 +1289,30 @@ app.get("/profile", requireLogin, async (req, res) => {
       </div>
 
       <script>
+        const FALLBACK_IMG = "https://spacebook.world/SPACEBOOK-WORLD-LOGO.png";
         let profileGalleryAlbumId = null;
         let profileGalleryPhotoIndex = null;
 
+        // ====== BIO ======
+        function editBio() {
+          document.getElementById("bio-editor").style.display = "block";
+          document.getElementById("bio-input").focus();
+        }
+        function cancelBio() {
+          document.getElementById("bio-editor").style.display = "none";
+        }
+        async function saveBio() {
+          const bio = document.getElementById("bio-input").value.trim();
+          await fetch("/api/update-bio", {
+            method: "POST", credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ bio })
+          });
+          document.getElementById("bio-text").textContent = bio || "Exploring the universe via Spacebook.";
+          document.getElementById("bio-editor").style.display = "none";
+        }
+
+        // ====== GALLERY ======
         async function loadOwnGallery() {
           const albums = await fetch("/api/albums", { credentials: "include" }).then(r => r.json()).catch(() => []);
           const grid = document.getElementById("profile-own-gallery");
@@ -1287,8 +1320,8 @@ app.get("/profile", requireLogin, async (req, res) => {
           albums.forEach(function(a) { a.photos.forEach(function(p, i) { allPhotos.push({ url: p.url, albumId: a._id, photoIndex: i }); }); });
           if (!allPhotos.length) { grid.innerHTML = "<p style='color:#888;font-size:13px;'>No photos yet.</p>"; return; }
           grid.innerHTML = allPhotos.slice(0, 9).map(function(p) {
-            return "<div class='gallery-thumb' onclick=\"openProfileGallery('" + p.albumId + "'," + p.photoIndex + ",'" + p.url + "')\">" +
-              "<img src='" + p.url + "' onerror=\"this.src='/assets/img/default-avatar.png'\"/></div>";
+            return "<div onclick=\"openProfileGallery('" + p.albumId + "'," + p.photoIndex + ",'" + p.url + "')\" style='aspect-ratio:1;border-radius:10px;overflow:hidden;cursor:pointer;border:1px solid rgba(255,106,0,0.2);transition:border-color .15s;' onmouseover=\"this.style.borderColor='#ff6a00'\" onmouseout=\"this.style.borderColor='rgba(255,106,0,0.2)'\">" +
+              "<img src='" + p.url + "' style='width:100%;height:100%;object-fit:cover;display:block;' onerror=\"this.src='" + FALLBACK_IMG + "'\"/></div>";
           }).join("");
         }
 
@@ -1300,7 +1333,7 @@ app.get("/profile", requireLogin, async (req, res) => {
           const isVideo = url.match(/\.(mp4|webm|ogg)(\?|$)/i);
           media.innerHTML = isVideo
             ? "<video src='" + url + "' controls autoplay style='max-width:100%;max-height:65vh;border-radius:10px;display:block;margin:0 auto;'></video>"
-            : "<img src='" + url + "' style='max-width:100%;max-height:65vh;border-radius:10px;display:block;margin:0 auto;' onerror=\"this.src='/assets/img/default-avatar.png'\"/>";
+            : "<img src='" + url + "' style='max-width:100%;max-height:65vh;border-radius:10px;display:block;margin:0 auto;' onerror=\"this.src='" + FALLBACK_IMG + "'\"/>";
           overlay.style.display = "flex";
           await loadProfileReactions();
           await loadProfileComments();
@@ -1341,7 +1374,7 @@ app.get("/profile", requireLogin, async (req, res) => {
           if (!comments.length) { list.innerHTML = "<div style='color:#666;font-size:13px;padding:8px;'>No comments yet.</div>"; return; }
           list.innerHTML = comments.map(function(c) {
             return "<div class='comment-item'>" +
-              "<img class='comment-avatar' src='" + (c.userPic || "/assets/img/default-avatar.png") + "' onerror=\"this.src='/assets/img/default-avatar.png'\"/>" +
+              "<img class='comment-avatar' src='" + (c.userPic || FALLBACK_IMG) + "' onerror=\"this.src='" + FALLBACK_IMG + "'\"/>" +
               "<div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div>" +
             "</div>";
           }).join("");
@@ -1361,7 +1394,7 @@ app.get("/profile", requireLogin, async (req, res) => {
           await loadProfileComments();
         }
 
-        // Post interactions
+        // ====== POST INTERACTIONS ======
         document.addEventListener("click", async function(e) {
           const pill = e.target.closest(".react-pill");
           if (pill) {
@@ -1447,7 +1480,7 @@ app.get("/profile", requireLogin, async (req, res) => {
           list.innerHTML = !comments.length
             ? "<div style='color:#666;font-size:13px;padding:6px;'>No comments yet.</div>"
             : comments.map(function(c) {
-                return "<div class='comment-item'><img class='comment-avatar' src='" + (c.userPic || "/assets/img/default-avatar.png") + "' onerror=\"this.src='/assets/img/default-avatar.png'\"/><div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div></div>";
+                return "<div class='comment-item'><img class='comment-avatar' src='" + (c.userPic || FALLBACK_IMG) + "' onerror=\"this.src='" + FALLBACK_IMG + "'\"/><div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div></div>";
               }).join("");
           list.scrollTop = list.scrollHeight;
         }
@@ -1476,7 +1509,7 @@ app.get("/profile", requireLogin, async (req, res) => {
       <\/script>
     </body>
     </html>
-  `);
+  \`);
 });
 
 // ====== OTHER USER'S PROFILE ======
@@ -1624,7 +1657,16 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
             <div>
               <h2 style="margin:0;color:#ff6a00;">${target.name}</h2>
               <p style="margin:4px 0;color:#aaa;">${target.network || "Unknown network"}</p>
-              <p style="margin:4px 0;color:#ccc;font-size:13px;">"Exploring the universe via Spacebook."</p>
+              <p style="margin:4px 0;color:#ccc;font-size:13px;"><span id="bio-text">${user.bio || "Exploring the universe via Spacebook."}</span>
+<button onclick="editBio()" style="background:none;border:none;color:#ff6a00;cursor:pointer;font-size:12px;margin-left:8px;">✏️ Edit</button>
+<div id="bio-editor" style="display:none;margin-top:8px;">
+  <input id="bio-input" type="text" maxlength="150" value="${user.bio || ""}"
+    style="width:100%;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:6px 10px;font-size:13px;box-sizing:border-box;"/>
+  <div style="margin-top:6px;display:flex;gap:8px;">
+    <button onclick="saveBio()" class="btn-primary" style="font-size:12px;padding:5px 12px;">Save</button>
+    <button onclick="cancelBio()" class="btn-secondary" style="font-size:12px;padding:5px 12px;">Cancel</button>
+  </div>
+</div></p>
             </div>
           </div>
           <div style="margin-top:16px;">
@@ -1978,9 +2020,22 @@ app.get("/logout", (req, res) => {
 // ====== SESSION CHECK API ======
 app.get("/api/me", requireLogin, async (req, res) => {
   try {
-    const user = await User.findById(req.session.userId).select("name profilePic network");
+    const user = await User.findById(req.session.userId).select("name profilePic network bio");
     if (!user) return res.status(401).json({ error: "Not logged in" });
-    res.json({ _id: user._id, name: user.name, profilePic: user.profilePic || "", network: user.network || "" });
+    res.json({ _id: user._id, name: user.name, profilePic: user.profilePic || "", network: user.network || "", bio: user.bio || "" });
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// ====== UPDATE BIO ======
+app.post("/api/update-bio", requireLogin, async (req, res) => {
+  try {
+    const user = await User.findById(req.session.userId);
+    if (!user) return res.status(401).json({ error: "Not logged in" });
+    user.bio = (req.body.bio || "").slice(0, 150);
+    await user.save();
+    res.json({ success: true, bio: user.bio });
   } catch (err) {
     res.status(500).json({ error: "Server error" });
   }
@@ -2004,7 +2059,7 @@ app.get("/api/users/search", requireLogin, async (req, res) => {
 // ====== GET USER BY ID API ======
 app.get("/api/users/:userId", requireLogin, async (req, res) => {
   try {
-    const user = await User.findById(req.params.userId).select("name profilePic network friends");
+    const user = await User.findById(req.params.userId).select("name profilePic network friends bio");
     if (!user) return res.status(404).json({ error: "User not found" });
     res.json(user);
   } catch (err) {
@@ -2023,8 +2078,7 @@ app.get("/api/friends", requireLogin, async (req, res) => {
   }
 });
 
-
-// ====== START SERVER ======
+// ====== START SERVER (SINGLE INSTANCE) ======
 const server = app.listen(PORT, () => {
   console.log("Spacebook running on port " + PORT);
 });
@@ -2043,7 +2097,7 @@ try {
 
 try {
   const attachStories = require("./modules/stories");
-  attachStories(app, mongoose, requireLogin, cloudinary, upload);
+  attachStories(app, server, mongoose, requireLogin, cloudinary, upload);
 } catch(e) { console.warn("stories module not found, skipping"); }
 
 try {
@@ -2056,3 +2110,22 @@ try {
   attachListenTogether(app, mongoose, requireLogin);
 } catch(e) { console.warn("listen-together module not found, skipping"); }
 
+try {
+  const attachSoundCloud = require("./modules/soundcloud");
+  attachSoundCloud(app, mongoose, requireLogin);
+} catch(e) { console.warn("soundcloud module not found, skipping"); }
+
+try {
+  const attachThemes = require("./modules/themes");
+  attachThemes(app, mongoose, requireLogin);
+} catch(e) { console.warn("themes module not found, skipping"); }
+
+try {
+  const attachPlaylists = require("./modules/playlists");
+  attachPlaylists(app, server, mongoose, requireLogin);
+} catch(e) { console.warn("playlists module not found, skipping"); }
+
+try {
+  const attachSocial = require("./modules/social");
+  attachSocial(app, mongoose, requireLogin, cloudinary, upload);
+} catch(e) { console.warn("social module not found, skipping"); }
