@@ -4,61 +4,285 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Spacebook · Stories</title>
-<link rel="stylesheet" href="/styles.css"/>
+<link rel="stylesheet" href="/assets/css/styles.css"/>
 <style>
-  .stories-page { max-width: 860px; margin: 30px auto; padding: 0 16px; }
+  html, body {
+    background: #000;
+    margin: 0; padding: 0;
+    color: #fff;
+    font-family: Arial, sans-serif;
+    overflow-x: hidden;
+  }
+  #starfield {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: -1;
+    background: #000;
+  }
+  .navbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    width: 100%;
+    padding: 14px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(0,0,0,0.65);
+    backdrop-filter: blur(10px);
+    box-sizing: border-box;
+  }
+  .navbar .logo { color: #ff6a00; font-size: 20px; font-weight: bold; text-decoration: none; }
+  .nav-links { display: flex; flex-wrap: wrap; gap: 10px; }
+  .nav-links a { color: #ccc; text-decoration: none; font-size: 13px; }
+  .nav-links a:hover, .nav-links a.active { color: #ff6a00; }
+
+  .stories-page { max-width: 860px; margin: 30px auto; padding: 0 16px; box-sizing: border-box; }
+
+  /* Story bar */
   .story-bar { display: flex; gap: 14px; overflow-x: auto; padding: 4px 0 12px; scrollbar-width: thin; }
+
   .story-bubble { display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; min-width: 68px; }
-  .story-ring { width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg,#ff6a00,#ee0979); padding: 3px; flex-shrink: 0; }
+
+  /* FIX: ring is purely a border element, avatar fills it */
+  .story-ring {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ff6a00, #ee0979);
+    padding: 3px;
+    flex-shrink: 0;
+    box-sizing: border-box;
+  }
   .story-ring.seen { background: #444; }
-  .story-ring img { width: 100%; height: 100%; border-radius: 50%; border: 2px solid #0d0d0d; object-fit: cover; }
+  .story-ring-inner {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 2px solid #000;
+    overflow: hidden;
+    box-sizing: border-box;
+    background: #111;
+  }
+  .story-ring-inner img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    border-radius: 50%;
+  }
+
   .story-bubble span { font-size: 11px; color: #ccc; text-align: center; max-width: 68px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .add-story-circle { width: 60px; height: 60px; border-radius: 50%; background: #111; border: 2px dashed #ff6a00; display: flex; align-items: center; justify-content: center; font-size: 26px; color: #ff6a00; flex-shrink: 0; }
-  .create-panel { background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 20px; margin-top: 20px; display: none; }
+
+  .add-story-circle {
+    width: 60px; height: 60px;
+    border-radius: 50%;
+    background: rgba(255,106,0,0.1);
+    border: 2px dashed #ff6a00;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; color: #ff6a00; flex-shrink: 0;
+  }
+
+  /* Create panel */
+  .create-panel {
+    background: rgba(0,0,0,0.55);
+    border: 1px solid rgba(255,106,0,0.3);
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 20px;
+    display: none;
+    backdrop-filter: blur(10px);
+  }
   .create-panel h3 { color: #ff6a00; margin-bottom: 14px; }
+
   .type-btns { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
-  .type-btn { padding: 8px 16px; border-radius: 20px; border: 1px solid #333; background: #0d0d0d; color: #f2f2f2; cursor: pointer; font-size: 13px; }
-  .type-btn.active { background: #ff6a00; color: #000; border-color: #ff6a00; }
-  .color-row { display: flex; gap: 14px; margin-bottom: 12px; align-items: center; }
+  .type-btn {
+    padding: 8px 16px; border-radius: 20px;
+    border: 1px solid #444;
+    background: rgba(255,255,255,0.05);
+    color: #f2f2f2; cursor: pointer; font-size: 13px;
+    transition: all .15s;
+  }
+  .type-btn.active { background: #ff6a00; color: #000; border-color: #ff6a00; font-weight: 700; }
+
+  textarea, input[type=file] {
+    width: 100%; box-sizing: border-box;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid #444;
+    border-radius: 8px;
+    color: #fff;
+    padding: 10px;
+    font-size: 14px;
+    resize: vertical;
+  }
+
+  .color-row { display: flex; gap: 14px; margin-bottom: 12px; align-items: center; flex-wrap: wrap; }
   .color-row label { font-size: 12px; color: #888; display: flex; flex-direction: column; gap: 4px; }
-  .color-row input[type=color] { width: 48px; height: 36px; padding: 2px; border-radius: 4px; border: 1px solid #333; background: #0d0d0d; cursor: pointer; margin-bottom: 0; }
+  .color-row input[type=color] { width: 48px; height: 36px; padding: 2px; border-radius: 4px; border: 1px solid #444; background: #0d0d0d; cursor: pointer; }
+
+  .btn-primary { display: inline-block; padding: 8px 16px; background: #ff6a00; color: #000; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; transition: .2s; font-size: 14px; }
+  .btn-primary:hover { background: #ff8c32; }
+  .btn-secondary { display: inline-block; padding: 8px 16px; background: rgba(255,255,255,0.08); color: #ff6a00; border-radius: 8px; border: 1px solid #ff6a00; font-weight: bold; cursor: pointer; transition: .2s; font-size: 14px; }
+  .btn-secondary:hover { background: rgba(255,106,0,0.15); }
+
+  /* Archive */
   .archive-section { margin-top: 30px; }
   .archive-section h3 { color: #ff6a00; cursor: pointer; margin-bottom: 10px; }
   .archive-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
-  .archive-thumb { aspect-ratio: 1; border-radius: 6px; overflow: hidden; border: 1px solid #333; }
-  .archive-thumb img { width: 100%; height: 100%; object-fit: cover; }
-  .archive-text { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 12px; text-align: center; padding: 8px; }
+  .archive-thumb {
+    aspect-ratio: 1; border-radius: 10px; overflow: hidden;
+    border: 1px solid rgba(255,106,0,0.25);
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(4px);
+  }
+  .archive-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .archive-text { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 12px; text-align: center; padding: 8px; box-sizing: border-box; }
 
   /* Story Viewer */
   .story-viewer { display: none; position: fixed; inset: 0; background: #000; z-index: 2000; flex-direction: column; }
   .story-viewer.open { display: flex; }
   .sv-progress { display: flex; gap: 4px; padding: 10px 14px 6px; }
   .sv-prog-bar { flex: 1; height: 3px; background: rgba(255,255,255,.25); border-radius: 2px; overflow: hidden; }
-  .sv-prog-bar .fill { height: 100%; background: #ff6a00; width: 0%; }
+  .sv-prog-bar .fill { height: 100%; background: #ff6a00; width: 0%; transition: width linear; }
   .sv-body { flex: 1; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; }
   .sv-body img, .sv-body video { max-height: 80vh; max-width: 100vw; object-fit: contain; border-radius: 6px; }
   .sv-text-card { font-size: 28px; font-weight: 700; text-align: center; padding: 48px 32px; width: 100%; min-height: 60vh; display: flex; align-items: center; justify-content: center; }
+
+  /* FIX: avatar in viewer also centered properly */
   .sv-meta { position: absolute; top: 10px; left: 14px; display: flex; align-items: center; gap: 10px; z-index: 2; }
-  .sv-meta img { width: 36px; height: 36px; border-radius: 50%; border: 2px solid #ff6a00; object-fit: cover; }
+  .sv-meta .sv-avatar-ring {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ff6a00, #ee0979);
+    padding: 2px;
+    box-sizing: border-box;
+    flex-shrink: 0;
+  }
+  .sv-meta .sv-avatar-ring img {
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    border: 2px solid #000;
+    object-fit: cover;
+    display: block;
+    box-sizing: border-box;
+  }
   .sv-name { color: #f2f2f2; font-weight: 700; font-size: 14px; }
   .sv-time { color: #aaa; font-size: 11px; }
-  .sv-close { position: absolute; top: 10px; right: 14px; font-size: 24px; cursor: pointer; color: #fff; z-index: 3; }
+  .sv-close { position: absolute; top: 10px; right: 14px; font-size: 24px; cursor: pointer; color: #fff; z-index: 3; background: rgba(0,0,0,0.5); border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; }
   .sv-nav-prev { position: absolute; left: 0; top: 0; bottom: 0; width: 38%; cursor: pointer; z-index: 1; }
   .sv-nav-next { position: absolute; right: 0; top: 0; bottom: 0; width: 38%; cursor: pointer; z-index: 1; }
-  .sv-reactions { position: absolute; bottom: 70px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 3; }
-  .sv-reactions button { font-size: 24px; background: rgba(0,0,0,.55); border: none; border-radius: 50%; width: 46px; height: 46px; cursor: pointer; transition: transform .15s; }
-  .sv-reactions button:hover { transform: scale(1.2); }
+
+  /* Reactions */
+  .sv-reactions {
+    position: absolute;
+    bottom: 70px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px;
+    z-index: 3;
+  }
+  .sv-reactions button {
+    font-size: 24px;
+    background: rgba(0,0,0,0.6);
+    border: 1px solid rgba(255,106,0,0.3);
+    border-radius: 50%;
+    width: 48px; height: 48px;
+    cursor: pointer;
+    transition: transform .15s, border-color .15s;
+  }
+  .sv-reactions button:hover { transform: scale(1.25); border-color: #ff6a00; }
+
+  /* Reaction toast */
+  .reaction-toast {
+    position: fixed;
+    bottom: 140px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(255,106,0,0.15);
+    border: 1px solid #ff6a00;
+    color: #fff;
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-size: 14px;
+    backdrop-filter: blur(8px);
+    opacity: 0;
+    transition: opacity .3s, transform .3s;
+    z-index: 3000;
+    pointer-events: none;
+  }
+  .reaction-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Mobile */
+  @media (max-width: 600px) {
+    .navbar { padding: 10px 14px; }
+    .nav-links a { font-size: 12px; }
+    .stories-page { margin: 16px auto; }
+    .sv-text-card { font-size: 20px; padding: 24px 16px; }
+    .sv-reactions button { width: 42px; height: 42px; font-size: 20px; }
+  }
 </style>
 </head>
 <body>
+<canvas id="starfield"></canvas>
+<script>
+  const canvas = document.getElementById("starfield");
+  const ctx = canvas.getContext("2d");
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  window.addEventListener("resize", () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  });
+  const stars = Array.from({ length: 200 }, () => ({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    r: Math.random() * 1.5 + 0.3,
+    alpha: Math.random(),
+    speed: Math.random() * 0.3 + 0.1
+  }));
+  const shootingStars = [];
+  function spawnShootingStar() {
+    shootingStars.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height * 0.5, len: Math.random() * 120 + 80, speed: Math.random() * 8 + 6, angle: Math.PI / 4, alpha: 1 });
+  }
+  setInterval(spawnShootingStar, 2500);
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#000"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    stars.forEach(s => {
+      s.alpha += s.speed * 0.02 * (Math.random() > 0.5 ? 1 : -1);
+      s.alpha = Math.max(0.1, Math.min(1, s.alpha));
+      ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(255,255,255," + s.alpha + ")"; ctx.fill();
+    });
+    for (let i = shootingStars.length - 1; i >= 0; i--) {
+      const s = shootingStars[i];
+      ctx.beginPath(); ctx.moveTo(s.x, s.y);
+      ctx.lineTo(s.x - Math.cos(s.angle) * s.len, s.y - Math.sin(s.angle) * s.len);
+      const grad = ctx.createLinearGradient(s.x, s.y, s.x - Math.cos(s.angle) * s.len, s.y - Math.sin(s.angle) * s.len);
+      grad.addColorStop(0, "rgba(255,150,50," + s.alpha + ")");
+      grad.addColorStop(1, "rgba(255,150,50,0)");
+      ctx.strokeStyle = grad; ctx.lineWidth = 2; ctx.stroke();
+      s.x += Math.cos(s.angle) * s.speed; s.y += Math.sin(s.angle) * s.speed;
+      s.alpha -= 0.015;
+      if (s.alpha <= 0) shootingStars.splice(i, 1);
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+</script>
+
 <nav class="navbar">
   <a class="logo" href="/feed">Spacebook</a>
   <div class="nav-links">
+    <a href="/home">Home</a>
     <a href="/feed">Feed</a>
     <a href="/profile">Profile</a>
     <a href="/messages">Messages</a>
-    <a href="/stories" style="color:#ff6a00">Stories</a>
+    <a href="/stories" class="active">Stories</a>
     <a href="/gallery">Gallery</a>
+    <a href="/activity">Activity</a>
     <a href="/logout">Logout</a>
   </div>
 </nav>
@@ -72,21 +296,21 @@
   </div>
 
   <div class="create-panel" id="create-panel">
-    <h3>Create a Story</h3>
+    <h3>✨ Create a Story</h3>
     <div class="type-btns">
       <button class="type-btn active" onclick="setStoryType('text',this)">✏️ Text</button>
       <button class="type-btn" onclick="setStoryType('photo',this)">📷 Photo</button>
       <button class="type-btn" onclick="setStoryType('video',this)">🎥 Video</button>
     </div>
     <div id="text-inputs">
-      <textarea id="story-text" placeholder="What's on your mind?" style="height:90px"></textarea>
-      <div class="color-row">
+      <textarea id="story-text" placeholder="What's on your mind?"></textarea>
+      <div class="color-row" style="margin-top:10px;">
         <label>Background <input type="color" id="story-bg" value="#1a1a1a"/></label>
         <label>Text Color <input type="color" id="story-fg" value="#f2f2f2"/></label>
       </div>
     </div>
-    <div id="media-inputs" style="display:none">
-      <input type="file" id="story-media-file" accept="image/*,video/*" style="margin-bottom:10px"/>
+    <div id="media-inputs" style="display:none; margin-bottom:12px;">
+      <input type="file" id="story-media-file" accept="image/*,video/*"/>
     </div>
     <button class="btn-primary" onclick="submitStory()">Post Story</button>
     <button class="btn-secondary" style="margin-left:10px" onclick="toggleCreatePanel()">Cancel</button>
@@ -105,7 +329,9 @@
     <div class="sv-nav-prev" onclick="prevStory()"></div>
     <div class="sv-nav-next" onclick="nextStory()"></div>
     <div class="sv-meta">
-      <img id="sv-avatar" src="" alt=""/>
+      <div class="sv-avatar-ring">
+        <img id="sv-avatar" src="" alt=""/>
+      </div>
       <div>
         <div class="sv-name" id="sv-name"></div>
         <div class="sv-time" id="sv-time"></div>
@@ -122,6 +348,27 @@
   </div>
 </div>
 
+<!-- Reaction toast -->
+<div class="reaction-toast" id="reaction-toast"></div>
+
+<script>
+  // Hook into reactStory to also send to activity + show toast
+  function reactStory(emoji) {
+    // Show toast
+    const toast = document.getElementById('reaction-toast');
+    toast.textContent = "Reacted " + emoji + " — sent!";
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+
+    // Send reaction as activity event
+    fetch('/api/story-react', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ emoji: emoji, storyId: window._currentStoryId || null })
+    }).catch(() => {});
+  }
+</script>
 <script src="/modules/stories-client.js"></script>
 </body>
 </html>
