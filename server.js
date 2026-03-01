@@ -2030,7 +2030,7 @@ app.get("/api/friends", requireLogin, async (req, res) => {
 const attachGallery = require("./modules/gallery");
 attachGallery(app, mongoose, requireLogin, cloudinary, upload);
 
-const attachMessages = require("./modules/messages");
+const attachMessages = require("./modules/messaging");
 attachMessages(app, mongoose, requireLogin);
 
 const attachStories = require("./modules/stories");
