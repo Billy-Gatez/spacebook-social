@@ -40,6 +40,14 @@ module.exports = function attachArtist(app, mongoose, requireLogin, cloudinary, 
     res.sendFile(path.join(__dirname, "../public", "artist-dashboard.html"));
   });
 
+  // ✅ MUST be before /api/artist/:userId
+  app.get("/api/artist/me", requireLogin, async (req, res) => {
+    try {
+      const artist = await ArtistProfile.findOne({ userId: req.session.userId });
+      res.json(artist || null);
+    } catch (e) { res.json(null); }
+  });
+
   app.get("/api/artist/:userId", async (req, res) => {
     try {
       const artist = await ArtistProfile.findOne({ userId: req.params.userId });
@@ -137,4 +145,5 @@ module.exports = function attachArtist(app, mongoose, requireLogin, cloudinary, 
     if (!artist) return res.status(404).json({ error: "Not found" });
     res.json(artist.fanMessages || []);
   });
+
 };
