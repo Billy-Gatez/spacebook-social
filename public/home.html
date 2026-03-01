@@ -6,7 +6,6 @@
   <link rel="stylesheet" href="assets/css/styles.css">
 
   <style>
-    /* Full transparency */
     html, body {
       background: transparent !important;
       background-color: transparent !important;
@@ -16,7 +15,6 @@
       font-family: Arial, sans-serif;
     }
 
-    /* Transparent navbar */
     .navbar {
       width: 100%;
       padding: 20px;
@@ -30,9 +28,9 @@
       color: #ff6a00;
       text-decoration: none;
       font-weight: bold;
+      margin-left: 14px;
     }
 
-    /* Page layout */
     .page {
       width: 100%;
       min-height: 100vh;
@@ -42,7 +40,6 @@
       background: transparent !important;
     }
 
-    /* Sidebar glass panel */
     .sidebar .card {
       width: 220px;
       padding: 20px;
@@ -57,10 +54,7 @@
       text-decoration: none;
     }
 
-    /* Main feed area */
-    .feed {
-      flex: 1;
-    }
+    .feed { flex: 1; }
 
     .feed .card {
       padding: 25px;
@@ -81,14 +75,11 @@
       transition: 0.2s;
     }
 
-    .btn-primary:hover {
-      background: #ff8c32;
-    }
+    .btn-primary:hover { background: #ff8c32; }
 
-    hr {
-      border: none;
-      border-top: 1px solid rgba(255,255,255,0.2);
-    }
+    hr { border: none; border-top: 1px solid rgba(255,255,255,0.2); }
+
+    .sidebar ul li { margin-bottom: 10px; }
   </style>
 </head>
 
@@ -99,8 +90,14 @@
       <a href="/feed">Spacebook</a>
     </div>
     <div class="nav-links">
-      <a href="/profile">Profile</a>
       <a href="/feed">Feed</a>
+      <a href="/profile">Profile</a>
+      <a href="/messages">Messages</a>
+      <a href="/stories">Stories</a>
+      <a href="/gallery">Gallery</a>
+      <a href="/listen-together">Listen</a>
+      <a href="/artist-dashboard">Artist</a>
+      <a href="/activity">Activity</a>
       <a href="/logout">Log Out</a>
     </div>
   </div>
@@ -111,11 +108,14 @@
       <div class="card">
         <strong style="color:#ff6a00;">Navigation</strong>
         <ul style="list-style:none; margin-top:10px; font-size:14px; padding-left:0;">
-          <li><a href="/profile">Your Profile</a></li>
-          <li><a href="/feed">Feed</a></li>
-          <li><a href="#">Messages</a></li>
-          <li><a href="#">Friends</a></li>
-          <li><a href="#">Groups</a></li>
+          <li><a href="/profile">👤 Your Profile</a></li>
+          <li><a href="/feed">📰 Feed</a></li>
+          <li><a href="/messages">💬 Messages</a></li>
+          <li><a href="/stories">⚡ Stories</a></li>
+          <li><a href="/gallery">📷 Gallery</a></li>
+          <li><a href="/listen-together">🎵 Listen Together</a></li>
+          <li><a href="/artist-dashboard">🎤 Artist Dashboard</a></li>
+          <li><a href="/activity">🤝 Activity</a></li>
         </ul>
       </div>
     </aside>

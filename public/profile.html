@@ -6,7 +6,6 @@
   <link rel="stylesheet" href="assets/css/styles.css">
 
   <style>
-    /* Full transparency */
     html, body {
       background: transparent !important;
       background-color: transparent !important;
@@ -16,7 +15,6 @@
       font-family: Arial, sans-serif;
     }
 
-    /* Transparent navbar */
     .navbar {
       width: 100%;
       padding: 20px;
@@ -30,9 +28,9 @@
       color: #ff6a00;
       text-decoration: none;
       font-weight: bold;
+      margin-left: 14px;
     }
 
-    /* Page wrapper */
     .page {
       width: 100%;
       min-height: 100vh;
@@ -43,7 +41,6 @@
       background: transparent !important;
     }
 
-    /* Glass card */
     .card {
       width: 100%;
       max-width: 900px;
@@ -54,7 +51,6 @@
       border: 1px solid rgba(255, 255, 255, 0.15);
     }
 
-    /* Profile header layout */
     .profile-header {
       display: flex;
       gap: 20px;
@@ -70,17 +66,9 @@
       backdrop-filter: blur(4px);
     }
 
-    .profile-info h2 {
-      margin: 0;
-      color: #ff6a00;
-    }
+    .profile-info h2 { margin: 0; color: #ff6a00; }
+    .profile-info p { margin: 4px 0; color: #ccc; }
 
-    .profile-info p {
-      margin: 4px 0;
-      color: #ccc;
-    }
-
-    /* Posts */
     .post {
       padding: 15px;
       margin-bottom: 15px;
@@ -89,15 +77,8 @@
       border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    .post .author {
-      font-weight: bold;
-      color: #ff6a00;
-    }
-
-    .post .meta {
-      font-size: 12px;
-      color: #aaa;
-    }
+    .post .author { font-weight: bold; color: #ff6a00; }
+    .post .meta { font-size: 12px; color: #aaa; }
   </style>
 </head>
 
@@ -105,11 +86,17 @@
 
   <div class="navbar">
     <div class="logo">
-      <a href="/home">Spacebook</a>
+      <a href="/feed">Spacebook</a>
     </div>
     <div class="nav-links">
-      <a href="/home">Home</a>
       <a href="/feed">Feed</a>
+      <a href="/profile" style="text-decoration:underline">Profile</a>
+      <a href="/messages">Messages</a>
+      <a href="/stories">Stories</a>
+      <a href="/gallery">Gallery</a>
+      <a href="/listen-together">Listen</a>
+      <a href="/artist-dashboard">Artist</a>
+      <a href="/activity">Activity</a>
       <a href="/logout">Log Out</a>
     </div>
   </div>
@@ -117,22 +104,19 @@
   <div class="page">
     <div class="card">
 
-      <!-- Profile Header -->
       <div class="profile-header">
         <div class="profile-avatar"></div>
-
         <div class="profile-info">
           <h2>Your Name</h2>
           <p>Your Network · Your Location</p>
           <p style="margin-top:6px; color:#ccc;">
-            “Your bio goes here — a message from your corner of the universe.”
+            "Your bio goes here — a message from your corner of the universe."
           </p>
         </div>
       </div>
 
-      <hr style="margin:20px 0; border:none; border-top:1px solid rgba(255,255,255,0.2);">
+      <hr style="margin:20px 0; border:none; border-top:1px solid rgba(0,0,0,0.2);">
 
-      <!-- About Section -->
       <h3 style="color:#ff6a00; margin-bottom:10px;">About</h3>
       <p style="color:#ccc; font-size:14px;">
         This is your Spacebook profile. Once the backend is connected, this section will show your real data — birthday, network, interests, and more.
@@ -140,7 +124,6 @@
 
       <hr style="margin:20px 0; border:none; border-top:1px solid rgba(255,255,255,0.2);">
 
-      <!-- Posts Section -->
       <h3 style="color:#ff6a00; margin-bottom:10px;">Your Posts</h3>
 
       <div class="post">
