@@ -54,8 +54,7 @@ const userSchema = new mongoose.Schema({
   password: String,
   birthday: String,
   network: String,
-bio: { type: String, default: "" },
-profilePic: String,
+  profilePic: String,
   friends: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   topFriends: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }]
 });
@@ -1480,9 +1479,7 @@ app.get("/profile", requireLogin, async (req, res) => {
   `);
 });
 
-
-
-// ======== OTHER USER'S PROFILE ======
+// ====== OTHER USER'S PROFILE ======
 app.get("/profile/:id", requireLogin, async (req, res) => {
   const viewer = await User.findById(req.session.userId).populate("friends").populate("topFriends");
   const target = await User.findById(req.params.id).populate("friends").populate("topFriends");
@@ -1627,16 +1624,7 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
             <div>
               <h2 style="margin:0;color:#ff6a00;">${target.name}</h2>
               <p style="margin:4px 0;color:#aaa;">${target.network || "Unknown network"}</p>
-              <p style="margin:4px 0;color:#ccc;font-size:13px;"><span id="bio-text">${user.bio || "Exploring the universe via Spacebook."}</span>
-<button onclick="editBio()" style="background:none;border:none;color:#ff6a00;cursor:pointer;font-size:12px;margin-left:8px;">✏️ Edit</button>
-<div id="bio-editor" style="display:none;margin-top:8px;">
-  <input id="bio-input" type="text" maxlength="150" value="${user.bio || ""}"
-    style="width:100%;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:6px 10px;font-size:13px;box-sizing:border-box;"/>
-  <div style="margin-top:6px;display:flex;gap:8px;">
-    <button onclick="saveBio()" class="btn-primary" style="font-size:12px;padding:5px 12px;">Save</button>
-    <button onclick="cancelBio()" class="btn-secondary" style="font-size:12px;padding:5px 12px;">Cancel</button>
-  </div>
-</div></p>
+              <p style="margin:4px 0;color:#ccc;font-size:13px;">"Exploring the universe via Spacebook."</p>
             </div>
           </div>
           <div style="margin-top:16px;">
@@ -1990,22 +1978,9 @@ app.get("/logout", (req, res) => {
 // ====== SESSION CHECK API ======
 app.get("/api/me", requireLogin, async (req, res) => {
   try {
-    const user = await User.findById(req.session.userId).select("name profilePic network bio");
+    const user = await User.findById(req.session.userId).select("name profilePic network");
     if (!user) return res.status(401).json({ error: "Not logged in" });
-    res.json({ _id: user._id, name: user.name, profilePic: user.profilePic || "", network: user.network || "", bio: user.bio || "" });
-  } catch (err) {
-    res.status(500).json({ error: "Server error" });
-  }
-});
-
-// ====== UPDATE BIO ======
-app.post("/api/update-bio", requireLogin, async (req, res) => {
-  try {
-    const user = await User.findById(req.session.userId);
-    if (!user) return res.status(401).json({ error: "Not logged in" });
-    user.bio = (req.body.bio || "").slice(0, 150);
-    await user.save();
-    res.json({ success: true, bio: user.bio });
+    res.json({ _id: user._id, name: user.name, profilePic: user.profilePic || "", network: user.network || "" });
   } catch (err) {
     res.status(500).json({ error: "Server error" });
   }
@@ -2029,7 +2004,7 @@ app.get("/api/users/search", requireLogin, async (req, res) => {
 // ====== GET USER BY ID API ======
 app.get("/api/users/:userId", requireLogin, async (req, res) => {
   try {
-    const user = await User.findById(req.params.userId).select("name profilePic network friends bio");
+    const user = await User.findById(req.params.userId).select("name profilePic network friends");
     if (!user) return res.status(404).json({ error: "User not found" });
     res.json(user);
   } catch (err) {
@@ -2048,7 +2023,8 @@ app.get("/api/friends", requireLogin, async (req, res) => {
   }
 });
 
-// ====== START SERVER (SINGLE INSTANCE) ======
+
+// ====== START SERVER ======
 const server = app.listen(PORT, () => {
   console.log("Spacebook running on port " + PORT);
 });
@@ -2067,7 +2043,7 @@ try {
 
 try {
   const attachStories = require("./modules/stories");
-  attachStories(app, server, mongoose, requireLogin, cloudinary, upload);
+  attachStories(app, mongoose, requireLogin, cloudinary, upload);
 } catch(e) { console.warn("stories module not found, skipping"); }
 
 try {
@@ -2079,23 +2055,3 @@ try {
   const attachListenTogether = require("./modules/listen-together");
   attachListenTogether(app, mongoose, requireLogin);
 } catch(e) { console.warn("listen-together module not found, skipping"); }
-
-try {
-  const attachSoundCloud = require("./modules/soundcloud");
-  attachSoundCloud(app, mongoose, requireLogin);
-} catch(e) { console.warn("soundcloud module not found, skipping"); }
-
-try {
-  const attachThemes = require("./modules/themes");
-  attachThemes(app, mongoose, requireLogin);
-} catch(e) { console.warn("themes module not found, skipping"); }
-
-try {
-  const attachPlaylists = require("./modules/playlists");
-  attachPlaylists(app, server, mongoose, requireLogin);
-} catch(e) { console.warn("playlists module not found, skipping"); }
-
-try {
-  const attachSocial = require("./modules/social");
-  attachSocial(app, mongoose, requireLogin, cloudinary, upload);
-} catch(e) { console.warn("social module not found, skipping"); }
