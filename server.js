@@ -805,9 +805,15 @@ app.get("/feed", requireLogin, async (req, res) => {
     <body>
       <div class="navbar">
         <div class="logo"><a href="/feed" style="color:#ff6a00;">Spacebook</a></div>
-        <div class="nav-links">
-          <a href="/home">Home</a>
+            <div class="nav-links">
+          <a href="/feed">Feed</a>
           <a href="/profile">Profile</a>
+          <a href="/messages">Messages</a>
+          <a href="/gallery">Gallery</a>
+          <a href="/stories">Stories</a>
+          <a href="/listen-together">Listen Together</a>
+          <a href="/artist-dashboard">Artist</a>
+          <a href="/activity">Activity</a>
           <a href="/logout">Log Out</a>
         </div>
       </div>
@@ -816,13 +822,17 @@ app.get("/feed", requireLogin, async (req, res) => {
         <aside class="sidebar">
           <div class="card">
             <strong style="color:#ff6a00;">Navigation</strong>
-            <ul style="list-style:none; margin-top:10px; font-size:14px;">
-              <li><a href="/profile">Your Profile</a></li>
-              <li><a href="/feed">Feed</a></li>
-              <li><a href="#">Messages</a></li>
-              <li><a href="#">Friends</a></li>
-              <li><a href="#">Groups</a></li>
+        <ul style="list-style:none; margin-top:10px; font-size:14px;">
+              <li><a href="/profile">👤 Your Profile</a></li>
+              <li><a href="/feed">📰 Feed</a></li>
+              <li><a href="/messages">💬 Messages</a></li>
+              <li><a href="/stories">⚡ Stories</a></li>
+              <li><a href="/gallery">📷 Gallery</a></li>
+              <li><a href="/listen-together">🎵 Listen Together</a></li>
+              <li><a href="/artist-dashboard">🎤 Artist</a></li>
+              <li><a href="/activity">🤝 Activity</a></li>
             </ul>
+
           </div>
         </aside>
 
@@ -1389,9 +1399,15 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
         <div class="logo">
           <a href="/feed" style="color:#ff6a00; text-decoration:none;">Spacebook</a>
         </div>
-        <div class="nav-links">
-          <a href="/home">Home</a>
-          <a href="/profile">Your Profile</a>
+          <div class="nav-links">
+          <a href="/feed">Feed</a>
+          <a href="/profile">Profile</a>
+          <a href="/messages">Messages</a>
+          <a href="/gallery">Gallery</a>
+          <a href="/stories">Stories</a>
+          <a href="/listen-together">Listen Together</a>
+          <a href="/artist-dashboard">Artist</a>
+          <a href="/activity">Activity</a>
           <a href="/logout">Log Out</a>
         </div>
       </div>
