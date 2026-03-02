@@ -265,13 +265,35 @@ app.get("/home", requireLogin, async (req, res) => {
   }).limit(8);
 
   const latestPostsHtml = latestPosts.map(p => `
+  <div class="post-card" data-post-id="${p._id}">
     <div class="post">
-      <div class="author">${p.userName}</div>
+      <div class="author"><a href="/profile/${p.userId}" style="color:#ff6a00;text-decoration:none;">${p.userName}</a></div>
       <div class="meta">${p.createdAt.toLocaleString()}</div>
-      <p style="margin-top:6px;">${p.content || ""}</p>
-      ${p.imagePath ? `<img src="${p.imagePath}" style="max-width:100%; margin-top:8px; border-radius:6px;">` : ""}
+      <p class="post-content" style="margin-top:6px;">${p.content || ""}</p>
+      ${p.imagePath ? `<img src="${p.imagePath}" style="max-width:100%;margin-top:8px;border-radius:6px;">` : ""}
     </div>
-  `).join("");
+    <div class="post-reactions" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
+      ${["❤️","🔥","😂","🤝","🚀"].map(e => `
+        <button class="react-pill" data-emoji="${e}" data-post-id="${p._id}">${e}
+          <span class="rpill-count" id="rp-${p._id}-${e.codePointAt(0)}">0</span>
+        </button>`).join("")}
+    </div>
+    <div style="margin-top:8px;">
+      <button class="btn-secondary comment-toggle-btn" data-post-id="${p._id}" style="font-size:12px;padding:4px 10px;">💬 Comments</button>
+    </div>
+    <div class="comment-section" id="cs-${p._id}" style="display:none;margin-top:10px;">
+      <div class="comment-list" id="cl-${p._id}" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;max-height:200px;overflow-y:auto;"></div>
+      <div style="display:flex;gap:8px;">
+        <input class="comment-input" data-post-id="${p._id}" type="text" placeholder="Write a comment..." maxlength="300"
+          style="flex:1;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;min-height:44px;"
+
+          onkeydown="if(event.key==='Enter') submitPostComment('${p._id}', this)"/>
+        <button class="btn-primary" style="font-size:12px;padding:6px 10px;"
+          onclick="submitPostComment('${p._id}', document.querySelector('.comment-input[data-post-id=\\'${p._id}\\']'))">Post</button>
+      </div>
+    </div>
+  </div>`).join("");
+
 
   const suggestedHtml = suggestedFriends.map(f => `
     <div class="friend-tile">
@@ -337,6 +359,79 @@ app.get("/home", requireLogin, async (req, res) => {
           requestAnimationFrame(draw);
         }
         draw();
+
+
+  async function loadPostReactions(postId) {
+    const data = await fetch("/api/posts/" + postId + "/reactions", { credentials: "include" })
+      .then(r => r.json()).catch(() => ({ counts: {}, myReaction: null }));
+    ["❤️","🔥","😂","🤝","🚀"].forEach(function(e) {
+      const el = document.getElementById("rp-" + postId + "-" + e.codePointAt(0));
+      if (el) el.textContent = data.counts[e] || 0;
+      const btn = document.querySelector(".react-pill[data-post-id='" + postId + "'][data-emoji='" + e + "']");
+      if (btn) btn.classList.toggle("mine", data.myReaction === e);
+    });
+  }
+
+  document.addEventListener("click", async function(e) {
+    const pill = e.target.closest(".react-pill");
+    if (pill) {
+      await fetch("/api/posts/" + pill.dataset.postId + "/react", {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ emoji: pill.dataset.emoji })
+      });
+      loadPostReactions(pill.dataset.postId);
+    }
+    const toggleBtn = e.target.closest(".comment-toggle-btn");
+    if (toggleBtn) {
+      const postId = toggleBtn.dataset.postId;
+      const section = document.getElementById("cs-" + postId);
+      if (section.style.display === "none") { section.style.display = "block"; loadPostComments(postId); }
+      else section.style.display = "none";
+    }
+  });
+
+  async function loadPostComments(postId) {
+    const comments = await fetch("/api/posts/" + postId + "/comments", { credentials: "include" })
+      .then(r => r.json()).catch(() => []);
+    const list = document.getElementById("cl-" + postId);
+    if (!list) return;
+    list.innerHTML = !comments.length
+      ? "<div style='color:#666;font-size:13px;padding:6px;'>No comments yet.</div>"
+      : comments.map(function(c) {
+          return "<div class='comment-item'><img class='comment-avatar' src='" + (c.userPic || "/assets/img/default-avatar.png") + "' onerror=\"this.src='/assets/img/default-avatar.png'\"/><div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div></div>";
+        }).join("");
+    list.scrollTop = list.scrollHeight;
+  }
+
+  async function submitPostComment(postId, inputEl) {
+    const text = inputEl.value.trim();
+    if (!text) return;
+    await fetch("/api/posts/" + postId + "/comments", {
+      method: "POST", credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: text })
+    });
+    inputEl.value = "";
+    loadPostComments(postId);
+  }
+
+  function timeAgo(date) {
+    const diff = Date.now() - new Date(date).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "just now";
+    if (mins < 60) return mins + "m ago";
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return hrs + "h ago";
+    return Math.floor(hrs / 24) + "d ago";
+  }
+
+  document.querySelectorAll(".post-card").forEach(function(card) {
+    const id = card.dataset.postId;
+    if (id) loadPostReactions(id);
+  });
+</script>
+
       <\/script>
 
       <div class="navbar">
@@ -454,7 +549,8 @@ app.get("/feed", requireLogin, async (req, res) => {
         <div style="display:flex;gap:8px;">
           <input class="comment-input" data-post-id="${p._id}" type="text"
             placeholder="Write a comment..." maxlength="300"
-            style="flex:1;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:6px 10px;font-size:13px;"
+            style="flex:1;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;min-height:44px;"
+
             onkeydown="if(event.key==='Enter') submitPostComment('${p._id}', this)"/>
           <button class="btn-primary" style="font-size:12px;padding:6px 10px;"
             onclick="submitPostComment('${p._id}', document.querySelector('.comment-input[data-post-id=\\'${p._id}\\']'))">Post</button>
@@ -531,6 +627,22 @@ app.get("/feed", requireLogin, async (req, res) => {
         input[type=text]:focus { border-color: #ff6a00; outline: none; }
         .notif-panel { position: absolute; right: 0; top: 36px; width: 300px; background: rgba(10,10,10,0.97); border: 1px solid rgba(255,106,0,0.3); border-radius: 12px; backdrop-filter: blur(12px); z-index: 500; max-height: 400px; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.6); }
         @media (max-width: 600px) { .page { flex-direction: column; padding: 16px; } .sidebar { width: 100%; } .nav-links a { font-size: 12px; } }
+
+.post-card { margin-bottom: 16px; }
+.react-pill { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; padding: 4px 12px; font-size: 16px; cursor: pointer; color: #fff; transition: all .15s; display: inline-flex; align-items: center; gap: 5px; }
+.react-pill:hover { border-color: #ff6a00; background: rgba(255,106,0,0.15); }
+.react-pill.mine { border-color: #ff6a00; background: rgba(255,106,0,0.2); }
+.rpill-count { font-size: 12px; color: #ccc; }
+.comment-item { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 8px 12px; display: flex; gap: 10px; align-items: flex-start; }
+.comment-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1px solid rgba(255,106,0,0.3); }
+.comment-name { font-size: 12px; color: #ff6a00; font-weight: bold; }
+.comment-text { font-size: 13px; color: #f0f0f0; word-break: break-word; margin-top: 2px; }
+.comment-time { font-size: 11px; color: #555; margin-top: 2px; }
+.comment-section { flex-direction: column; }
+.comment-section > div:last-child { flex-wrap: wrap; }
+.comment-section input { min-width: 0; width: 100%; }
+
+
       </style>
     </head>
     <body>
@@ -851,11 +963,12 @@ app.post("/delete-post/:postId", requireLogin, async (req, res) => {
   }
 });
 
-// ====== POST REACTIONS API ======
+// POST REACTIONS API
 app.post("/api/posts/:postId/react", requireLogin, async (req, res) => {
   try {
     const { emoji } = req.body;
-    const existing = await PostReaction.findOne({ postId: req.params.postId, userId: req.session.userId });
+    const filter = { postId: req.params.postId, userId: req.session.userId };
+    const existing = await PostReaction.findOne(filter);
     if (existing) {
       if (existing.emoji === emoji) {
         await PostReaction.deleteOne({ _id: existing._id });
@@ -864,24 +977,21 @@ app.post("/api/posts/:postId/react", requireLogin, async (req, res) => {
         await existing.save();
       }
     } else {
-      await PostReaction.create({ postId: req.params.postId, userId: req.session.userId, emoji });
+      await PostReaction.create({ ...filter, emoji });
       const post = await Post.findById(req.params.postId);
-      if (post && post.userId.toString() !== req.session.userId.toString()) {
-        const reactor = await User.findById(req.session.userId);
+      const user = await User.findById(req.session.userId);
+      if (post && user && post.userId.toString() !== user._id.toString()) {
         await Notification.create({
-          toUserId: post.userId,
-          fromUserId: req.session.userId,
-          fromUserName: reactor ? reactor.name : "Someone",
-          type: "reaction",
-          postId: post._id,
-          text: "reacted " + emoji + " to your post"
+          toUserId: post.userId, fromUserId: user._id, fromUserName: user.name,
+          type: "reaction", postId: post._id,
+          text: user.name + " reacted " + emoji + " to your post"
         });
       }
     }
     const reactions = await PostReaction.find({ postId: req.params.postId });
     const counts = {};
     reactions.forEach(r => { counts[r.emoji] = (counts[r.emoji] || 0) + 1; });
-    const mine = await PostReaction.findOne({ postId: req.params.postId, userId: req.session.userId });
+    const mine = await PostReaction.findOne(filter);
     res.json({ counts, myReaction: mine ? mine.emoji : null });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -895,45 +1005,6 @@ app.get("/api/posts/:postId/reactions", requireLogin, async (req, res) => {
     reactions.forEach(r => { counts[r.emoji] = (counts[r.emoji] || 0) + 1; });
     const mine = await PostReaction.findOne({ postId: req.params.postId, userId: req.session.userId });
     res.json({ counts, myReaction: mine ? mine.emoji : null });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ====== POST COMMENTS API ======
-app.get("/api/posts/:postId/comments", requireLogin, async (req, res) => {
-  try {
-    const comments = await PostComment.find({ postId: req.params.postId }).sort({ createdAt: 1 });
-    res.json(comments);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post("/api/posts/:postId/comments", requireLogin, async (req, res) => {
-  try {
-    const { text } = req.body;
-    if (!text || !text.trim()) return res.status(400).json({ error: "Empty comment" });
-    const user = await User.findById(req.session.userId);
-    const comment = await PostComment.create({
-      postId: req.params.postId,
-      userId: user._id,
-      userName: user.name,
-      userPic: user.profilePic || "",
-      text: text.trim()
-    });
-    const post = await Post.findById(req.params.postId);
-    if (post && post.userId.toString() !== req.session.userId.toString()) {
-      await Notification.create({
-        toUserId: post.userId,
-        fromUserId: user._id,
-        fromUserName: user.name,
-        type: "comment",
-        postId: post._id,
-        text: "commented on your post: \"" + text.trim().slice(0, 60) + "\""
-      });
-    }
-    res.json(comment);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -1063,7 +1134,8 @@ app.get("/profile", requireLogin, async (req, res) => {
         <div class="comment-list" id="cl-${p._id}" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;max-height:200px;overflow-y:auto;"></div>
         <div style="display:flex;gap:8px;">
           <input class="comment-input" data-post-id="${p._id}" type="text" placeholder="Write a comment..." maxlength="300"
-            style="flex:1;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:6px 10px;font-size:13px;"
+           style="flex:1;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;min-height:44px;"
+
             onkeydown="if(event.key==='Enter') submitPostComment('${p._id}', this)"/>
           <button class="btn-primary" style="font-size:12px;padding:6px 10px;"
             onclick="submitPostComment('${p._id}', document.querySelector('.comment-input[data-post-id=\\'${p._id}\\']'))">Post</button>
@@ -1258,7 +1330,8 @@ app.get("/profile", requireLogin, async (req, res) => {
             <div id="profile-comment-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;max-height:220px;overflow-y:auto;"></div>
             <div style="display:flex;gap:8px;">
               <input id="profile-comment-input" type="text" placeholder="Add a comment..." maxlength="300"
-                style="flex:1;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:8px 12px;font-size:13px;"
+                style="flex:1;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;min-height:44px;"
+
                 onkeydown="if(event.key==='Enter') submitProfileComment()"/>
               <button class="btn-primary" onclick="submitProfileComment()">Post</button>
             </div>
@@ -1513,7 +1586,8 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
         <div class="comment-list" id="cl-${p._id}" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;max-height:200px;overflow-y:auto;"></div>
         <div style="display:flex;gap:8px;">
           <input class="comment-input" data-post-id="${p._id}" type="text" placeholder="Write a comment..." maxlength="300"
-            style="flex:1;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:6px 10px;font-size:13px;"
+            style="flex:1;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;min-height:44px;"
+
             onkeydown="if(event.key==='Enter') submitPostComment('${p._id}', this)"/>
           <button class="btn-primary" style="font-size:12px;padding:6px 10px;"
             onclick="submitPostComment('${p._id}', document.querySelector('.comment-input[data-post-id=\\'${p._id}\\']'))">Post</button>
@@ -1672,7 +1746,8 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
             <div id="profile-comment-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;max-height:220px;overflow-y:auto;"></div>
             <div style="display:flex;gap:8px;">
               <input id="profile-comment-input" type="text" placeholder="Add a comment..." maxlength="300"
-                style="flex:1;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:8px 12px;font-size:13px;"
+                style="flex:1;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;min-height:44px;"
+
                 onkeydown="if(event.key==='Enter') submitProfileComment()"/>
               <button class="btn-primary" onclick="submitProfileComment()">Post</button>
             </div>
