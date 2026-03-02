@@ -1,3 +1,5 @@
+// server.js – part 1/5
+
 const express = require("express");
 const session = require("express-session");
 const bodyParser = require("body-parser");
@@ -5,7 +7,7 @@ const path = require("path");
 const mongoose = require("mongoose");
 const multer = require("multer");
 const attachChessServer = require("./chess-ws");
-const attachStories = require("./modules/stories");
+const attachStories = require("./modules/stories"); // adjust path if folder is different
 
 // ====== CLOUDINARY ======
 const cloudinary = require("cloudinary").v2;
@@ -153,7 +155,7 @@ const storage = new CloudinaryStorage({
 });
 const upload = multer({ storage });
 
-// ====== ATTACH STORIES (early, before routes) ======
+// Attach stories routes (must be after requireLogin, cloudinary, upload)
 attachStories(app, null, mongoose, requireLogin, cloudinary, upload);
 
 // ====== ROUTES ======
@@ -248,6 +250,9 @@ app.get("/view", async (req, res) => {
   }
 });
 
+
+// server.js – part 2/5
+
 // ====== HOME (DASHBOARD) ======
 app.get("/home", requireLogin, async (req, res) => {
   const user = await User.findById(req.session.userId).populate("friends").populate("topFriends");
@@ -267,14 +272,17 @@ app.get("/home", requireLogin, async (req, res) => {
   const latestPostsHtml = latestPosts.map(p => `
   <div class="post-card" data-post-id="${p._id}">
     <div class="post">
-      <div class="author"><a href="/profile/${p.userId}" style="color:#ff6a00;text-decoration:none;">${p.userName}</a></div>
+      <div class="author">
+        <a href="/profile/${p.userId}" style="color:#ff6a00;text-decoration:none;">${p.userName}</a>
+      </div>
       <div class="meta">${p.createdAt.toLocaleString()}</div>
       <p class="post-content" style="margin-top:6px;">${p.content || ""}</p>
       ${p.imagePath ? `<img src="${p.imagePath}" style="max-width:100%;margin-top:8px;border-radius:6px;">` : ""}
     </div>
     <div class="post-reactions" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
       ${["❤️","🔥","😂","🤝","🚀"].map(e => `
-        <button class="react-pill" data-emoji="${e}" data-post-id="${p._id}">${e}
+        <button class="react-pill" data-emoji="${e}" data-post-id="${p._id}">
+          ${e}
           <span class="rpill-count" id="rp-${p._id}-${e.codePointAt(0)}">0</span>
         </button>`).join("")}
     </div>
@@ -286,14 +294,12 @@ app.get("/home", requireLogin, async (req, res) => {
       <div style="display:flex;gap:8px;">
         <input class="comment-input" data-post-id="${p._id}" type="text" placeholder="Write a comment..." maxlength="300"
           style="flex:1;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;min-height:44px;"
-
           onkeydown="if(event.key==='Enter') submitPostComment('${p._id}', this)"/>
         <button class="btn-primary" style="font-size:12px;padding:6px 10px;"
-          onclick="submitPostComment('${p._id}', document.querySelector('.comment-input[data-post-id=\\'${p._id}\\']'))">Post</button>
+          onclick="submitPostComment('${p._id}', document.querySelector('.comment-input[data-post-id=\\\\'${p._id}\\\\']'))">Post</button>
       </div>
     </div>
   </div>`).join("");
-
 
   const suggestedHtml = suggestedFriends.map(f => `
     <div class="friend-tile">
@@ -337,6 +343,13 @@ app.get("/home", requireLogin, async (req, res) => {
         .friend-tile { width: 80px; text-align: center; }
         .btn-primary { display: inline-block; padding: 8px 14px; background: #ff6a00; color: #000; border-radius: 6px; text-decoration: none; font-weight: bold; border: none; cursor: pointer; transition: 0.2s; }
         .btn-primary:hover { background: #ff8c32; }
+        .react-pill { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; padding: 4px 12px; font-size: 16px; cursor: pointer; color: #fff; transition: all .15s; display: inline-flex; align-items: center; gap: 5px; }
+        .react-pill:hover { border-color: #ff6a00; background: rgba(255,106,0,0.15); }
+        .react-pill.mine { border-color: #ff6a00; background: rgba(255,106,0,0.2); }
+        .rpill-count { font-size: 12px; color: #ccc; }
+        textarea { width: 100%; background: rgba(255,255,255,0.06); border: 1px solid #444; border-radius: 8px; color: #fff; padding: 10px; font-size: 14px; resize: vertical; box-sizing: border-box; }
+        textarea:focus { border-color: #ff6a00; outline: none; }
+        input[type=text]:focus { border-color: #ff6a00; outline: none; }
         @media (max-width: 600px) { .page { flex-direction: column; padding: 16px; } .sidebar { width: 100%; } }
       </style>
     </head>
@@ -360,79 +373,76 @@ app.get("/home", requireLogin, async (req, res) => {
         }
         draw();
 
+        async function loadPostReactions(postId) {
+          const data = await fetch("/api/posts/" + postId + "/reactions", { credentials: "include" })
+            .then(r => r.json()).catch(() => ({ counts: {}, myReaction: null }));
+          ["❤️","🔥","😂","🤝","🚀"].forEach(function(e) {
+            const el = document.getElementById("rp-" + postId + "-" + e.codePointAt(0));
+            if (el) el.textContent = data.counts[e] || 0;
+            const btn = document.querySelector(".react-pill[data-post-id='" + postId + "'][data-emoji='" + e + "']");
+            if (btn) btn.classList.toggle("mine", data.myReaction === e);
+          });
+        }
 
-  async function loadPostReactions(postId) {
-    const data = await fetch("/api/posts/" + postId + "/reactions", { credentials: "include" })
-      .then(r => r.json()).catch(() => ({ counts: {}, myReaction: null }));
-    ["❤️","🔥","😂","🤝","🚀"].forEach(function(e) {
-      const el = document.getElementById("rp-" + postId + "-" + e.codePointAt(0));
-      if (el) el.textContent = data.counts[e] || 0;
-      const btn = document.querySelector(".react-pill[data-post-id='" + postId + "'][data-emoji='" + e + "']");
-      if (btn) btn.classList.toggle("mine", data.myReaction === e);
-    });
-  }
+        async function loadPostComments(postId) {
+          const comments = await fetch("/api/posts/" + postId + "/comments", { credentials: "include" })
+            .then(r => r.json()).catch(() => []);
+          const list = document.getElementById("cl-" + postId);
+          if (!list) return;
+          list.innerHTML = !comments.length
+            ? "<div style='color:#666;font-size:13px;padding:6px;'>No comments yet.</div>"
+            : comments.map(function(c) {
+                return "<div class='comment-item'><img class='comment-avatar' src='" + (c.userPic || "/assets/img/default-avatar.png") + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/><div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div></div>";
+              }).join("");
+          list.scrollTop = list.scrollHeight;
+        }
 
-  document.addEventListener("click", async function(e) {
-    const pill = e.target.closest(".react-pill");
-    if (pill) {
-      await fetch("/api/posts/" + pill.dataset.postId + "/react", {
-        method: "POST", credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ emoji: pill.dataset.emoji })
-      });
-      loadPostReactions(pill.dataset.postId);
-    }
-    const toggleBtn = e.target.closest(".comment-toggle-btn");
-    if (toggleBtn) {
-      const postId = toggleBtn.dataset.postId;
-      const section = document.getElementById("cs-" + postId);
-      if (section.style.display === "none") { section.style.display = "block"; loadPostComments(postId); }
-      else section.style.display = "none";
-    }
-  });
+        async function submitPostComment(postId, inputEl) {
+          const text = inputEl.value.trim();
+          if (!text) return;
+          await fetch("/api/posts/" + postId + "/comments", {
+            method: "POST", credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text: text })
+          });
+          inputEl.value = "";
+          loadPostComments(postId);
+        }
 
-  async function loadPostComments(postId) {
-    const comments = await fetch("/api/posts/" + postId + "/comments", { credentials: "include" })
-      .then(r => r.json()).catch(() => []);
-    const list = document.getElementById("cl-" + postId);
-    if (!list) return;
-    list.innerHTML = !comments.length
-      ? "<div style='color:#666;font-size:13px;padding:6px;'>No comments yet.</div>"
-      : comments.map(function(c) {
-          return "<div class='comment-item'><img class='comment-avatar' src='" + (c.userPic || "/assets/img/default-avatar.png") + "' onerror=\"this.src='/assets/img/default-avatar.png'\"/><div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div></div>";
-        }).join("");
-    list.scrollTop = list.scrollHeight;
-  }
+        function timeAgo(date) {
+          const diff = Date.now() - new Date(date).getTime();
+          const mins = Math.floor(diff / 60000);
+          if (mins < 1) return "just now";
+          if (mins < 60) return mins + "m ago";
+          const hrs = Math.floor(mins / 60);
+          if (hrs < 24) return hrs + "h ago";
+          return Math.floor(hrs / 24) + "d ago";
+        }
 
-  async function submitPostComment(postId, inputEl) {
-    const text = inputEl.value.trim();
-    if (!text) return;
-    await fetch("/api/posts/" + postId + "/comments", {
-      method: "POST", credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: text })
-    });
-    inputEl.value = "";
-    loadPostComments(postId);
-  }
+        document.addEventListener("click", async function(e) {
+          const pill = e.target.closest(".react-pill");
+          if (pill) {
+            await fetch("/api/posts/" + pill.dataset.postId + "/react", {
+              method: "POST", credentials: "include",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ emoji: pill.dataset.emoji })
+            });
+            loadPostReactions(pill.dataset.postId);
+          }
+          const toggleBtn = e.target.closest(".comment-toggle-btn");
+          if (toggleBtn) {
+            const postId = toggleBtn.dataset.postId;
+            const section = document.getElementById("cs-" + postId);
+            if (section.style.display === "none") { section.style.display = "block"; loadPostComments(postId); }
+            else section.style.display = "none";
+          }
+        });
 
-  function timeAgo(date) {
-    const diff = Date.now() - new Date(date).getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 1) return "just now";
-    if (mins < 60) return mins + "m ago";
-    const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return hrs + "h ago";
-    return Math.floor(hrs / 24) + "d ago";
-  }
-
-  document.querySelectorAll(".post-card").forEach(function(card) {
-    const id = card.dataset.postId;
-    if (id) loadPostReactions(id);
-  });
-</script>
-
-     
+        document.querySelectorAll(".post-card").forEach(function(card) {
+          const id = card.dataset.postId;
+          if (id) loadPostReactions(id);
+        });
+      </script>
 
       <div class="navbar">
         <div class="logo"><a href="/feed" style="color:#ff6a00;">Spacebook</a></div>
@@ -503,7 +513,6 @@ app.get("/home", requireLogin, async (req, res) => {
   `);
 });
 
-
 // ====== FEED ======
 app.get("/feed", requireLogin, async (req, res) => {
   const user = await User.findById(req.session.userId).populate("friends");
@@ -533,7 +542,8 @@ app.get("/feed", requireLogin, async (req, res) => {
 
       <div class="post-reactions" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
         ${["❤️","🔥","😂","🤝","🚀"].map(e => `
-          <button class="react-pill" data-emoji="${e}" data-post-id="${p._id}">${e}
+          <button class="react-pill" data-emoji="${e}" data-post-id="${p._id}">
+            ${e}
             <span class="rpill-count" id="rp-${p._id}-${e.codePointAt(0)}">0</span>
           </button>`).join("")}
       </div>
@@ -550,10 +560,9 @@ app.get("/feed", requireLogin, async (req, res) => {
           <input class="comment-input" data-post-id="${p._id}" type="text"
             placeholder="Write a comment..." maxlength="300"
             style="flex:1;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;min-height:44px;"
-
             onkeydown="if(event.key==='Enter') submitPostComment('${p._id}', this)"/>
           <button class="btn-primary" style="font-size:12px;padding:6px 10px;"
-            onclick="submitPostComment('${p._id}', document.querySelector('.comment-input[data-post-id=\\'${p._id}\\']'))">Post</button>
+            onclick="submitPostComment('${p._id}', document.querySelector('.comment-input[data-post-id=\\\\'${p._id}\\\\']'))">Post</button>
         </div>
       </div>
 
@@ -626,23 +635,11 @@ app.get("/feed", requireLogin, async (req, res) => {
         textarea:focus { border-color: #ff6a00; outline: none; }
         input[type=text]:focus { border-color: #ff6a00; outline: none; }
         .notif-panel { position: absolute; right: 0; top: 36px; width: 300px; background: rgba(10,10,10,0.97); border: 1px solid rgba(255,106,0,0.3); border-radius: 12px; backdrop-filter: blur(12px); z-index: 500; max-height: 400px; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.6); }
-        @media (max-width: 600px) { .page { flex-direction: column; padding: 16px; } .sidebar { width: 100%; } .nav-links a { font-size: 12px; } }
-
-.post-card { margin-bottom: 16px; }
-.react-pill { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; padding: 4px 12px; font-size: 16px; cursor: pointer; color: #fff; transition: all .15s; display: inline-flex; align-items: center; gap: 5px; }
-.react-pill:hover { border-color: #ff6a00; background: rgba(255,106,0,0.15); }
-.react-pill.mine { border-color: #ff6a00; background: rgba(255,106,0,0.2); }
-.rpill-count { font-size: 12px; color: #ccc; }
-.comment-item { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 8px 12px; display: flex; gap: 10px; align-items: flex-start; }
-.comment-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1px solid rgba(255,106,0,0.3); }
-.comment-name { font-size: 12px; color: #ff6a00; font-weight: bold; }
-.comment-text { font-size: 13px; color: #f0f0f0; word-break: break-word; margin-top: 2px; }
-.comment-time { font-size: 11px; color: #555; margin-top: 2px; }
-.comment-section { flex-direction: column; }
-.comment-section > div:last-child { flex-wrap: wrap; }
-.comment-section input { min-width: 0; width: 100%; }
-
-
+        @media (max-width: 600px) {
+          .page { flex-direction: column; padding: 16px; }
+          .sidebar { width: 100%; }
+          .nav-links a { font-size: 12px; }
+        }
       </style>
     </head>
     <body>
@@ -664,65 +661,7 @@ app.get("/feed", requireLogin, async (req, res) => {
           requestAnimationFrame(draw);
         }
         draw();
-      </script>
 
-      <div class="navbar">
-        <div class="logo"><a href="/feed">Spacebook</a></div>
-        <div class="nav-links">
-          <a href="/home">Home</a>
-          <a href="/feed">Feed</a>
-          <a href="/profile">Profile</a>
-          <a href="/messages">Messages</a>
-          <a href="/gallery">Gallery</a>
-          <a href="/stories">Stories</a>
-          <a href="/listen-together">Listen Together</a>
-          <a href="/artist-dashboard">Artist</a>
-          <a href="/activity">Activity</a>
-          <a href="/logout">Log Out</a>
-          <div style="position:relative;display:inline-block;">
-            <button onclick="toggleNotifPanel()"
-              style="background:none;border:none;cursor:pointer;font-size:20px;color:#ccc;padding:0 4px;"
-              title="Notifications">🔔</button>
-            <span id="notif-badge"
-              style="display:none;position:absolute;top:-4px;right:-4px;background:#ff6a00;color:#000;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:bold;align-items:center;justify-content:center;">0</span>
-            <div id="notif-panel" class="notif-panel" style="display:none;"></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="page">
-        <aside class="sidebar">
-          <div class="card">
-            <strong style="color:#ff6a00;">Navigation</strong>
-            <ul style="list-style:none; margin-top:10px; font-size:14px; padding-left:0;">
-              <li><a href="/profile" style="color:#ff6a00;">Your Profile</a></li>
-              <li><a href="/feed" style="color:#ff6a00;">Feed</a></li>
-              <li><a href="/messages" style="color:#ff6a00;">Messages</a></li>
-              <li><a href="/gallery" style="color:#ff6a00;">Gallery</a></li>
-              <li><a href="/stories" style="color:#ff6a00;">Stories</a></li>
-              <li><a href="/listen-together" style="color:#ff6a00;">Listen Together</a></li>
-              <li><a href="/artist-dashboard" style="color:#ff6a00;">Artist</a></li>
-              <li><a href="/activity" style="color:#ff6a00;">Activity</a></li>
-            </ul>
-          </div>
-        </aside>
-
-        <main class="feed">
-          <div class="card">
-            <form action="/post" method="post" enctype="multipart/form-data">
-              <textarea name="content" placeholder="What's happening in your universe?"></textarea>
-              <label style="color:#ccc; font-size:14px; margin-top:6px; display:block;">Upload an image (optional)</label>
-              <input type="file" name="image" accept="image/*">
-              <button class="btn-primary" style="margin-top:10px;">Post</button>
-            </form>
-          </div>
-          <div class="card" style="margin-top:20px;">
-            ${htmlPosts || "<p style='color:#ccc;font-size:13px;'>No posts yet.</p>"}
-          </div>
-        </main>
-      </div>
-
-      <script>
         async function loadPostReactions(postId) {
           const data = await fetch("/api/posts/" + postId + "/reactions", { credentials: "include" })
             .then(r => r.json()).catch(() => ({ counts: {}, myReaction: null }));
@@ -734,103 +673,14 @@ app.get("/feed", requireLogin, async (req, res) => {
           });
         }
 
-        document.addEventListener("click", async function(e) {
-          const pill = e.target.closest(".react-pill");
-          if (pill) {
-            await fetch("/api/posts/" + pill.dataset.postId + "/react", {
-              method: "POST", credentials: "include",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ emoji: pill.dataset.emoji })
-            });
-            loadPostReactions(pill.dataset.postId);
-          }
-
-          const toggleBtn = e.target.closest(".comment-toggle-btn");
-          if (toggleBtn) {
-            const postId = toggleBtn.dataset.postId;
-            const section = document.getElementById("cs-" + postId);
-            if (section.style.display === "none") { section.style.display = "block"; loadPostComments(postId); }
-            else section.style.display = "none";
-          }
-
-          const editBtn = e.target.closest(".edit-post-btn");
-          if (editBtn) {
-            const card = editBtn.closest(".post-card");
-            const editor = card.querySelector(".post-editor");
-            if (editor) editor.classList.toggle("open");
-          }
-
-          const cancelBtn = e.target.closest(".cancel-edit-btn");
-          if (cancelBtn) {
-            const editor = cancelBtn.closest(".post-editor");
-            if (editor) editor.classList.remove("open");
-          }
-
-          const deleteBtn = e.target.closest(".delete-post-btn");
-          if (deleteBtn) {
-            const card = deleteBtn.closest(".post-card");
-            const postId = card.getAttribute("data-post-id");
-            if (!postId || !confirm("Delete this post?")) return;
-            fetch("/delete-post/" + postId, {
-              method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({})
-            }).then(r => r.json()).then(data => { if (data.success) card.remove(); else alert("Error deleting post"); })
-              .catch(() => alert("Error deleting post"));
-          }
-
-          const deleteImageBtn = e.target.closest(".delete-image-btn");
-          if (deleteImageBtn) {
-            const form = deleteImageBtn.closest(".post-editor-form");
-            form.querySelector("input[name=deleteImage]").value = "true";
-            const preview = form.querySelector(".current-image-preview");
-            if (preview) preview.innerHTML = "<p style='font-size:12px;color:#777;'>Image will be removed.</p>";
-          }
-        });
-
-        document.addEventListener("change", function(e) {
-          const fileInput = e.target.closest("input[type=file][name=image]");
-          if (fileInput) {
-            const form = fileInput.closest(".post-editor-form");
-            form.querySelector("input[name=deleteImage]").value = "false";
-            const preview = form.querySelector(".current-image-preview");
-            if (fileInput.files && fileInput.files[0]) {
-              const reader = new FileReader();
-              reader.onload = function(ev) {
-                if (preview) preview.innerHTML = "<img src='" + ev.target.result + "' style='max-width:100%;border-radius:6px;margin-bottom:6px;'>";
-              };
-              reader.readAsDataURL(fileInput.files[0]);
-            }
-          }
-        });
-
-        document.addEventListener("submit", function(e) {
-          const form = e.target.closest(".post-editor-form");
-          if (!form) return;
-          e.preventDefault();
-          const postId = form.getAttribute("data-post-id");
-          const card = form.closest(".post-card");
-          fetch("/edit-post/" + postId, { method: "POST", body: new FormData(form) })
-            .then(r => r.json()).then(data => {
-              if (!data.success) { alert("Error saving changes"); return; }
-              const contentEl = card.querySelector(".post-content");
-              const imageWrapper = card.querySelector(".post-image-wrapper");
-              if (contentEl) contentEl.textContent = data.content;
-              if (imageWrapper) {
-                if (data.imagePath) imageWrapper.innerHTML = "<img class='post-image' src='" + data.imagePath + "' style='max-width:100%;margin-top:8px;border-radius:6px;'>";
-                else imageWrapper.innerHTML = "";
-              }
-              card.querySelector(".post-editor").classList.remove("open");
-            }).catch(() => alert("Error saving changes"));
-        });
-
         async function loadPostComments(postId) {
-          const comments = await fetch("/api/posts/" + postId + "/comments", { credentials: "include" })
-            .then(r => r.json()).catch(() => []);
+          const comments = await fetch("/api/posts/" + postId + "/comments", { credentials: "include" }).then(r => r.json()).catch(() => []);
           const list = document.getElementById("cl-" + postId);
           if (!list) return;
           list.innerHTML = !comments.length
             ? "<div style='color:#666;font-size:13px;padding:6px;'>No comments yet. Be first!</div>"
             : comments.map(function(c) {
-                return "<div class='comment-item'><img class='comment-avatar' src='" + (c.userPic || "/assets/img/default-avatar.png") + "' onerror=\"this.src='/assets/img/default-avatar.png'\"/><div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div></div>";
+                return "<div class='comment-item'><img class='comment-avatar' src='" + (c.userPic || "/assets/img/default-avatar.png") + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/><div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div></div>";
               }).join("");
           list.scrollTop = list.scrollHeight;
         }
@@ -887,13 +737,101 @@ app.get("/feed", requireLogin, async (req, res) => {
           }
         }
 
-        document.addEventListener("click", function(e) {
+        document.addEventListener("click", async function(e) {
+          const pill = e.target.closest(".react-pill");
+          if (pill) {
+            await fetch("/api/posts/" + pill.dataset.postId + "/react", {
+              method: "POST", credentials: "include",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ emoji: pill.dataset.emoji })
+            });
+            loadPostReactions(pill.dataset.postId);
+          }
+
+          const toggleBtn = e.target.closest(".comment-toggle-btn");
+          if (toggleBtn) {
+            const postId = toggleBtn.dataset.postId;
+            const section = document.getElementById("cs-" + postId);
+            if (section.style.display === "none") { section.style.display = "block"; loadPostComments(postId); }
+            else section.style.display = "none";
+          }
+
+          const editBtn = e.target.closest(".edit-post-btn");
+          if (editBtn) {
+            const card = editBtn.closest(".post-card");
+            const editor = card.querySelector(".post-editor");
+            if (editor) editor.classList.toggle("open");
+          }
+
+          const cancelBtn = e.target.closest(".cancel-edit-btn");
+          if (cancelBtn) {
+            const editor = cancelBtn.closest(".post-editor");
+            if (editor) editor.classList.remove("open");
+          }
+
+          const deleteBtn = e.target.closest(".delete-post-btn");
+          if (deleteBtn) {
+            const card = deleteBtn.closest(".post-card");
+            const postId = card.getAttribute("data-post-id");
+            if (!postId || !confirm("Delete this post?")) return;
+            fetch("/delete-post/" + postId, {
+              method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({})
+            }).then(r => r.json()).then(data => { if (data.success) card.remove(); else alert("Error deleting post"); })
+              .catch(() => alert("Error deleting post"));
+          }
+
+          const deleteImageBtn = e.target.closest(".delete-image-btn");
+          if (deleteImageBtn) {
+            const form = deleteImageBtn.closest(".post-editor-form");
+            form.querySelector("input[name=deleteImage]").value = "true";
+            const preview = form.querySelector(".current-image-preview");
+            if (preview) preview.innerHTML = "<p style='font-size:12px;color:#777;'>Image will be removed.</p>";
+          }
+
           const panel = document.getElementById("notif-panel");
           if (panel && panel.style.display === "block") {
             if (!e.target.closest("#notif-panel") && !e.target.closest("button[onclick='toggleNotifPanel()']")) {
               panel.style.display = "none";
             }
           }
+        });
+
+        document.addEventListener("change", function(e) {
+          const fileInput = e.target.closest("input[type=file][name=image]");
+          if (fileInput) {
+            const form = fileInput.closest(".post-editor-form");
+            form.querySelector("input[name=deleteImage]").value = "false";
+            const preview = form.querySelector(".current-image-preview");
+            if (fileInput.files && fileInput.files[0]) {
+              const reader = new FileReader();
+              reader.onload = function(ev) {
+                if (preview) preview.innerHTML = "<img src='" + ev.target.result + "' style='max-width:100%;border-radius:6px;margin-bottom:6px;'>";
+              };
+              reader.readAsDataURL(fileInput.files[0]);
+            }
+          }
+        });
+
+        document.addEventListener("submit", function(e) {
+          const form = e.target.closest(".post-editor-form");
+          if (!form) return;
+          e.preventDefault();
+          const postId = form.getAttribute("data-post-id");
+          const card = form.closest(".post-card");
+          const contentEl = card.querySelector(".post-content");
+          const imageWrapper = card.querySelector(".post-image-wrapper");
+          const formData = new FormData(form);
+          fetch("/edit-post/" + postId, { method: "POST", body: formData })
+            .then(r => r.json()).then(data => {
+              if (!data.success) { alert("Error saving changes"); return; }
+              if (contentEl) contentEl.textContent = data.content;
+              if (imageWrapper) {
+                if (data.imagePath) imageWrapper.innerHTML = "<img class='post-image' src='" + data.imagePath + "' style='max-width:100%;margin-top:8px;border-radius:6px;'>";
+                else imageWrapper.innerHTML = "";
+              }
+              const editor = card.querySelector(".post-editor");
+              if (editor) editor.classList.remove("open");
+            }).catch(() => alert("Error saving changes"));
         });
 
         document.querySelectorAll(".post-card").forEach(function(card) {
@@ -907,6 +845,9 @@ app.get("/feed", requireLogin, async (req, res) => {
     </html>
   `);
 });
+
+
+// server.js – part 3/5
 
 // ====== POST ======
 app.post("/post", requireLogin, upload.single("image"), async (req, res) => {
@@ -924,7 +865,7 @@ app.post("/post", requireLogin, upload.single("image"), async (req, res) => {
     fromUserId: user._id,
     fromUserName: user.name,
     type: "post",
-    text: "posted: \"" + (req.body.content || "").slice(0, 60) + "\""
+    text: 'posted: "' + (req.body.content || "").slice(0, 60) + '"'
   });
   res.redirect("/feed");
 });
@@ -982,8 +923,11 @@ app.post("/api/posts/:postId/react", requireLogin, async (req, res) => {
       const user = await User.findById(req.session.userId);
       if (post && user && post.userId.toString() !== user._id.toString()) {
         await Notification.create({
-          toUserId: post.userId, fromUserId: user._id, fromUserName: user.name,
-          type: "reaction", postId: post._id,
+          toUserId: post.userId,
+          fromUserId: user._id,
+          fromUserName: user.name,
+          type: "reaction",
+          postId: post._id,
           text: user.name + " reacted " + emoji + " to your post"
         });
       }
@@ -1038,7 +982,6 @@ app.post("/api/notifications/mark-read", requireLogin, async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
 
 // ====== UPLOAD PROFILE PIC ======
 app.post("/upload-profile-pic", requireLogin, upload.single("profilePic"), async (req, res) => {
@@ -1123,7 +1066,8 @@ app.get("/profile", requireLogin, async (req, res) => {
       </div>
       <div class="post-reactions" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
         ${["❤️","🔥","😂","🤝","🚀"].map(e => `
-          <button class="react-pill" data-emoji="${e}" data-post-id="${p._id}">${e}
+          <button class="react-pill" data-emoji="${e}" data-post-id="${p._id}">
+            ${e}
             <span class="rpill-count" id="rp-${p._id}-${e.codePointAt(0)}">0</span>
           </button>`).join("")}
       </div>
@@ -1135,10 +1079,9 @@ app.get("/profile", requireLogin, async (req, res) => {
         <div style="display:flex;gap:8px;">
           <input class="comment-input" data-post-id="${p._id}" type="text" placeholder="Write a comment..." maxlength="300"
            style="flex:1;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;min-height:44px;"
-
-            onkeydown="if(event.key==='Enter') submitPostComment('${p._id}', this)"/>
+           onkeydown="if(event.key==='Enter') submitPostComment('${p._id}', this)"/>
           <button class="btn-primary" style="font-size:12px;padding:6px 10px;"
-            onclick="submitPostComment('${p._id}', document.querySelector('.comment-input[data-post-id=\\'${p._id}\\']'))">Post</button>
+            onclick="submitPostComment('${p._id}', document.querySelector('.comment-input[data-post-id=\\\\'${p._id}\\\\']'))">Post</button>
         </div>
       </div>
       <div class="post-editor" id="editor-${p._id}">
@@ -1212,8 +1155,6 @@ app.get("/profile", requireLogin, async (req, res) => {
         .comment-name { font-size: 12px; color: #ff6a00; font-weight: bold; }
         .comment-text { font-size: 13px; color: #f0f0f0; word-break: break-word; margin-top: 2px; }
         .comment-time { font-size: 11px; color: #555; margin-top: 2px; }
-        textarea { width: 100%; background: rgba(255,255,255,0.06); border: 1px solid #444; border-radius: 8px; color: #fff; padding: 10px; font-size: 14px; resize: vertical; box-sizing: border-box; }
-        textarea:focus { border-color: #ff6a00; outline: none; }
         .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px,1fr)); gap: 8px; }
         .gallery-thumb { aspect-ratio: 1; border-radius: 10px; overflow: hidden; cursor: pointer; border: 1px solid rgba(255,106,0,0.2); transition: border-color .15s; }
         .gallery-thumb:hover { border-color: #ff6a00; }
@@ -1243,103 +1184,7 @@ app.get("/profile", requireLogin, async (req, res) => {
           requestAnimationFrame(draw);
         }
         draw();
-      </script>
 
-      <div class="navbar">
-        <div class="logo"><a href="/feed">Spacebook</a></div>
-        <div class="nav-links">
-          <a href="/home">Home</a>
-          <a href="/feed">Feed</a>
-          <a href="/profile">Profile</a>
-          <a href="/messages">Messages</a>
-          <a href="/gallery">Gallery</a>
-          <a href="/stories">Stories</a>
-          <a href="/listen-together">Listen Together</a>
-          <a href="/artist-dashboard">Artist</a>
-          <a href="/activity">Activity</a>
-          <a href="/logout">Log Out</a>
-        </div>
-      </div>
-
-      <div class="page">
-        <div class="card">
-          <div class="profile-header">
-            <div class="profile-avatar"></div>
-            <div>
-              <h2 style="margin:0;color:#ff6a00;">${user.name}</h2>
-              <p style="margin:4px 0;color:#aaa;">${user.network || "Unknown network"}</p>
-              <p style="margin:4px 0;color:#ccc;font-size:13px;">"Exploring the universe via Spacebook."</p>
-            </div>
-          </div>
-          <form action="/upload-profile-pic" method="post" enctype="multipart/form-data" style="margin-top:16px;">
-            <label style="color:#ccc;font-size:14px;">Update profile picture</label><br>
-            <input type="file" name="profilePic" accept="image/*" style="margin-top:6px;">
-            <button class="btn-primary" style="margin-top:10px;">Upload</button>
-          </form>
-        </div>
-
-        <div class="card">
-          <h3 style="color:#ff6a00;margin-bottom:10px;">⭐ Top Friends</h3>
-          <div class="top-friends-bar">
-            ${topFriendsHtml || "<p style='color:#ccc;font-size:13px;'>No top friends yet. Pick some below.</p>"}
-          </div>
-          <hr style="margin:16px 0;border:none;border-top:1px solid #333;">
-          <h3 style="color:#ff6a00;margin-bottom:10px;">👥 Friends</h3>
-          <div style="display:flex;flex-wrap:wrap;gap:10px;">
-            ${friendsGridHtml || "<p style='color:#ccc;font-size:13px;'>No friends yet.</p>"}
-          </div>
-          <form action="/set-top-friends" method="post" style="margin-top:20px;">
-            <h4 style="color:#ff6a00;margin-bottom:8px;">Select Top 8 Friends</h4>
-            <div style="max-height:200px;overflow-y:auto;border:1px solid #333;padding:10px;border-radius:6px;">
-              ${topFriendsSelector || "<p style='color:#ccc;font-size:13px;'>Add some friends first.</p>"}
-            </div>
-            <button class="btn-primary" style="margin-top:10px;">Save Top Friends</button>
-          </form>
-        </div>
-
-        <div class="card">
-          <h3 style="color:#ff6a00;margin-bottom:10px;">📷 Gallery</h3>
-          <div id="profile-own-gallery" class="gallery-grid">
-            <p style="color:#888;font-size:13px;">Loading...</p>
-          </div>
-          <a href="/gallery" style="display:inline-block;margin-top:12px;color:#ff6a00;font-size:13px;">View full gallery →</a>
-        </div>
-
-        <div class="card">
-          <h3 style="color:#ff6a00;margin-bottom:10px;">📝 Your Posts</h3>
-          ${postsHtml || "<p style='color:#ccc;font-size:13px;'>You haven't posted yet.</p>"}
-        </div>
-      </div>
-
-      <!-- Gallery overlay -->
-      <div id="profile-media-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:1000;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px 0;">
-        <div style="max-width:860px;width:100%;padding:0 16px;box-sizing:border-box;">
-          <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
-            <div onclick="closeProfileGallery()" style="font-size:28px;cursor:pointer;color:#fff;background:rgba(255,255,255,0.1);border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;">✕</div>
-          </div>
-          <div id="profile-overlay-media"></div>
-          <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;justify-content:center;">
-            <button onclick="reactProfilePhoto('❤️')" class="react-btn" id="prb-❤️">❤️ <span id="prc-❤️">0</span></button>
-            <button onclick="reactProfilePhoto('🔥')" class="react-btn" id="prb-🔥">🔥 <span id="prc-🔥">0</span></button>
-            <button onclick="reactProfilePhoto('😂')" class="react-btn" id="prb-😂">😂 <span id="prc-😂">0</span></button>
-            <button onclick="reactProfilePhoto('🤝')" class="react-btn" id="prb-🤝">🤝 <span id="prc-🤝">0</span></button>
-            <button onclick="reactProfilePhoto('🚀')" class="react-btn" id="prb-🚀">🚀 <span id="prc-🚀">0</span></button>
-          </div>
-          <div style="margin-top:16px;">
-            <h4 style="color:#ff6a00;margin:0 0 10px;">💬 Comments</h4>
-            <div id="profile-comment-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;max-height:220px;overflow-y:auto;"></div>
-            <div style="display:flex;gap:8px;">
-              <input id="profile-comment-input" type="text" placeholder="Add a comment..." maxlength="300"
-                style="flex:1;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;min-height:44px;"
-
-                onkeydown="if(event.key==='Enter') submitProfileComment()"/>
-              <button class="btn-primary" onclick="submitProfileComment()">Post</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <script>
         let profileGalleryAlbumId = null;
         let profileGalleryPhotoIndex = null;
 
@@ -1350,8 +1195,8 @@ app.get("/profile", requireLogin, async (req, res) => {
           albums.forEach(function(a) { a.photos.forEach(function(p, i) { allPhotos.push({ url: p.url, albumId: a._id, photoIndex: i }); }); });
           if (!allPhotos.length) { grid.innerHTML = "<p style='color:#888;font-size:13px;'>No photos yet.</p>"; return; }
           grid.innerHTML = allPhotos.slice(0, 9).map(function(p) {
-            return "<div class='gallery-thumb' onclick=\\"openProfileGallery('" + p.albumId + "'," + p.photoIndex + ",'" + p.url + "')\\">" +
-              "<img src='" + p.url + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/></div>";
+            return "<div class='gallery-thumb' onclick=\\\"openProfileGallery('" + p.albumId + "'," + p.photoIndex + ",'" + p.url + "')\\\">" +
+              "<img src='" + p.url + "' onerror=\\\"this.src='/assets/img/default-avatar.png'\\\"/></div>";
           }).join("");
         }
 
@@ -1363,7 +1208,7 @@ app.get("/profile", requireLogin, async (req, res) => {
           const isVideo = url.match(/\\.(mp4|webm|ogg)(\\?|$)/i);
           media.innerHTML = isVideo
             ? "<video src='" + url + "' controls autoplay style='max-width:100%;max-height:65vh;border-radius:10px;display:block;margin:0 auto;'></video>"
-            : "<img src='" + url + "' style='max-width:100%;max-height:65vh;border-radius:10px;display:block;margin:0 auto;' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/>";
+            : "<img src='" + url + "' style='max-width:100%;max-height:65vh;border-radius:10px;display:block;margin:0 auto;' onerror=\\\"this.src='/assets/img/default-avatar.png'\\\"/>";
           overlay.style.display = "flex";
           await loadProfileReactions();
           await loadProfileComments();
@@ -1404,7 +1249,7 @@ app.get("/profile", requireLogin, async (req, res) => {
           if (!comments.length) { list.innerHTML = "<div style='color:#666;font-size:13px;padding:8px;'>No comments yet.</div>"; return; }
           list.innerHTML = comments.map(function(c) {
             return "<div class='comment-item'>" +
-              "<img class='comment-avatar' src='" + (c.userPic || "/assets/img/default-avatar.png") + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/>" +
+              "<img class='comment-avatar' src='" + (c.userPic || "/assets/img/default-avatar.png") + "' onerror=\\\"this.src='/assets/img/default-avatar.png'\\\"/>" +
               "<div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div>" +
             "</div>";
           }).join("");
@@ -1536,37 +1381,126 @@ app.get("/profile", requireLogin, async (req, res) => {
         document.querySelectorAll(".post-card").forEach(function(card) { const id = card.dataset.postId; if (id) loadPostReactions(id); });
         loadOwnGallery();
       </script>
+
+      <div class="navbar">
+        <div class="logo"><a href="/feed">Spacebook</a></div>
+        <div class="nav-links">
+          <a href="/home">Home</a>
+          <a href="/feed">Feed</a>
+          <a href="/profile">Profile</a>
+          <a href="/messages">Messages</a>
+          <a href="/gallery">Gallery</a>
+          <a href="/stories">Stories</a>
+          <a href="/listen-together">Listen Together</a>
+          <a href="/artist-dashboard">Artist</a>
+          <a href="/activity">Activity</a>
+          <a href="/logout">Log Out</a>
+        </div>
+      </div>
+
+      <div class="page">
+        <div class="card">
+          <div class="profile-header">
+            <div class="profile-avatar"></div>
+            <div>
+              <h2 style="margin:0;color:#ff6a00;">${user.name}</h2>
+              <p style="margin:4px 0;color:#aaa;">${user.network || "Unknown network"}</p>
+              <p style="margin:4px 0;color:#ccc;font-size:13px;">"Exploring the universe via Spacebook."</p>
+            </div>
+          </div>
+          <form action="/upload-profile-pic" method="post" enctype="multipart/form-data" style="margin-top:16px;">
+            <label style="color:#ccc;font-size:14px;">Update profile picture</label><br>
+            <input type="file" name="profilePic" accept="image/*" style="margin-top:6px;">
+            <button class="btn-primary" style="margin-top:10px;">Upload</button>
+          </form>
+        </div>
+
+        <div class="card">
+          <h3 style="color:#ff6a00;margin-bottom:10px;">⭐ Top Friends</h3>
+          <div class="top-friends-bar">
+            ${topFriendsHtml || "<p style='color:#ccc;font-size:13px;'>No top friends yet. Pick some below.</p>"}
+          </div>
+          <hr style="margin:16px 0;border:none;border-top:1px solid #333;">
+          <h3 style="color:#ff6a00;margin-bottom:10px;">👥 Friends</h3>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;">
+            ${friendsGridHtml || "<p style='color:#ccc;font-size:13px;'>No friends yet.</p>"}
+          </div>
+          <form action="/set-top-friends" method="post" style="margin-top:20px;">
+            <h4 style="color:#ff6a00;margin-bottom:8px;">Select Top 8 Friends</h4>
+            <div style="max-height:200px;overflow-y:auto;border:1px solid #333;padding:10px;border-radius:6px;">
+              ${topFriendsSelector || "<p style='color:#ccc;font-size:13px;'>Add some friends first.</p>"}
+            </div>
+            <button class="btn-primary" style="margin-top:10px;">Save Top Friends</button>
+          </form>
+        </div>
+
+        <div class="card">
+          <h3 style="color:#ff6a00;margin-bottom:10px;">📷 Gallery</h3>
+          <div id="profile-own-gallery" class="gallery-grid">
+            <p style="color:#888;font-size:13px;">Loading...</p>
+          </div>
+          <a href="/gallery" style="display:inline-block;margin-top:12px;color:#ff6a00;font-size:13px;">View full gallery →</a>
+        </div>
+
+        <div class="card">
+          <h3 style="color:#ff6a00;margin-bottom:10px;">📝 Your Posts</h3>
+          ${postsHtml || "<p style='color:#ccc;font-size:13px;'>You haven't posted yet.</p>"}
+        </div>
+      </div>
+
+      <!-- Gallery overlay -->
+      <div id="profile-media-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:1000;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px 0;">
+        <div style="max-width:860px;width:100%;padding:0 16px;box-sizing:border-box;">
+          <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+            <div onclick="closeProfileGallery()" style="font-size:28px;cursor:pointer;color:#fff;background:rgba(255,255,255,0.1);border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;">✕</div>
+          </div>
+          <div id="profile-overlay-media"></div>
+          <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;justify-content:center;">
+            <button onclick="reactProfilePhoto('❤️')" class="react-btn" id="prb-❤️">❤️ <span id="prc-❤️">0</span></button>
+            <button onclick="reactProfilePhoto('🔥')" class="react-btn" id="prb-🔥">🔥 <span id="prc-🔥">0</span></button>
+            <button onclick="reactProfilePhoto('😂')" class="react-btn" id="prb-😂">😂 <span id="prc-😂">0</span></button>
+            <button onclick="reactProfilePhoto('🤝')" class="react-btn" id="prb-🤝">🤝 <span id="prc-🤝">0</span></button>
+            <button onclick="reactProfilePhoto('🚀')" class="react-btn" id="prb-🚀">🚀 <span id="prc-🚀">0</span></button>
+          </div>
+          <div style="margin-top:16px;">
+            <h4 style="color:#ff6a00;margin:0 0 10px;">💬 Comments</h4>
+            <div id="profile-comment-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;max-height:220px;overflow-y:auto;"></div>
+            <div style="display:flex;gap:8px;">
+              <input id="profile-comment-input" type="text" placeholder="Add a comment..." maxlength="300"
+                style="flex:1;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;min-height:44px;"
+                onkeydown="if(event.key==='Enter') submitProfileComment()"/>
+              <button class="btn-primary" onclick="submitProfileComment()">Post</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </body>
     </html>
   `);
 });
 
-// ====== OTHER USER'S PROFILE ======
+
+// server.js – part 4/5
+
+// ====== OTHER USER PROFILE ======
 app.get("/profile/:id", requireLogin, async (req, res) => {
-  const viewer = await User.findById(req.session.userId).populate("friends").populate("topFriends");
-  const target = await User.findById(req.params.id).populate("friends").populate("topFriends");
-  if (!target) return res.redirect("/feed");
-  if (target._id.toString() === viewer._id.toString()) return res.redirect("/profile");
+  const viewer = await User.findById(req.session.userId).populate("friends");
+  const user = await User.findById(req.params.id).populate("friends");
+  if (!user) return res.send("User not found");
 
-  const posts = await Post.find({ userId: target._id }).sort({ createdAt: -1 });
-  const isFriend = viewer.friends.some(f => f._id.toString() === target._id.toString());
+  const isFriend = viewer.friends.some(f => f._id.toString() === user._id.toString());
+  const posts = await Post.find({ userId: user._id }).sort({ createdAt: -1 });
 
-  const topFriendsHtml = target.topFriends.map(f => `
+  const friendTiles = user.friends.map(f => `
     <div class="friend-tile">
-      <div style="width:60px;height:60px;border-radius:8px;background:#111 url('${f.profilePic || "/assets/img/default-avatar.png"}') center/cover no-repeat;margin-bottom:4px;border:1px solid rgba(255,106,0,0.3);"></div>
-      <div style="font-size:12px;"><a href="/profile/${f._id}" style="color:#ff6a00;">${f.name}</a></div>
-    </div>`).join("");
-
-  const friendsGridHtml = target.friends.map(f => `
-    <div class="friend-tile">
-      <div style="width:60px;height:60px;border-radius:8px;background:#111 url('${f.profilePic || "/assets/img/default-avatar.png"}') center/cover no-repeat;margin-bottom:4px;border:1px solid rgba(255,106,0,0.3);"></div>
+      <div class="friend-avatar" style="width:60px;height:60px;border-radius:8px;background:#111 url('${f.profilePic || "/assets/img/default-avatar.png"}') center/cover no-repeat;margin-bottom:4px;border:1px solid rgba(255,106,0,0.3);"></div>
       <div style="font-size:12px;"><a href="/profile/${f._id}" style="color:#ff6a00;">${f.name}</a></div>
     </div>`).join("");
 
   const postsHtml = posts.map(p => `
     <div class="post-card" data-post-id="${p._id}">
       <div class="post">
-        <div class="author" style="color:#ff6a00;">${p.userName}</div>
+        <div class="author">${p.userName}</div>
         <div class="meta">${p.createdAt.toLocaleString()}</div>
         <p class="post-content" style="margin-top:6px;">${p.content || ""}</p>
         <div class="post-image-wrapper">
@@ -1575,7 +1509,8 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
       </div>
       <div class="post-reactions" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
         ${["❤️","🔥","😂","🤝","🚀"].map(e => `
-          <button class="react-pill" data-emoji="${e}" data-post-id="${p._id}">${e}
+          <button class="react-pill" data-emoji="${e}" data-post-id="${p._id}">
+            ${e}
             <span class="rpill-count" id="rp-${p._id}-${e.codePointAt(0)}">0</span>
           </button>`).join("")}
       </div>
@@ -1587,15 +1522,14 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
         <div style="display:flex;gap:8px;">
           <input class="comment-input" data-post-id="${p._id}" type="text" placeholder="Write a comment..." maxlength="300"
             style="flex:1;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;min-height:44px;"
-
             onkeydown="if(event.key==='Enter') submitPostComment('${p._id}', this)"/>
           <button class="btn-primary" style="font-size:12px;padding:6px 10px;"
-            onclick="submitPostComment('${p._id}', document.querySelector('.comment-input[data-post-id=\\'${p._id}\\']'))">Post</button>
+            onclick="submitPostComment('${p._id}', document.querySelector('.comment-input[data-post-id=\\\\'${p._id}\\\\']'))">Post</button>
         </div>
       </div>
     </div>`).join("");
 
-  const pic = target.profilePic || "/assets/img/default-avatar.png";
+  const pic = user.profilePic || "/assets/img/default-avatar.png";
 
   res.send(`
     <!DOCTYPE html>
@@ -1603,7 +1537,7 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>${target.name} – Spacebook</title>
+      <title>${user.name} – Spacebook</title>
       <link rel="stylesheet" href="/assets/css/styles.css">
       <style>
         html, body { background: #000 !important; margin: 0; padding: 0; color: #fff; font-family: Arial, sans-serif; overflow-x: hidden; }
@@ -1618,8 +1552,6 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
         .profile-header { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
         .profile-avatar { width: 100px; height: 100px; border-radius: 50%; background: #111 url('${pic}') center/cover no-repeat; border: 3px solid #ff6a00; flex-shrink: 0; }
         .friend-tile { width: 70px; text-align: center; }
-        .top-friends-bar { display: flex; flex-wrap: wrap; gap: 10px; }
-        .post-card { margin-bottom: 16px; }
         .btn-primary { display: inline-block; padding: 8px 14px; background: #ff6a00; color: #000; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; transition: 0.2s; font-size: 14px; }
         .btn-primary:hover { background: #ff8c32; }
         .btn-secondary { padding: 6px 10px; background: rgba(255,255,255,0.08); border-radius: 6px; border: none; color: #ff6a00; cursor: pointer; font-weight: bold; transition: 0.2s; }
@@ -1662,202 +1594,6 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
           requestAnimationFrame(draw);
         }
         draw();
-      </script>
-
-      <div class="navbar">
-        <div class="logo"><a href="/feed">Spacebook</a></div>
-        <div class="nav-links">
-          <a href="/home">Home</a>
-          <a href="/feed">Feed</a>
-          <a href="/profile">Profile</a>
-          <a href="/messages">Messages</a>
-          <a href="/gallery">Gallery</a>
-          <a href="/stories">Stories</a>
-          <a href="/listen-together">Listen Together</a>
-          <a href="/artist-dashboard">Artist</a>
-          <a href="/activity">Activity</a>
-          <a href="/logout">Log Out</a>
-        </div>
-      </div>
-
-      <div class="page">
-        <div class="card">
-          <div class="profile-header">
-            <div class="profile-avatar"></div>
-            <div>
-              <h2 style="margin:0;color:#ff6a00;">${target.name}</h2>
-              <p style="margin:4px 0;color:#aaa;">${target.network || "Unknown network"}</p>
-              <p style="margin:4px 0;color:#ccc;font-size:13px;">"Exploring the universe via Spacebook."</p>
-            </div>
-          </div>
-          <div style="margin-top:16px;">
-            ${isFriend
-              ? `<form action="/remove-friend/${target._id}" method="post" style="display:inline;">
-                   <button class="btn-primary" style="background:#222;color:#ff6a00;border:1px solid #ff6a00;">Remove Friend</button>
-                 </form>`
-              : `<form action="/add-friend/${target._id}" method="post" style="display:inline;">
-                   <button class="btn-primary">+ Add Friend</button>
-                 </form>`}
-            <a href="/gallery/${target._id}" class="btn-secondary" style="margin-left:10px;font-size:13px;">📷 View Gallery</a>
-          </div>
-        </div>
-
-        <div class="card">
-          <h3 style="color:#ff6a00;margin-bottom:10px;">⭐ Top Friends</h3>
-          <div class="top-friends-bar">
-            ${topFriendsHtml || "<p style='color:#ccc;font-size:13px;'>No top friends yet.</p>"}
-          </div>
-          <hr style="margin:16px 0;border:none;border-top:1px solid #333;">
-          <h3 style="color:#ff6a00;margin-bottom:10px;">👥 Friends</h3>
-          <div style="display:flex;flex-wrap:wrap;gap:10px;">
-            ${friendsGridHtml || "<p style='color:#ccc;font-size:13px;'>No friends yet.</p>"}
-          </div>
-        </div>
-
-        <div class="card">
-          <h3 style="color:#ff6a00;margin-bottom:10px;">📷 Gallery</h3>
-          <div id="target-gallery-grid" class="gallery-grid">
-            <p style="color:#888;font-size:13px;">Loading...</p>
-          </div>
-        </div>
-
-        <div class="card">
-          <h3 style="color:#ff6a00;margin-bottom:10px;">📝 Posts</h3>
-          ${postsHtml || "<p style='color:#ccc;font-size:13px;'>No posts yet.</p>"}
-        </div>
-      </div>
-
-      <!-- Gallery overlay -->
-      <div id="profile-media-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:1000;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px 0;">
-        <div style="max-width:860px;width:100%;padding:0 16px;box-sizing:border-box;">
-          <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
-            <div onclick="closeProfileGallery()" style="font-size:28px;cursor:pointer;color:#fff;background:rgba(255,255,255,0.1);border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;">✕</div>
-          </div>
-          <div id="profile-overlay-media"></div>
-          <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;justify-content:center;">
-            <button onclick="reactProfilePhoto('❤️')" class="react-btn" id="prb-❤️">❤️ <span id="prc-❤️">0</span></button>
-            <button onclick="reactProfilePhoto('🔥')" class="react-btn" id="prb-🔥">🔥 <span id="prc-🔥">0</span></button>
-            <button onclick="reactProfilePhoto('😂')" class="react-btn" id="prb-😂">😂 <span id="prc-😂">0</span></button>
-            <button onclick="reactProfilePhoto('🤝')" class="react-btn" id="prb-🤝">🤝 <span id="prc-🤝">0</span></button>
-            <button onclick="reactProfilePhoto('🚀')" class="react-btn" id="prb-🚀">🚀 <span id="prc-🚀">0</span></button>
-          </div>
-          <div style="margin-top:16px;">
-            <h4 style="color:#ff6a00;margin:0 0 10px;">💬 Comments</h4>
-            <div id="profile-comment-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;max-height:220px;overflow-y:auto;"></div>
-            <div style="display:flex;gap:8px;">
-              <input id="profile-comment-input" type="text" placeholder="Add a comment..." maxlength="300"
-                style="flex:1;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;min-height:44px;"
-
-                onkeydown="if(event.key==='Enter') submitProfileComment()"/>
-              <button class="btn-primary" onclick="submitProfileComment()">Post</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <script>
-        let profileGalleryAlbumId = null;
-        let profileGalleryPhotoIndex = null;
-
-        async function loadTargetGallery() {
-          const albums = await fetch("/api/albums/user/${target._id}", { credentials: "include" }).then(r => r.json()).catch(() => []);
-          const grid = document.getElementById("target-gallery-grid");
-          const allPhotos = [];
-          albums.forEach(function(a) { a.photos.forEach(function(p, i) { allPhotos.push({ url: p.url, albumId: a._id, photoIndex: i }); }); });
-          if (!allPhotos.length) { grid.innerHTML = "<p style='color:#888;font-size:13px;'>No photos yet.</p>"; return; }
-          grid.innerHTML = allPhotos.slice(0, 9).map(function(p) {
-            return "<div class='gallery-thumb' onclick=\\"openProfileGallery('" + p.albumId + "'," + p.photoIndex + ",'" + p.url + "')\\">" +
-              "<img src='" + p.url + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/></div>";
-          }).join("");
-        }
-
-        async function openProfileGallery(albumId, photoIndex, url) {
-          profileGalleryAlbumId = albumId;
-          profileGalleryPhotoIndex = photoIndex;
-          const overlay = document.getElementById("profile-media-overlay");
-          const media = document.getElementById("profile-overlay-media");
-          const isVideo = url.match(/\\.(mp4|webm|ogg)(\\?|$)/i);
-          media.innerHTML = isVideo
-            ? "<video src='" + url + "' controls autoplay style='max-width:100%;max-height:65vh;border-radius:10px;display:block;margin:0 auto;'></video>"
-            : "<img src='" + url + "' style='max-width:100%;max-height:65vh;border-radius:10px;display:block;margin:0 auto;' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/>";
-          overlay.style.display = "flex";
-          await loadProfileReactions();
-          await loadProfileComments();
-        }
-
-        function closeProfileGallery() {
-          document.getElementById("profile-media-overlay").style.display = "none";
-          document.getElementById("profile-overlay-media").innerHTML = "";
-          document.getElementById("profile-comment-list").innerHTML = "";
-          profileGalleryAlbumId = null; profileGalleryPhotoIndex = null;
-        }
-
-        async function loadProfileReactions() {
-          const data = await fetch("/api/albums/" + profileGalleryAlbumId + "/photos/" + profileGalleryPhotoIndex + "/reactions", { credentials: "include" })
-            .then(r => r.json()).catch(() => ({ counts: {}, myReaction: null }));
-          ["❤️","🔥","😂","🤝","🚀"].forEach(function(e) {
-            const el = document.getElementById("prc-" + e);
-            const btn = document.getElementById("prb-" + e);
-            if (el) el.textContent = data.counts[e] || 0;
-            if (btn) btn.classList.toggle("mine", data.myReaction === e);
-          });
-        }
-
-        async function reactProfilePhoto(emoji) {
-          if (!profileGalleryAlbumId && profileGalleryPhotoIndex === null) return;
-          await fetch("/api/albums/" + profileGalleryAlbumId + "/photos/" + profileGalleryPhotoIndex + "/react", {
-            method: "POST", credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ emoji: emoji })
-          });
-          await loadProfileReactions();
-        }
-
-        async function loadProfileComments() {
-          const comments = await fetch("/api/albums/" + profileGalleryAlbumId + "/photos/" + profileGalleryPhotoIndex + "/comments", { credentials: "include" })
-            .then(r => r.json()).catch(() => []);
-          const list = document.getElementById("profile-comment-list");
-          if (!comments.length) { list.innerHTML = "<div style='color:#666;font-size:13px;padding:8px;'>No comments yet.</div>"; return; }
-          list.innerHTML = comments.map(function(c) {
-            return "<div class='comment-item'>" +
-              "<img class='comment-avatar' src='" + (c.userPic || "/assets/img/default-avatar.png") + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/>" +
-              "<div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div>" +
-            "</div>";
-          }).join("");
-          list.scrollTop = list.scrollHeight;
-        }
-
-        async function submitProfileComment() {
-          const input = document.getElementById("profile-comment-input");
-          const text = input.value.trim();
-          if (!text || !profileGalleryAlbumId) return;
-          await fetch("/api/albums/" + profileGalleryAlbumId + "/photos/" + profileGalleryPhotoIndex + "/comments", {
-            method: "POST", credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text: text })
-          });
-          input.value = "";
-          await loadProfileComments();
-        }
-
-        document.addEventListener("click", async function(e) {
-          const pill = e.target.closest(".react-pill");
-          if (pill) {
-            await fetch("/api/posts/" + pill.dataset.postId + "/react", {
-              method: "POST", credentials: "include",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ emoji: pill.dataset.emoji })
-            });
-            loadPostReactions(pill.dataset.postId);
-          }
-          const toggleBtn = e.target.closest(".comment-toggle-btn");
-          if (toggleBtn) {
-            const postId = toggleBtn.dataset.postId;
-            const section = document.getElementById("cs-" + postId);
-            if (section.style.display === "none") { section.style.display = "block"; loadPostComments(postId); }
-            else section.style.display = "none";
-          }
-        });
 
         async function loadPostReactions(postId) {
           const data = await fetch("/api/posts/" + postId + "/reactions", { credentials: "include" }).then(r => r.json()).catch(() => ({ counts: {}, myReaction: null }));
@@ -1899,13 +1635,150 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
           return Math.floor(hrs / 24) + "d ago";
         }
 
-        document.addEventListener("keydown", function(e) { if (e.key === "Escape") closeProfileGallery(); });
-        document.querySelectorAll(".post-card").forEach(function(card) { const id = card.dataset.postId; if (id) loadPostReactions(id); });
-        loadTargetGallery();
+        document.addEventListener("click", async function(e) {
+          const pill = e.target.closest(".react-pill");
+          if (pill) {
+            await fetch("/api/posts/" + pill.dataset.postId + "/react", {
+              method: "POST", credentials: "include",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ emoji: pill.dataset.emoji })
+            });
+            loadPostReactions(pill.dataset.postId);
+          }
+          const toggleBtn = e.target.closest(".comment-toggle-btn");
+          if (toggleBtn) {
+            const postId = toggleBtn.dataset.postId;
+            const section = document.getElementById("cs-" + postId);
+            if (section.style.display === "none") { section.style.display = "block"; loadPostComments(postId); }
+            else section.style.display = "none";
+          }
+        });
+
+        document.querySelectorAll(".post-card").forEach(function(card) {
+          const id = card.dataset.postId;
+          if (id) loadPostReactions(id);
+        });
       </script>
+
+      <div class="navbar">
+        <div class="logo"><a href="/feed">Spacebook</a></div>
+        <div class="nav-links">
+          <a href="/home">Home</a>
+          <a href="/feed">Feed</a>
+          <a href="/profile">Profile</a>
+          <a href="/messages">Messages</a>
+          <a href="/gallery">Gallery</a>
+          <a href="/stories">Stories</a>
+          <a href="/listen-together">Listen Together</a>
+          <a href="/artist-dashboard">Artist</a>
+          <a href="/activity">Activity</a>
+          <a href="/logout">Log Out</a>
+        </div>
+      </div>
+
+      <div class="page">
+        <div class="card">
+          <div class="profile-header">
+            <div class="profile-avatar"></div>
+            <div>
+              <h2 style="margin:0;color:#ff6a00;">${user.name}</h2>
+              <p style="margin:4px 0;color:#aaa;">${user.network || "Unknown network"}</p>
+              <p style="margin:4px 0;color:#ccc;font-size:13px;">Friend of ${viewer.name}</p>
+              <div style="margin-top:8px;">
+                ${isFriend
+                  ? `<form action="/remove-friend/${user._id}" method="post" style="display:inline;">
+                       <button class="btn-secondary">Remove Friend</button>
+                     </form>`
+                  : `<form action="/add-friend/${user._id}" method="post" style="display:inline;">
+                       <button class="btn-primary">Add Friend</button>
+                     </form>`}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 style="color:#ff6a00;margin-bottom:10px;">Friends</h3>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;">
+            ${friendTiles || "<p style='color:#ccc;font-size:13px;'>No friends listed.</p>"}
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 style="color:#ff6a00;margin-bottom:10px;">Posts</h3>
+          ${postsHtml || "<p style='color:#ccc;font-size:13px;'>No posts yet.</p>"}
+        </div>
+      </div>
     </body>
     </html>
   `);
+});
+
+// ====== GALLERY PAGE (shell – module adds APIs) ======
+app.get("/gallery", requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "gallery.html"));
+});
+
+// ====== SIMPLE MESSAGES PAGE SHELL ======
+app.get("/messages", requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "messages.html"));
+});
+
+// ====== NOTIFICATIONS PAGE SHELL ======
+app.get("/notifications", requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "notifications.html"));
+});
+
+// ====== CHESS FRONTEND PAGE ======
+app.get("/chess", requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "chess.html"));
+});
+
+
+// server.js – part 5/5
+
+// ====== POST COMMENTS API ======
+app.get("/api/posts/:postId/comments", requireLogin, async (req, res) => {
+  try {
+    const comments = await PostComment.find({ postId: req.params.postId }).sort({ createdAt: 1 });
+    res.json(comments);
+  } catch (err) {
+    console.error("get comments error", err);
+    res.status(500).json({ error: "server error" });
+  }
+});
+
+app.post("/api/posts/:postId/comments", requireLogin, async (req, res) => {
+  try {
+    const user = await User.findById(req.session.userId);
+    if (!user) return res.status(401).json({ error: "Not logged in" });
+    const text = (req.body.text || "").toString().slice(0, 300);
+    if (!text.trim()) return res.status(400).json({ error: "Empty" });
+
+    const comment = await PostComment.create({
+      postId: req.params.postId,
+      userId: user._id,
+      userName: user.name,
+      userPic: user.profilePic || "",
+      text
+    });
+
+    const post = await Post.findById(req.params.postId);
+    if (post && post.userId.toString() !== user._id.toString()) {
+      await Notification.create({
+        toUserId: post.userId,
+        fromUserId: user._id,
+        fromUserName: user.name,
+        type: "comment",
+        postId: post._id,
+        text: user.name + ' commented: "' + text.slice(0, 60) + '"'
+      });
+    }
+    res.json(comment);
+  } catch (err) {
+    console.error("post comment error", err);
+    res.status(500).json({ error: "server error" });
+  }
 });
 
 // ====== CHESS LEADERBOARD ROUTES ======
@@ -2051,30 +1924,24 @@ app.get("/api/friends", requireLogin, async (req, res) => {
   }
 });
 
-// ====== STORIES ======
+// ====== STORIES / ACTIVITY / LISTEN / ARTIST PAGES ======
 app.get("/stories", requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, "public", "stories.html"));
 });
 
-// ====== ACTIVITY ======
 app.get("/activity", requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, "public", "activity.html"));
 });
 
-// ====== LISTEN TOGETHER ======
 app.get("/listen-together", requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, "public", "listen-together.html"));
 });
 
-// ====== ARTIST DASHBOARD ======
 app.get("/artist-dashboard", requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, "public", "artist-dashboard.html"));
 });
 
-// ====== CHESS ======
-app.get("/chess", requireLogin, (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "chess.html"));
-});
+// (Chess page shell already defined in part 4)
 
 // ====== LOGOUT ======
 app.get("/logout", (req, res) => {
@@ -2096,20 +1963,20 @@ attachGallery(app, mongoose, requireLogin, cloudinary, upload);
 try {
   const attachMessages = require("./modules/messaging");
   attachMessages(app, server, mongoose, requireLogin, cloudinary);
-} catch(e) { console.warn("messaging module not found, skipping"); }
+} catch (e) {
+  console.warn("messaging module not found, skipping");
+}
 
 try {
   const attachArtist = require("./modules/artist");
   attachArtist(app, mongoose, requireLogin, cloudinary, upload);
-} catch(e) { console.warn("artist module not found, skipping"); }
+} catch (e) {
+  console.warn("artist module not found, skipping");
+}
 
 try {
   const attachListenTogether = require("./modules/listen-together");
   attachListenTogether(app, mongoose, requireLogin);
-} catch(e) { console.warn("listen-together module not found, skipping"); }
-
-
-
-
-
-
+} catch (e) {
+  console.warn("listen-together module not found, skipping");
+}
