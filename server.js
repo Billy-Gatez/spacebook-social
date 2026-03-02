@@ -432,7 +432,7 @@ app.get("/home", requireLogin, async (req, res) => {
   });
 </script>
 
-      <\/script>
+     
 
       <div class="navbar">
         <div class="logo"><a href="/feed" style="color:#ff6a00;">Spacebook</a></div>
