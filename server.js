@@ -664,7 +664,7 @@ app.get("/feed", requireLogin, async (req, res) => {
           requestAnimationFrame(draw);
         }
         draw();
-      <\/script>
+      </script>
 
       <div class="navbar">
         <div class="logo"><a href="/feed">Spacebook</a></div>
@@ -902,7 +902,7 @@ app.get("/feed", requireLogin, async (req, res) => {
         });
         loadNotifCount();
         setInterval(loadNotifCount, 30000);
-      <\/script>
+      </script>
     </body>
     </html>
   `);
@@ -1243,7 +1243,7 @@ app.get("/profile", requireLogin, async (req, res) => {
           requestAnimationFrame(draw);
         }
         draw();
-      <\/script>
+      </script>
 
       <div class="navbar">
         <div class="logo"><a href="/feed">Spacebook</a></div>
@@ -1535,7 +1535,7 @@ app.get("/profile", requireLogin, async (req, res) => {
         document.addEventListener("keydown", function(e) { if (e.key === "Escape") closeProfileGallery(); });
         document.querySelectorAll(".post-card").forEach(function(card) { const id = card.dataset.postId; if (id) loadPostReactions(id); });
         loadOwnGallery();
-      <\/script>
+      </script>
     </body>
     </html>
   `);
@@ -1662,7 +1662,7 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
           requestAnimationFrame(draw);
         }
         draw();
-      <\/script>
+      </script>
 
       <div class="navbar">
         <div class="logo"><a href="/feed">Spacebook</a></div>
@@ -1902,7 +1902,7 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
         document.addEventListener("keydown", function(e) { if (e.key === "Escape") closeProfileGallery(); });
         document.querySelectorAll(".post-card").forEach(function(card) { const id = card.dataset.postId; if (id) loadPostReactions(id); });
         loadTargetGallery();
-      <\/script>
+      </script>
     </body>
     </html>
   `);
