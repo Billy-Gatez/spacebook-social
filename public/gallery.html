@@ -81,7 +81,6 @@
 
   .view-back { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
 
-  /* Media overlay */
   .media-overlay {
     display: none; position: fixed; inset: 0;
     background: rgba(0,0,0,.95); z-index: 1000;
@@ -106,7 +105,6 @@
     border-radius: 10px; display: block; margin: 0 auto;
   }
 
-  /* Reactions */
   .reaction-bar {
     display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; justify-content: center;
   }
@@ -119,7 +117,6 @@
   .react-btn.mine { border-color: #ff6a00; background: rgba(255,106,0,0.2); }
   .react-btn .count { font-size: 12px; color: #ccc; }
 
-  /* Comments */
   .comment-section { width: 100%; margin-top: 16px; }
   .comment-section h4 { color: #ff6a00; margin: 0 0 10px; font-size: 15px; }
   .comment-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; max-height: 220px; overflow-y: auto; }
@@ -148,7 +145,6 @@
   .comment-form input:focus { border-color: #ff6a00; }
   .comment-form button { flex-shrink: 0; }
 
-  /* Mobile */
   @media (max-width: 600px) {
     .navbar { padding: 10px 14px; }
     .nav-links a { font-size: 12px; }
@@ -212,8 +208,8 @@
 
 <div class="gallery-page">
   <div class="gallery-header">
-    <h2>🌌 My Gallery</h2>
-    <button class="btn-primary" onclick="createAlbum()">+ New Album</button>
+    <h2 id="gallery-title">🌌 My Gallery</h2>
+    <button id="new-album-btn" class="btn-primary" onclick="createAlbum()">+ New Album</button>
   </div>
 
   <div id="album-grid-view">
@@ -224,7 +220,7 @@
     <div class="view-back">
       <button class="btn-secondary" onclick="backToAlbums()">← Albums</button>
       <h3 id="album-detail-name" style="color:#ff6a00;margin:0"></h3>
-      <button class="btn-danger" style="margin-left:auto" onclick="deleteCurrentAlbum()">Delete Album</button>
+      <button id="delete-album-btn" class="btn-danger" style="margin-left:auto" onclick="deleteCurrentAlbum()">Delete Album</button>
     </div>
     <div class="drop-zone" id="drop-zone" onclick="document.getElementById('photo-file-input').click()">
       Drag &amp; drop photos here, or <strong style="color:#ff6a00">click to upload</strong>
@@ -234,7 +230,6 @@
   </div>
 </div>
 
-<!-- Media overlay -->
 <div id="media-overlay" class="media-overlay">
   <div class="overlay-inner">
     <div class="overlay-top">
@@ -242,7 +237,6 @@
     </div>
     <div class="overlay-media" id="media-overlay-content"></div>
 
-    <!-- Reactions -->
     <div class="reaction-bar" id="overlay-reactions">
       <button class="react-btn" onclick="reactPhoto('❤️')">❤️ <span class="count" id="rc-❤️">0</span></button>
       <button class="react-btn" onclick="reactPhoto('🔥')">🔥 <span class="count" id="rc-🔥">0</span></button>
@@ -251,7 +245,6 @@
       <button class="react-btn" onclick="reactPhoto('🚀')">🚀 <span class="count" id="rc-🚀">0</span></button>
     </div>
 
-    <!-- Comments -->
     <div class="comment-section">
       <h4>💬 Comments</h4>
       <div class="comment-list" id="comment-list"></div>

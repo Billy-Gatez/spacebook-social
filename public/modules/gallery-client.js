@@ -2,25 +2,41 @@ let albums = [];
 let currentAlbumId = null;
 let overlayAlbumId = null;
 let overlayPhotoIndex = null;
+let viewingUserId = null;
+
+(function detectUserFromPath() {
+  const m = window.location.pathname.match(/^\/gallery\/([a-f0-9]{24})$/);
+  viewingUserId = m ? m[1] : null;
+})();
 
 async function loadAlbums() {
-  albums = await fetch('/api/albums', { credentials: 'include' }).then(r => r.json()).catch(() => []);
+  const url = viewingUserId ? `/api/albums/user/${viewingUserId}` : '/api/albums';
+  albums = await fetch(url, { credentials: 'include' }).then(r => r.json()).catch(() => []);
   renderAlbumGrid();
+  if (viewingUserId) {
+    const btn = document.getElementById('new-album-btn');
+    if (btn) btn.style.display = 'none';
+    const delBtn = document.getElementById('delete-album-btn');
+    if (delBtn) delBtn.style.display = 'none';
+    const dropZone = document.getElementById('drop-zone');
+    if (dropZone) dropZone.style.display = 'none';
+  }
 }
 
 function renderAlbumGrid() {
   const grid = document.getElementById('album-grid');
   if (!albums.length) {
-    grid.innerHTML = '<div style="color:#888;grid-column:1/-1;padding:60px;text-align:center;font-size:15px">🌌 No albums yet. Create one!</div>';
+    grid.innerHTML = '<div style="color:#888;grid-column:1/-1;padding:60px;text-align:center;font-size:15px;">No albums yet.</div>';
     return;
   }
   grid.innerHTML = albums.map(function(a) {
     return '<div class="album-card" onclick="openAlbum(\'' + a._id + '\')">' +
-      '<img class="album-cover" src="' + (a.coverUrl || '/assets/img/default-avatar.png') + '" alt="' + a.name + '" onerror="this.src=\'/assets/img/default-avatar.png\'"/>' +
+      '<img class="album-cover" src="' + (a.coverUrl || '/assets/img/default-avatar.png') + '" alt="' + a.name + '" onerror="this.src=\'/assets/img/default-avatar.png\'">' +
       '<div class="album-info">' +
         '<div class="album-name">' + a.name + '</div>' +
         '<div class="album-count">' + a.photos.length + ' photo' + (a.photos.length !== 1 ? 's' : '') + '</div>' +
-      '</div></div>';
+      '</div>' +
+    '</div>';
   }).join('');
 }
 
@@ -44,24 +60,25 @@ function backToAlbums() {
 function renderPhotoGrid(album) {
   const grid = document.getElementById('photo-grid');
   if (!album.photos.length) {
-    grid.innerHTML = '<div style="color:#888;font-size:13px;padding:20px">No photos yet. Upload some!</div>';
+    grid.innerHTML = '<div style="color:#888;font-size:13px;padding:20px;">No photos yet. Upload some!</div>';
     return;
   }
   grid.innerHTML = album.photos.map(function(p, i) {
+    const delBtn = viewingUserId ? '' : '<button class="photo-del" onclick="deletePhoto(' + i + ', event)" title="Delete">✕</button>';
     return '<div class="photo-thumb">' +
-      '<img src="' + p.url + '" alt="" onclick="openMediaOverlay(\'' + album._id + '\',' + i + ',\'' + p.url + '\')" onerror="this.src=\'/assets/img/default-avatar.png\'"/>' +
-      '<button class="photo-del" onclick="deletePhoto(' + i + ',event)" title="Delete">✕</button>' +
+      '<img src="' + p.url + '" alt="" onclick="openMediaOverlay(\'' + album._id + '\', ' + i + ', \'' + p.url + '\')" onerror="this.src=\'/assets/img/default-avatar.png\'">' +
+      delBtn +
     '</div>';
   }).join('');
 }
 
 async function createAlbum() {
-  const name = prompt('Album name:');
+  const name = prompt('Album name');
   if (!name) return;
   const album = await fetch('/api/albums', {
     method: 'POST', credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: name })
+    body: JSON.stringify({ name })
   }).then(r => r.json());
   albums.push(album);
   renderAlbumGrid();
@@ -125,17 +142,14 @@ function setupDropZone() {
 async function openMediaOverlay(albumId, photoIndex, url) {
   overlayAlbumId = albumId;
   overlayPhotoIndex = photoIndex;
-
   const overlay = document.getElementById('media-overlay');
   const content = document.getElementById('media-overlay-content');
   const isVideo = url.match(/\.(mp4|webm|ogg)(\?|$)/i);
-
   if (isVideo) {
-    content.innerHTML = '<video src="' + url + '" controls autoplay style="max-width:100%;max-height:65vh;border-radius:10px"></video>';
+    content.innerHTML = '<video src="' + url + '" controls autoplay style="max-width:100%;max-height:65vh;border-radius:10px;"></video>';
   } else {
-    content.innerHTML = '<img src="' + url + '" style="max-width:100%;max-height:65vh;border-radius:10px" onerror="this.src=\'/assets/img/default-avatar.png\'"/>';
+    content.innerHTML = '<img src="' + url + '" style="max-width:100%;max-height:65vh;border-radius:10px;" onerror="this.src=\'/assets/img/default-avatar.png\'">';
   }
-
   overlay.classList.add('open');
   await loadReactions();
   await loadComments();
@@ -152,7 +166,8 @@ function closeMediaOverlay() {
 // ====== REACTIONS ======
 async function loadReactions() {
   if (overlayAlbumId === null || overlayPhotoIndex === null) return;
-  const data = await fetch('/api/albums/' + overlayAlbumId + '/photos/' + overlayPhotoIndex + '/reactions', { credentials: 'include' }).then(r => r.json()).catch(() => ({ counts: {}, myReaction: null }));
+  const data = await fetch('/api/albums/' + overlayAlbumId + '/photos/' + overlayPhotoIndex + '/reactions', { credentials: 'include' })
+    .then(r => r.json()).catch(() => ({ counts: {}, myReaction: null }));
   const emojis = ['❤️','🔥','😂','🤝','🚀'];
   emojis.forEach(function(e) {
     const countEl = document.getElementById('rc-' + e);
@@ -167,7 +182,7 @@ async function reactPhoto(emoji) {
   await fetch('/api/albums/' + overlayAlbumId + '/photos/' + overlayPhotoIndex + '/react', {
     method: 'POST', credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ emoji: emoji })
+    body: JSON.stringify({ emoji })
   });
   await loadReactions();
 }
@@ -175,21 +190,22 @@ async function reactPhoto(emoji) {
 // ====== COMMENTS ======
 async function loadComments() {
   if (overlayAlbumId === null || overlayPhotoIndex === null) return;
-  const comments = await fetch('/api/albums/' + overlayAlbumId + '/photos/' + overlayPhotoIndex + '/comments', { credentials: 'include' }).then(r => r.json()).catch(() => []);
+  const comments = await fetch('/api/albums/' + overlayAlbumId + '/photos/' + overlayPhotoIndex + '/comments', { credentials: 'include' })
+    .then(r => r.json()).catch(() => []);
   const list = document.getElementById('comment-list');
   if (!comments.length) {
-    list.innerHTML = '<div style="color:#666;font-size:13px;padding:8px">No comments yet. Be the first!</div>';
+    list.innerHTML = '<div style="color:#666;font-size:13px;padding:8px;">No comments yet. Be the first!</div>';
     return;
   }
   list.innerHTML = comments.map(function(c) {
     return '<div class="comment-item">' +
-      '<img class="comment-avatar" src="' + (c.userPic || '/assets/img/default-avatar.png') + '" onerror="this.src=\'/assets/img/default-avatar.png\'"/>' +
+      '<img class="comment-avatar" src="' + (c.userPic || '/assets/img/default-avatar.png') + '" onerror="this.src=\'/assets/img/default-avatar.png\'">' +
       '<div class="comment-body">' +
         '<div class="comment-name">' + c.userName + '</div>' +
         '<div class="comment-text">' + c.text + '</div>' +
         '<div class="comment-time">' + timeAgo(c.createdAt) + '</div>' +
       '</div>' +
-      '<button class="comment-del" onclick="deleteComment(\'' + c._id + '\',this)" title="Delete">✕</button>' +
+      '<button class="comment-del" onclick="deleteComment(\'' + c._id + '\', this)" title="Delete">✕</button>' +
     '</div>';
   }).join('');
   list.scrollTop = list.scrollHeight;
@@ -202,7 +218,7 @@ async function submitComment() {
   await fetch('/api/albums/' + overlayAlbumId + '/photos/' + overlayPhotoIndex + '/comments', {
     method: 'POST', credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text: text })
+    body: JSON.stringify({ text })
   });
   input.value = '';
   await loadComments();
@@ -225,5 +241,4 @@ function timeAgo(date) {
 }
 
 document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeMediaOverlay(); });
-
 loadAlbums();

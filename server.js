@@ -5,7 +5,7 @@ const path = require("path");
 const mongoose = require("mongoose");
 const multer = require("multer");
 const attachChessServer = require("./chess-ws");
-const attachStories = require("./modules/stories"); // adjust path if folder is different
+const attachStories = require("./modules/stories");
 
 // ====== CLOUDINARY ======
 const cloudinary = require("cloudinary").v2;
@@ -153,9 +153,8 @@ const storage = new CloudinaryStorage({
 });
 const upload = multer({ storage });
 
-// Attach stories routes (must be after requireLogin, cloudinary, upload)
+// ====== ATTACH STORIES (early, before routes) ======
 attachStories(app, null, mongoose, requireLogin, cloudinary, upload);
-
 
 // ====== ROUTES ======
 
@@ -531,11 +530,7 @@ app.get("/feed", requireLogin, async (req, res) => {
         textarea:focus { border-color: #ff6a00; outline: none; }
         input[type=text]:focus { border-color: #ff6a00; outline: none; }
         .notif-panel { position: absolute; right: 0; top: 36px; width: 300px; background: rgba(10,10,10,0.97); border: 1px solid rgba(255,106,0,0.3); border-radius: 12px; backdrop-filter: blur(12px); z-index: 500; max-height: 400px; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.6); }
-        @media (max-width: 600px) {
-          .page { flex-direction: column; padding: 16px; }
-          .sidebar { width: 100%; }
-          .nav-links a { font-size: 12px; }
-        }
+        @media (max-width: 600px) { .page { flex-direction: column; padding: 16px; } .sidebar { width: 100%; } .nav-links a { font-size: 12px; } }
       </style>
     </head>
     <body>
@@ -609,7 +604,6 @@ app.get("/feed", requireLogin, async (req, res) => {
               <button class="btn-primary" style="margin-top:10px;">Post</button>
             </form>
           </div>
-
           <div class="card" style="margin-top:20px;">
             ${htmlPosts || "<p style='color:#ccc;font-size:13px;'>No posts yet.</p>"}
           </div>
@@ -617,7 +611,6 @@ app.get("/feed", requireLogin, async (req, res) => {
       </div>
 
       <script>
-        // ====== REACTIONS ======
         async function loadPostReactions(postId) {
           const data = await fetch("/api/posts/" + postId + "/reactions", { credentials: "include" })
             .then(r => r.json()).catch(() => ({ counts: {}, myReaction: null }));
@@ -632,26 +625,20 @@ app.get("/feed", requireLogin, async (req, res) => {
         document.addEventListener("click", async function(e) {
           const pill = e.target.closest(".react-pill");
           if (pill) {
-            const postId = pill.dataset.postId;
-            const emoji = pill.dataset.emoji;
-            await fetch("/api/posts/" + postId + "/react", {
+            await fetch("/api/posts/" + pill.dataset.postId + "/react", {
               method: "POST", credentials: "include",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ emoji: emoji })
+              body: JSON.stringify({ emoji: pill.dataset.emoji })
             });
-            loadPostReactions(postId);
+            loadPostReactions(pill.dataset.postId);
           }
 
           const toggleBtn = e.target.closest(".comment-toggle-btn");
           if (toggleBtn) {
             const postId = toggleBtn.dataset.postId;
             const section = document.getElementById("cs-" + postId);
-            if (section.style.display === "none") {
-              section.style.display = "block";
-              loadPostComments(postId);
-            } else {
-              section.style.display = "none";
-            }
+            if (section.style.display === "none") { section.style.display = "block"; loadPostComments(postId); }
+            else section.style.display = "none";
           }
 
           const editBtn = e.target.closest(".edit-post-btn");
@@ -671,24 +658,18 @@ app.get("/feed", requireLogin, async (req, res) => {
           if (deleteBtn) {
             const card = deleteBtn.closest(".post-card");
             const postId = card.getAttribute("data-post-id");
-            if (!postId) return;
-            if (!confirm("Delete this post?")) return;
+            if (!postId || !confirm("Delete this post?")) return;
             fetch("/delete-post/" + postId, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({})
-            }).then(r => r.json()).then(data => {
-              if (data.success) card.remove();
-              else alert("Error deleting post");
-            }).catch(() => alert("Error deleting post"));
+              method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({})
+            }).then(r => r.json()).then(data => { if (data.success) card.remove(); else alert("Error deleting post"); })
+              .catch(() => alert("Error deleting post"));
           }
 
           const deleteImageBtn = e.target.closest(".delete-image-btn");
           if (deleteImageBtn) {
             const form = deleteImageBtn.closest(".post-editor-form");
-            const deleteInput = form.querySelector("input[name=deleteImage]");
+            form.querySelector("input[name=deleteImage]").value = "true";
             const preview = form.querySelector(".current-image-preview");
-            deleteInput.value = "true";
             if (preview) preview.innerHTML = "<p style='font-size:12px;color:#777;'>Image will be removed.</p>";
           }
         });
@@ -697,8 +678,7 @@ app.get("/feed", requireLogin, async (req, res) => {
           const fileInput = e.target.closest("input[type=file][name=image]");
           if (fileInput) {
             const form = fileInput.closest(".post-editor-form");
-            const deleteInput = form.querySelector("input[name=deleteImage]");
-            deleteInput.value = "false";
+            form.querySelector("input[name=deleteImage]").value = "false";
             const preview = form.querySelector(".current-image-preview");
             if (fileInput.files && fileInput.files[0]) {
               const reader = new FileReader();
@@ -716,41 +696,30 @@ app.get("/feed", requireLogin, async (req, res) => {
           e.preventDefault();
           const postId = form.getAttribute("data-post-id");
           const card = form.closest(".post-card");
-          const contentEl = card.querySelector(".post-content");
-          const imageWrapper = card.querySelector(".post-image-wrapper");
-          const formData = new FormData(form);
-          fetch("/edit-post/" + postId, { method: "POST", body: formData })
+          fetch("/edit-post/" + postId, { method: "POST", body: new FormData(form) })
             .then(r => r.json()).then(data => {
               if (!data.success) { alert("Error saving changes"); return; }
+              const contentEl = card.querySelector(".post-content");
+              const imageWrapper = card.querySelector(".post-image-wrapper");
               if (contentEl) contentEl.textContent = data.content;
               if (imageWrapper) {
                 if (data.imagePath) imageWrapper.innerHTML = "<img class='post-image' src='" + data.imagePath + "' style='max-width:100%;margin-top:8px;border-radius:6px;'>";
                 else imageWrapper.innerHTML = "";
               }
-              const editor = card.querySelector(".post-editor");
-              if (editor) editor.classList.remove("open");
+              card.querySelector(".post-editor").classList.remove("open");
             }).catch(() => alert("Error saving changes"));
         });
 
-        // ====== COMMENTS ======
         async function loadPostComments(postId) {
           const comments = await fetch("/api/posts/" + postId + "/comments", { credentials: "include" })
             .then(r => r.json()).catch(() => []);
           const list = document.getElementById("cl-" + postId);
           if (!list) return;
-          if (!comments.length) {
-            list.innerHTML = "<div style='color:#666;font-size:13px;padding:6px;'>No comments yet. Be first!</div>";
-            return;
-          }
-          list.innerHTML = comments.map(function(c) {
-            return "<div class='comment-item'>" +
-              "<img class='comment-avatar' src='" + (c.userPic || "/assets/img/default-avatar.png") + "' onerror=\"this.src='/assets/img/default-avatar.png'\"/>" +
-              "<div style='flex:1;min-width:0;'>" +
-                "<div class='comment-name'>" + c.userName + "</div>" +
-                "<div class='comment-text'>" + c.text + "</div>" +
-                "<div class='comment-time'>" + timeAgo(c.createdAt) + "</div>" +
-              "</div></div>";
-          }).join("");
+          list.innerHTML = !comments.length
+            ? "<div style='color:#666;font-size:13px;padding:6px;'>No comments yet. Be first!</div>"
+            : comments.map(function(c) {
+                return "<div class='comment-item'><img class='comment-avatar' src='" + (c.userPic || "/assets/img/default-avatar.png") + "' onerror=\"this.src='/assets/img/default-avatar.png'\"/><div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div></div>";
+              }).join("");
           list.scrollTop = list.scrollHeight;
         }
 
@@ -776,7 +745,6 @@ app.get("/feed", requireLogin, async (req, res) => {
           return Math.floor(hrs / 24) + "d ago";
         }
 
-        // ====== NOTIFICATIONS ======
         async function loadNotifCount() {
           const data = await fetch("/api/notifications/unread-count", { credentials: "include" })
             .then(r => r.json()).catch(() => ({ count: 0 }));
@@ -796,24 +764,30 @@ app.get("/feed", requireLogin, async (req, res) => {
               .then(r => r.json()).catch(() => []);
             panel.innerHTML = notes.length
               ? notes.map(function(n) {
-                  return "<div style='padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.06);font-size:13px;color:#f0f0f0;'>" +
-                    "<div>" + n.text + "</div>" +
-                    "<div style='font-size:11px;color:#555;margin-top:3px;'>" + timeAgo(n.createdAt) + "</div>" +
-                  "</div>";
+                  return "<div style='padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.07);font-size:13px;color:#ccc;'>" +
+                    "<span style='color:#ff6a00;font-weight:bold;'>" + n.fromUserName + "</span> " + n.text +
+                    "<div style='font-size:11px;color:#555;margin-top:2px;'>" + timeAgo(n.createdAt) + "</div></div>";
                 }).join("")
-              : "<div style='padding:20px;text-align:center;color:#666;'>No notifications yet. 🌌</div>";
+              : "<div style='padding:16px;color:#666;font-size:13px;text-align:center;'>No notifications yet.</div>";
             document.getElementById("notif-badge").style.display = "none";
           } else {
             panel.style.display = "none";
           }
         }
 
-        // Load reactions for all posts on page load
+        document.addEventListener("click", function(e) {
+          const panel = document.getElementById("notif-panel");
+          if (panel && panel.style.display === "block") {
+            if (!e.target.closest("#notif-panel") && !e.target.closest("button[onclick='toggleNotifPanel()']")) {
+              panel.style.display = "none";
+            }
+          }
+        });
+
         document.querySelectorAll(".post-card").forEach(function(card) {
           const id = card.dataset.postId;
           if (id) loadPostReactions(id);
         });
-
         loadNotifCount();
         setInterval(loadNotifCount, 30000);
       <\/script>
@@ -822,7 +796,7 @@ app.get("/feed", requireLogin, async (req, res) => {
   `);
 });
 
-// ====== CREATE POST ======
+// ====== POST ======
 app.post("/post", requireLogin, upload.single("image"), async (req, res) => {
   const user = await User.findById(req.session.userId);
   if (!user) return res.redirect("/");
@@ -833,154 +807,165 @@ app.post("/post", requireLogin, upload.single("image"), async (req, res) => {
     content: req.body.content,
     imagePath
   });
+  await Notification.create({
+    toUserId: user._id,
+    fromUserId: user._id,
+    fromUserName: user.name,
+    type: "post",
+    text: "posted: \"" + (req.body.content || "").slice(0, 60) + "\""
+  });
   res.redirect("/feed");
 });
 
 // ====== EDIT POST ======
-app.post("/edit-post/:id", requireLogin, upload.single("image"), async (req, res) => {
+app.post("/edit-post/:postId", requireLogin, upload.single("image"), async (req, res) => {
   try {
-    const post = await Post.findById(req.params.id);
-    if (!post) return res.json({ success: false, error: "Post not found" });
-    if (post.userId.toString() !== req.session.userId.toString())
-      return res.json({ success: false, error: "Not authorized" });
-    const { content, deleteImage } = req.body;
-    post.content = content;
-    if (deleteImage === "true") post.imagePath = null;
-    if (req.file) post.imagePath = req.file.path;
+    const post = await Post.findOne({ _id: req.params.postId, userId: req.session.userId });
+    if (!post) return res.json({ success: false, error: "Not found" });
+    if (req.body.content !== undefined) post.content = req.body.content;
+    if (req.body.deleteImage === "true") {
+      post.imagePath = null;
+    } else if (req.file) {
+      post.imagePath = req.file.path;
+    }
     await post.save();
     res.json({ success: true, content: post.content, imagePath: post.imagePath || null });
   } catch (err) {
-    console.error(err);
-    res.json({ success: false, error: "Server error" });
+    console.error("edit-post error", err);
+    res.json({ success: false, error: err.message });
   }
 });
 
 // ====== DELETE POST ======
-app.post("/delete-post/:id", requireLogin, async (req, res) => {
+app.post("/delete-post/:postId", requireLogin, async (req, res) => {
   try {
-    const post = await Post.findById(req.params.id);
-    if (!post) return res.json({ success: false, error: "Post not found" });
-    if (post.userId.toString() !== req.session.userId.toString())
-      return res.json({ success: false, error: "Not authorized" });
-    await Post.deleteOne({ _id: post._id });
+    const post = await Post.findOne({ _id: req.params.postId, userId: req.session.userId });
+    if (!post) return res.json({ success: false, error: "Not found or not yours" });
+    await Post.deleteOne({ _id: req.params.postId });
+    await PostComment.deleteMany({ postId: req.params.postId });
+    await PostReaction.deleteMany({ postId: req.params.postId });
     res.json({ success: true });
   } catch (err) {
-    console.error(err);
-    res.json({ success: false, error: "Server error" });
+    console.error("delete-post error", err);
+    res.json({ success: false, error: err.message });
   }
 });
 
-// ====== DELETE PHOTO ONLY ======
-app.post("/delete-photo/:id", requireLogin, async (req, res) => {
+// ====== POST REACTIONS API ======
+app.post("/api/posts/:postId/react", requireLogin, async (req, res) => {
   try {
-    const post = await Post.findById(req.params.id);
-    if (!post) return res.json({ success: false, error: "Post not found" });
-    if (post.userId.toString() !== req.session.userId.toString())
-      return res.json({ success: false, error: "Not authorized" });
-    post.imagePath = null;
-    await post.save();
-    res.json({ success: true });
+    const { emoji } = req.body;
+    const existing = await PostReaction.findOne({ postId: req.params.postId, userId: req.session.userId });
+    if (existing) {
+      if (existing.emoji === emoji) {
+        await PostReaction.deleteOne({ _id: existing._id });
+      } else {
+        existing.emoji = emoji;
+        await existing.save();
+      }
+    } else {
+      await PostReaction.create({ postId: req.params.postId, userId: req.session.userId, emoji });
+      const post = await Post.findById(req.params.postId);
+      if (post && post.userId.toString() !== req.session.userId.toString()) {
+        const reactor = await User.findById(req.session.userId);
+        await Notification.create({
+          toUserId: post.userId,
+          fromUserId: req.session.userId,
+          fromUserName: reactor ? reactor.name : "Someone",
+          type: "reaction",
+          postId: post._id,
+          text: "reacted " + emoji + " to your post"
+        });
+      }
+    }
+    const reactions = await PostReaction.find({ postId: req.params.postId });
+    const counts = {};
+    reactions.forEach(r => { counts[r.emoji] = (counts[r.emoji] || 0) + 1; });
+    const mine = await PostReaction.findOne({ postId: req.params.postId, userId: req.session.userId });
+    res.json({ counts, myReaction: mine ? mine.emoji : null });
   } catch (err) {
-    console.error(err);
-    res.json({ success: false, error: "Server error" });
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/api/posts/:postId/reactions", requireLogin, async (req, res) => {
+  try {
+    const reactions = await PostReaction.find({ postId: req.params.postId });
+    const counts = {};
+    reactions.forEach(r => { counts[r.emoji] = (counts[r.emoji] || 0) + 1; });
+    const mine = await PostReaction.findOne({ postId: req.params.postId, userId: req.session.userId });
+    res.json({ counts, myReaction: mine ? mine.emoji : null });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
 // ====== POST COMMENTS API ======
 app.get("/api/posts/:postId/comments", requireLogin, async (req, res) => {
-  const comments = await PostComment.find({ postId: req.params.postId }).sort({ createdAt: 1 });
-  res.json(comments);
+  try {
+    const comments = await PostComment.find({ postId: req.params.postId }).sort({ createdAt: 1 });
+    res.json(comments);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.post("/api/posts/:postId/comments", requireLogin, async (req, res) => {
-  const user = await User.findById(req.session.userId);
-  if (!user) return res.status(401).json({ error: "Not logged in" });
-  const post = await Post.findById(req.params.postId);
-  const comment = await PostComment.create({
-    postId: req.params.postId,
-    userId: user._id,
-    userName: user.name,
-    userPic: user.profilePic || "",
-    text: req.body.text
-  });
-  if (post && post.userId.toString() !== user._id.toString()) {
-    await Notification.create({
-      toUserId: post.userId,
-      fromUserId: user._id,
-      fromUserName: user.name,
-      type: "comment",
-      postId: post._id,
-      text: user.name + " commented: \"" + req.body.text.slice(0, 60) + "\""
+  try {
+    const { text } = req.body;
+    if (!text || !text.trim()) return res.status(400).json({ error: "Empty comment" });
+    const user = await User.findById(req.session.userId);
+    const comment = await PostComment.create({
+      postId: req.params.postId,
+      userId: user._id,
+      userName: user.name,
+      userPic: user.profilePic || "",
+      text: text.trim()
     });
-  }
-  res.json(comment);
-});
-
-app.delete("/api/post-comments/:commentId", requireLogin, async (req, res) => {
-  const comment = await PostComment.findById(req.params.commentId);
-  if (!comment) return res.status(404).json({ error: "Not found" });
-  if (comment.userId.toString() !== req.session.userId.toString())
-    return res.status(403).json({ error: "Not yours" });
-  await PostComment.deleteOne({ _id: req.params.commentId });
-  res.json({ success: true });
-});
-
-// ====== POST REACTIONS API ======
-app.post("/api/posts/:postId/react", requireLogin, async (req, res) => {
-  const { emoji } = req.body;
-  const filter = { postId: req.params.postId, userId: req.session.userId };
-  const existing = await PostReaction.findOne(filter);
-  const post = await Post.findById(req.params.postId);
-  const user = await User.findById(req.session.userId);
-  if (existing) {
-    if (existing.emoji === emoji) {
-      await PostReaction.deleteOne({ _id: existing._id });
-      return res.json({ action: "removed", emoji });
+    const post = await Post.findById(req.params.postId);
+    if (post && post.userId.toString() !== req.session.userId.toString()) {
+      await Notification.create({
+        toUserId: post.userId,
+        fromUserId: user._id,
+        fromUserName: user.name,
+        type: "comment",
+        postId: post._id,
+        text: "commented on your post: \"" + text.trim().slice(0, 60) + "\""
+      });
     }
-    existing.emoji = emoji;
-    await existing.save();
-    return res.json({ action: "updated", emoji });
+    res.json(comment);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
-  await PostReaction.create({ ...filter, emoji });
-  if (post && user && post.userId.toString() !== user._id.toString()) {
-    await Notification.create({
-      toUserId: post.userId,
-      fromUserId: user._id,
-      fromUserName: user.name,
-      type: "reaction",
-      postId: post._id,
-      text: user.name + " reacted " + emoji + " to your post"
-    });
-  }
-  res.json({ action: "added", emoji });
-});
-
-app.get("/api/posts/:postId/reactions", requireLogin, async (req, res) => {
-  const reactions = await PostReaction.find({ postId: req.params.postId });
-  const counts = {};
-  let myReaction = null;
-  reactions.forEach(r => {
-    counts[r.emoji] = (counts[r.emoji] || 0) + 1;
-    if (r.userId.toString() === req.session.userId.toString()) myReaction = r.emoji;
-  });
-  res.json({ counts, myReaction });
 });
 
 // ====== NOTIFICATIONS API ======
 app.get("/api/notifications", requireLogin, async (req, res) => {
-  const notes = await Notification.find({ toUserId: req.session.userId })
-    .sort({ createdAt: -1 }).limit(30);
-  res.json(notes);
+  try {
+    const notes = await Notification.find({ toUserId: req.session.userId })
+      .sort({ createdAt: -1 }).limit(30);
+    res.json(notes);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.get("/api/notifications/unread-count", requireLogin, async (req, res) => {
-  const count = await Notification.countDocuments({ toUserId: req.session.userId, read: false });
-  res.json({ count });
+  try {
+    const count = await Notification.countDocuments({ toUserId: req.session.userId, read: false });
+    res.json({ count });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.post("/api/notifications/mark-read", requireLogin, async (req, res) => {
-  await Notification.updateMany({ toUserId: req.session.userId, read: false }, { read: true });
-  res.json({ success: true });
+  try {
+    await Notification.updateMany({ toUserId: req.session.userId, read: false }, { read: true });
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 
@@ -1292,8 +1277,8 @@ app.get("/profile", requireLogin, async (req, res) => {
           albums.forEach(function(a) { a.photos.forEach(function(p, i) { allPhotos.push({ url: p.url, albumId: a._id, photoIndex: i }); }); });
           if (!allPhotos.length) { grid.innerHTML = "<p style='color:#888;font-size:13px;'>No photos yet.</p>"; return; }
           grid.innerHTML = allPhotos.slice(0, 9).map(function(p) {
-            return "<div class='gallery-thumb' onclick=\"openProfileGallery('" + p.albumId + "'," + p.photoIndex + ",'" + p.url + "')\">" +
-              "<img src='" + p.url + "' onerror=\"this.src='/assets/img/default-avatar.png'\"/></div>";
+            return "<div class='gallery-thumb' onclick=\\"openProfileGallery('" + p.albumId + "'," + p.photoIndex + ",'" + p.url + "')\\">" +
+              "<img src='" + p.url + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/></div>";
           }).join("");
         }
 
@@ -1302,10 +1287,10 @@ app.get("/profile", requireLogin, async (req, res) => {
           profileGalleryPhotoIndex = photoIndex;
           const overlay = document.getElementById("profile-media-overlay");
           const media = document.getElementById("profile-overlay-media");
-          const isVideo = url.match(/\.(mp4|webm|ogg)(\?|$)/i);
+          const isVideo = url.match(/\\.(mp4|webm|ogg)(\\?|$)/i);
           media.innerHTML = isVideo
             ? "<video src='" + url + "' controls autoplay style='max-width:100%;max-height:65vh;border-radius:10px;display:block;margin:0 auto;'></video>"
-            : "<img src='" + url + "' style='max-width:100%;max-height:65vh;border-radius:10px;display:block;margin:0 auto;' onerror=\"this.src='/assets/img/default-avatar.png'\"/>";
+            : "<img src='" + url + "' style='max-width:100%;max-height:65vh;border-radius:10px;display:block;margin:0 auto;' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/>";
           overlay.style.display = "flex";
           await loadProfileReactions();
           await loadProfileComments();
@@ -1346,7 +1331,7 @@ app.get("/profile", requireLogin, async (req, res) => {
           if (!comments.length) { list.innerHTML = "<div style='color:#666;font-size:13px;padding:8px;'>No comments yet.</div>"; return; }
           list.innerHTML = comments.map(function(c) {
             return "<div class='comment-item'>" +
-              "<img class='comment-avatar' src='" + (c.userPic || "/assets/img/default-avatar.png") + "' onerror=\"this.src='/assets/img/default-avatar.png'\"/>" +
+              "<img class='comment-avatar' src='" + (c.userPic || "/assets/img/default-avatar.png") + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/>" +
               "<div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div>" +
             "</div>";
           }).join("");
@@ -1366,7 +1351,6 @@ app.get("/profile", requireLogin, async (req, res) => {
           await loadProfileComments();
         }
 
-        // Post interactions
         document.addEventListener("click", async function(e) {
           const pill = e.target.closest(".react-pill");
           if (pill) {
@@ -1452,7 +1436,7 @@ app.get("/profile", requireLogin, async (req, res) => {
           list.innerHTML = !comments.length
             ? "<div style='color:#666;font-size:13px;padding:6px;'>No comments yet.</div>"
             : comments.map(function(c) {
-                return "<div class='comment-item'><img class='comment-avatar' src='" + (c.userPic || "/assets/img/default-avatar.png") + "' onerror=\"this.src='/assets/img/default-avatar.png'\"/><div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div></div>";
+                return "<div class='comment-item'><img class='comment-avatar' src='" + (c.userPic || "/assets/img/default-avatar.png") + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/><div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div></div>";
               }).join("");
           list.scrollTop = list.scrollHeight;
         }
@@ -1640,6 +1624,7 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
               : `<form action="/add-friend/${target._id}" method="post" style="display:inline;">
                    <button class="btn-primary">+ Add Friend</button>
                  </form>`}
+            <a href="/gallery/${target._id}" class="btn-secondary" style="margin-left:10px;font-size:13px;">📷 View Gallery</a>
           </div>
         </div>
 
@@ -1706,8 +1691,8 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
           albums.forEach(function(a) { a.photos.forEach(function(p, i) { allPhotos.push({ url: p.url, albumId: a._id, photoIndex: i }); }); });
           if (!allPhotos.length) { grid.innerHTML = "<p style='color:#888;font-size:13px;'>No photos yet.</p>"; return; }
           grid.innerHTML = allPhotos.slice(0, 9).map(function(p) {
-            return "<div class='gallery-thumb' onclick=\"openProfileGallery('" + p.albumId + "'," + p.photoIndex + ",'" + p.url + "')\">" +
-              "<img src='" + p.url + "' onerror=\"this.src='/assets/img/default-avatar.png'\"/></div>";
+            return "<div class='gallery-thumb' onclick=\\"openProfileGallery('" + p.albumId + "'," + p.photoIndex + ",'" + p.url + "')\\">" +
+              "<img src='" + p.url + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/></div>";
           }).join("");
         }
 
@@ -1716,10 +1701,10 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
           profileGalleryPhotoIndex = photoIndex;
           const overlay = document.getElementById("profile-media-overlay");
           const media = document.getElementById("profile-overlay-media");
-          const isVideo = url.match(/\.(mp4|webm|ogg)(\?|$)/i);
+          const isVideo = url.match(/\\.(mp4|webm|ogg)(\\?|$)/i);
           media.innerHTML = isVideo
             ? "<video src='" + url + "' controls autoplay style='max-width:100%;max-height:65vh;border-radius:10px;display:block;margin:0 auto;'></video>"
-            : "<img src='" + url + "' style='max-width:100%;max-height:65vh;border-radius:10px;display:block;margin:0 auto;' onerror=\"this.src='/assets/img/default-avatar.png'\"/>";
+            : "<img src='" + url + "' style='max-width:100%;max-height:65vh;border-radius:10px;display:block;margin:0 auto;' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/>";
           overlay.style.display = "flex";
           await loadProfileReactions();
           await loadProfileComments();
@@ -1760,7 +1745,7 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
           if (!comments.length) { list.innerHTML = "<div style='color:#666;font-size:13px;padding:8px;'>No comments yet.</div>"; return; }
           list.innerHTML = comments.map(function(c) {
             return "<div class='comment-item'>" +
-              "<img class='comment-avatar' src='" + (c.userPic || "/assets/img/default-avatar.png") + "' onerror=\"this.src='/assets/img/default-avatar.png'\"/>" +
+              "<img class='comment-avatar' src='" + (c.userPic || "/assets/img/default-avatar.png") + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/>" +
               "<div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div>" +
             "</div>";
           }).join("");
@@ -1816,7 +1801,7 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
           list.innerHTML = !comments.length
             ? "<div style='color:#666;font-size:13px;padding:6px;'>No comments yet.</div>"
             : comments.map(function(c) {
-                return "<div class='comment-item'><img class='comment-avatar' src='" + (c.userPic || "/assets/img/default-avatar.png") + "' onerror=\"this.src='/assets/img/default-avatar.png'\"/><div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div></div>";
+                return "<div class='comment-item'><img class='comment-avatar' src='" + (c.userPic || "/assets/img/default-avatar.png") + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/><div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div></div>";
               }).join("");
           list.scrollTop = list.scrollHeight;
         }
@@ -1943,43 +1928,6 @@ app.post("/api/story-react", requireLogin, async (req, res) => {
   }
 });
 
-
-
-// ====== STORIES ======
-app.get("/stories", requireLogin, (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "stories.html"));
-});
-
-// ====== GALLERY ======
-app.get("/gallery", requireLogin, (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "gallery.html"));
-});
-
-// ====== ACTIVITY ======
-app.get("/activity", requireLogin, (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "activity.html"));
-});
-
-// ====== LISTEN TOGETHER ======
-app.get("/listen-together", requireLogin, (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "listen-together.html"));
-});
-
-// ====== ARTIST DASHBOARD ======
-app.get("/artist-dashboard", requireLogin, (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "artist-dashboard.html"));
-});
-
-// ====== CHESS ======
-app.get("/chess", requireLogin, (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "chess.html"));
-});
-
-// ====== LOGOUT ======
-app.get("/logout", (req, res) => {
-  req.session.destroy(() => res.redirect("/"));
-});
-
 // ====== SESSION CHECK API ======
 app.get("/api/me", requireLogin, async (req, res) => {
   try {
@@ -2028,6 +1976,35 @@ app.get("/api/friends", requireLogin, async (req, res) => {
   }
 });
 
+// ====== STORIES ======
+app.get("/stories", requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "stories.html"));
+});
+
+// ====== ACTIVITY ======
+app.get("/activity", requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "activity.html"));
+});
+
+// ====== LISTEN TOGETHER ======
+app.get("/listen-together", requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "listen-together.html"));
+});
+
+// ====== ARTIST DASHBOARD ======
+app.get("/artist-dashboard", requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "artist-dashboard.html"));
+});
+
+// ====== CHESS ======
+app.get("/chess", requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "chess.html"));
+});
+
+// ====== LOGOUT ======
+app.get("/logout", (req, res) => {
+  req.session.destroy(() => res.redirect("/"));
+});
 
 // ====== START SERVER ======
 const server = app.listen(PORT, () => {
@@ -2047,11 +2024,6 @@ try {
 } catch(e) { console.warn("messaging module not found, skipping"); }
 
 try {
-  const attachStories = require("./modules/stories");
-  attachStories(app, mongoose, requireLogin, cloudinary, upload);
-} catch(e) { console.warn("stories module not found, skipping"); }
-
-try {
   const attachArtist = require("./modules/artist");
   attachArtist(app, mongoose, requireLogin, cloudinary, upload);
 } catch(e) { console.warn("artist module not found, skipping"); }
@@ -2060,3 +2032,9 @@ try {
   const attachListenTogether = require("./modules/listen-together");
   attachListenTogether(app, mongoose, requireLogin);
 } catch(e) { console.warn("listen-together module not found, skipping"); }
+
+
+
+
+
+

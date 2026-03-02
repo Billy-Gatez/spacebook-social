@@ -40,6 +40,10 @@ module.exports = function attachGallery(app, mongoose, requireLogin, cloudinary,
     res.sendFile(path.join(__dirname, "../public", "gallery.html"));
   });
 
+  app.get("/gallery/:userId", requireLogin, (req, res) => {
+    res.sendFile(path.join(__dirname, "../public", "gallery.html"));
+  });
+
   app.get("/api/albums", requireLogin, async (req, res) => {
     const albums = await Album.find({ userId: req.session.userId });
     res.json(albums);
@@ -99,7 +103,6 @@ module.exports = function attachGallery(app, mongoose, requireLogin, cloudinary,
     res.json(shuffled);
   });
 
-  // ====== COMMENTS ======
   app.get("/api/albums/:albumId/photos/:photoIndex/comments", requireLogin, async (req, res) => {
     const comments = await PhotoComment.find({
       albumId: req.params.albumId,
@@ -132,7 +135,6 @@ module.exports = function attachGallery(app, mongoose, requireLogin, cloudinary,
     res.json({ success: true });
   });
 
-  // ====== REACTIONS ======
   app.post("/api/albums/:albumId/photos/:photoIndex/react", requireLogin, async (req, res) => {
     const { emoji } = req.body;
     const filter = {
@@ -160,7 +162,6 @@ module.exports = function attachGallery(app, mongoose, requireLogin, cloudinary,
       albumId: req.params.albumId,
       photoIndex: Number(req.params.photoIndex)
     });
-    // Group by emoji with counts
     const counts = {};
     let myReaction = null;
     reactions.forEach(r => {
@@ -169,4 +170,5 @@ module.exports = function attachGallery(app, mongoose, requireLogin, cloudinary,
     });
     res.json({ counts, myReaction });
   });
+
 };
