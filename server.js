@@ -243,19 +243,23 @@ app.post("/uploadMedia", uploadMedia.single("file"), async (req, res) => {
     if (!file) return res.json({ success: false, error: "No file uploaded" });
 
     let fileName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, "");
-// Check if file already exists — if so, append timestamp to filename
-const checkRes = await fetch(
-  `https://api.github.com/repos/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}/contents/media/${fileName}`,
-  { headers: { "Authorization": `Bearer ${process.env.GITHUB_TOKEN}`, "Accept": "application/vnd.github+json" } }
-);
 
-// If file exists, make filename unique
-if (checkRes.status === 200) {
-  const ext = fileName.includes('.') ? '.' + fileName.split('.').pop() : '';
-  const base = fileName.replace(ext, '');
-  fileName = `${base}-${Date.now()}${ext}`;
-}
+    // Check if file already exists — if so, append timestamp to filename
+    const checkRes = await fetch(
+      `https://api.github.com/repos/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}/contents/media/${fileName}`,
+      {
+        headers: {
+          "Authorization": `Bearer ${process.env.GITHUB_TOKEN}`,
+          "Accept": "application/vnd.github+json"
+        }
+      }
+    );
 
+    if (checkRes.status === 200) {
+      const ext  = fileName.includes(".") ? "." + fileName.split(".").pop() : "";
+      const base = fileName.replace(ext, "");
+      fileName   = `${base}-${Date.now()}${ext}`;
+    }
 
     const filePath = `media/${fileName}`;
     const encoded  = file.buffer.toString("base64");
@@ -278,21 +282,21 @@ if (checkRes.status === 200) {
 
     const data = await githubRes.json();
 
-   if (data.content) {
-  // Use GitHub blob URL with ?raw=1 — serves immediately after upload
-  // with correct MIME type unlike raw.githubusercontent.com
-  const blobUrl = `https://github.com/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}/blob/main/media/${fileName}?raw=true`;
-  return res.json({ success: true, url: blobUrl });
-}
+    if (data.content) {
 
+            const mediaUrl = `https://cdn.jsdelivr.net/gh/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}@main/media/${fileName}`;
+
+      // OPTION B (fallback): raw.githubusercontent.com
+      // const mediaUrl = `https://raw.githubusercontent.com/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}/main/media/${fileName}`;
+
+      return res.json({ success: true, url: mediaUrl });
+    }
 
     res.json({ success: false, error: "GitHub upload failed", details: data });
   } catch (err) {
     res.json({ success: false, error: err.message });
   }
 });
-
-
 
 // ====== VIEW PAGE (RENDERS THE HTML) ======
 app.get("/view", async (req, res) => {
