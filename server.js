@@ -6,6 +6,7 @@ const mongoose = require("mongoose");
 const multer = require("multer");
 const attachChessServer = require("./chess-ws");
 const attachStories = require("./modules/stories"); 
+const mime = require('mime-types');
 
 
 
@@ -294,6 +295,43 @@ app.get("/view", async (req, res) => {
   }
 });
 
+app.get('/media/:filename', (req, res) => {
+  const filename = path.basename(req.params.filename);
+  const filePath = path.join(UPLOADS_DIR, filename);
+
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ error: 'File not found' });
+  }
+
+  const mimeType = mime.lookup(filename) || 'application/octet-stream';
+  const stat     = fs.statSync(filePath);
+  const fileSize = stat.size;
+  const range    = req.headers.range;
+
+  res.setHeader('Content-Type', mimeType);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Accept-Ranges', 'bytes');
+
+  if (range) {
+    const parts = range.replace(/bytes=/, '').split('-');
+    const start = parseInt(parts[0], 10);
+    const end   = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+    const chunk = end - start + 1;
+
+    res.writeHead(206, {
+      'Content-Range':  `bytes ${start}-${end}/${fileSize}`,
+      'Content-Length': chunk,
+      'Content-Type':   mimeType,
+      'Access-Control-Allow-Origin': '*',
+      'Accept-Ranges':  'bytes'
+    });
+
+    fs.createReadStream(filePath, { start, end }).pipe(res);
+  } else {
+    res.setHeader('Content-Length', fileSize);
+    fs.createReadStream(filePath).pipe(res);
+  }
+});
 
 
 // ====== HOME (DASHBOARD) ======
