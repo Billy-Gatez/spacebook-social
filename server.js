@@ -5,11 +5,7 @@ const path = require("path");
 const mongoose = require("mongoose");
 const multer = require("multer");
 const attachChessServer = require("./chess-ws");
-const attachStories = require("./modules/stories");
-
-const multer = require("multer");
-const upload = multer();        
-const uploadMedia = multer();   
+const attachStories = require("./modules/stories"); 
 
 
 
@@ -158,6 +154,8 @@ const storage = new CloudinaryStorage({
   }
 });
 const upload = multer({ storage });
+const uploadMedia = multer();
+
 
 // ====== ATTACH STORIES (early, before routes) ======
 attachStories(app, null, mongoose, requireLogin, cloudinary, upload);
