@@ -6,7 +6,7 @@ const mongoose = require("mongoose");
 const multer = require("multer");
 const attachChessServer = require("./chess-ws");
 const attachStories = require("./modules/stories"); 
-const mime = require('mime-types');
+
 
 
 
@@ -243,12 +243,11 @@ app.post("/uploadMedia", uploadMedia.single("file"), async (req, res) => {
     if (!file) return res.json({ success: false, error: "No file uploaded" });
 
     const fileName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, "");
-    const path = `media/${fileName}`;
-
-    const encoded = file.buffer.toString("base64");
+    const filePath = `media/${fileName}`;
+    const encoded  = file.buffer.toString("base64");
 
     const githubRes = await fetch(
-      `https://api.github.com/repos/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}/contents/${path}`,
+      `https://api.github.com/repos/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}/contents/${filePath}`,
       {
         method: "PUT",
         headers: {
@@ -265,11 +264,10 @@ app.post("/uploadMedia", uploadMedia.single("file"), async (req, res) => {
 
     const data = await githubRes.json();
 
-    if (data.content && data.content.download_url) {
-      return res.json({
-        success: true,
-        url: data.content.download_url
-      });
+    if (data.content) {
+      // Use jsDelivr CDN — serves with correct MIME type, CORS, works on Safari
+      const cdnUrl = `https://cdn.jsdelivr.net/gh/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}@main/media/${fileName}`;
+      return res.json({ success: true, url: cdnUrl });
     }
 
     res.json({ success: false, error: "GitHub upload failed", details: data });
@@ -277,6 +275,7 @@ app.post("/uploadMedia", uploadMedia.single("file"), async (req, res) => {
     res.json({ success: false, error: err.message });
   }
 });
+
 
 
 // ====== VIEW PAGE (RENDERS THE HTML) ======
@@ -295,43 +294,6 @@ app.get("/view", async (req, res) => {
   }
 });
 
-app.get('/media/:filename', (req, res) => {
-  const filename = path.basename(req.params.filename);
-  const filePath = path.join(UPLOADS_DIR, filename);
-
-  if (!fs.existsSync(filePath)) {
-    return res.status(404).json({ error: 'File not found' });
-  }
-
-  const mimeType = mime.lookup(filename) || 'application/octet-stream';
-  const stat     = fs.statSync(filePath);
-  const fileSize = stat.size;
-  const range    = req.headers.range;
-
-  res.setHeader('Content-Type', mimeType);
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Accept-Ranges', 'bytes');
-
-  if (range) {
-    const parts = range.replace(/bytes=/, '').split('-');
-    const start = parseInt(parts[0], 10);
-    const end   = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
-    const chunk = end - start + 1;
-
-    res.writeHead(206, {
-      'Content-Range':  `bytes ${start}-${end}/${fileSize}`,
-      'Content-Length': chunk,
-      'Content-Type':   mimeType,
-      'Access-Control-Allow-Origin': '*',
-      'Accept-Ranges':  'bytes'
-    });
-
-    fs.createReadStream(filePath, { start, end }).pipe(res);
-  } else {
-    res.setHeader('Content-Length', fileSize);
-    fs.createReadStream(filePath).pipe(res);
-  }
-});
 
 
 // ====== HOME (DASHBOARD) ======
