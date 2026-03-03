@@ -243,6 +243,20 @@ app.post("/uploadMedia", uploadMedia.single("file"), async (req, res) => {
     if (!file) return res.json({ success: false, error: "No file uploaded" });
 
     const fileName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, "");
+// Check if file already exists — if so, append timestamp to filename
+const checkRes = await fetch(
+  `https://api.github.com/repos/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}/contents/media/${fileName}`,
+  { headers: { "Authorization": `Bearer ${process.env.GITHUB_TOKEN}`, "Accept": "application/vnd.github+json" } }
+);
+
+// If file exists, make filename unique
+if (checkRes.status === 200) {
+  const ext = fileName.includes('.') ? '.' + fileName.split('.').pop() : '';
+  const base = fileName.replace(ext, '');
+  fileName = `${base}-${Date.now()}${ext}`;
+}
+
+
     const filePath = `media/${fileName}`;
     const encoded  = file.buffer.toString("base64");
 
@@ -264,11 +278,13 @@ app.post("/uploadMedia", uploadMedia.single("file"), async (req, res) => {
 
     const data = await githubRes.json();
 
-    if (data.content) {
-      // Use jsDelivr CDN — serves with correct MIME type, CORS, works on Safari
-      const cdnUrl = `https://cdn.jsdelivr.net/gh/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}@main/media/${fileName}`;
-      return res.json({ success: true, url: cdnUrl });
-    }
+   if (data.content) {
+  // Use GitHub blob URL with ?raw=1 — serves immediately after upload
+  // with correct MIME type unlike raw.githubusercontent.com
+  const blobUrl = `https://github.com/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}/blob/main/media/${fileName}?raw=true`;
+  return res.json({ success: true, url: blobUrl });
+}
+
 
     res.json({ success: false, error: "GitHub upload failed", details: data });
   } catch (err) {
