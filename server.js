@@ -7,7 +7,10 @@ const multer = require("multer");
 const attachChessServer = require("./chess-ws");
 const attachStories = require("./modules/stories");
 
-const upload = multer();
+const multer = require("multer");
+const upload = multer();        
+const uploadMedia = multer();   
+
 
 
 // ====== CLOUDINARY ======
@@ -235,7 +238,7 @@ app.post("/createPage", async (req, res) => {
   }
 });
 
-app.post("/uploadMedia", upload.single("file"), async (req, res) => {
+app.post("/uploadMedia", uploadMedia.single("file"), async (req, res) => {
   try {
     const file = req.file;
     if (!file) return res.json({ success: false, error: "No file uploaded" });
