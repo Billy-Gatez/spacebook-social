@@ -284,7 +284,8 @@ app.post("/uploadMedia", uploadMedia.single("file"), async (req, res) => {
 
     if (data.content) {
 
-            const mediaUrl = `https://cdn.jsdelivr.net/gh/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}@main/media/${fileName}`;
+            const mediaUrl = `https://raw.githubusercontent.com/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}/main/media/${fileName}`;
+
 
       // OPTION B (fallback): raw.githubusercontent.com
       // const mediaUrl = `https://raw.githubusercontent.com/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}/main/media/${fileName}`;
