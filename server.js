@@ -242,7 +242,7 @@ app.post("/uploadMedia", uploadMedia.single("file"), async (req, res) => {
     const file = req.file;
     if (!file) return res.json({ success: false, error: "No file uploaded" });
 
-    const fileName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, "");
+    let fileName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, "");
 // Check if file already exists — if so, append timestamp to filename
 const checkRes = await fetch(
   `https://api.github.com/repos/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}/contents/media/${fileName}`,
