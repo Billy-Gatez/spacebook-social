@@ -315,6 +315,51 @@ app.get("/view", async (req, res) => {
   }
 });
 
+// Global media page search backed by GitHub "pages" folder
+app.get("/api/media-pages", async (req, res) => {
+  try {
+    const q = (req.query.q || "").toLowerCase();
+
+    const ghRes = await fetch(
+      `https://api.github.com/repos/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}/contents/pages`,
+      {
+        headers: {
+          "Authorization": `Bearer ${process.env.GITHUB_TOKEN}`,
+          "Accept": "application/vnd.github+json"
+        }
+      }
+    );
+
+    if (!ghRes.ok) {
+      return res.status(500).json({ error: "GitHub list failed" });
+    }
+
+    const files = await ghRes.json();
+
+    let items = files
+      .filter(f => f.name.endsWith(".html"))
+      .map(f => {
+        const base = f.name.replace(".html", "");
+        return {
+          file: f.name,
+          title: base, // later you can store real titles
+          url: `https://spacebook-app.onrender.com/view?page=${base}`
+        };
+      });
+
+    if (q) {
+      items = items.filter(p =>
+        p.title.toLowerCase().includes(q) ||
+        p.file.toLowerCase().includes(q) ||
+        p.url.toLowerCase().includes(q)
+      );
+    }
+
+    res.json({ items });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 
 // ====== HOME (DASHBOARD) ======
