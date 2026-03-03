@@ -6,6 +6,9 @@ const mongoose = require("mongoose");
 const multer = require("multer");
 const attachChessServer = require("./chess-ws");
 const attachStories = require("./modules/stories");
+const multer = require("multer");
+const upload = multer();
+
 
 // ====== CLOUDINARY ======
 const cloudinary = require("cloudinary").v2;
@@ -232,6 +235,48 @@ app.post("/createPage", async (req, res) => {
   }
 });
 
+app.post("/uploadMedia", upload.single("file"), async (req, res) => {
+  try {
+    const file = req.file;
+    if (!file) return res.json({ success: false, error: "No file uploaded" });
+
+    const fileName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, "");
+    const path = `media/${fileName}`;
+
+    const encoded = file.buffer.toString("base64");
+
+    const githubRes = await fetch(
+      `https://api.github.com/repos/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}/contents/${path}`,
+      {
+        method: "PUT",
+        headers: {
+          "Authorization": `Bearer ${process.env.GITHUB_TOKEN}`,
+          "Content-Type": "application/json",
+          "Accept": "application/vnd.github+json"
+        },
+        body: JSON.stringify({
+          message: `Upload media ${fileName}`,
+          content: encoded
+        })
+      }
+    );
+
+    const data = await githubRes.json();
+
+    if (data.content && data.content.download_url) {
+      return res.json({
+        success: true,
+        url: data.content.download_url
+      });
+    }
+
+    res.json({ success: false, error: "GitHub upload failed", details: data });
+  } catch (err) {
+    res.json({ success: false, error: err.message });
+  }
+});
+
+
 // ====== VIEW PAGE (RENDERS THE HTML) ======
 app.get("/view", async (req, res) => {
   const page = req.query.page;
@@ -247,6 +292,8 @@ app.get("/view", async (req, res) => {
     res.send("Error loading page.");
   }
 });
+
+
 
 // ====== HOME (DASHBOARD) ======
 app.get("/home", requireLogin, async (req, res) => {
