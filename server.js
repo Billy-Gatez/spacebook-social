@@ -1170,7 +1170,7 @@ app.get("/profile", requireLogin, async (req, res) => {
   const topFriendsHtml = user.topFriends.map(f => `
     <a href="/profile/${f._id}" style="text-decoration:none;">
       <div class="friend-tile">
-        <div class="friend-avatar" style="width:60px;height:60px;border-radius:8px;background:#111 url('${f.profilePic || "/assets/img/default-avatar.png"}') center/cover no-repeat;margin-bottom:4px;border:1px solid rgba(255,106,0,0.3);"></div>
+        <div style="width:60px;height:60px;border-radius:8px;background:#111 url('${f.profilePic || "/assets/img/default-avatar.png"}') center/cover no-repeat;margin-bottom:4px;border:1px solid rgba(255,106,0,0.3);"></div>
         <div style="font-size:12px;color:#ff6a00;">${f.name}</div>
       </div>
     </a>`).join("");
@@ -1178,7 +1178,7 @@ app.get("/profile", requireLogin, async (req, res) => {
   const friendsGridHtml = user.friends.map(f => `
     <a href="/profile/${f._id}" style="text-decoration:none;">
       <div class="friend-tile">
-        <div class="friend-avatar" style="width:60px;height:60px;border-radius:8px;background:#111 url('${f.profilePic || "/assets/img/default-avatar.png"}') center/cover no-repeat;margin-bottom:4px;border:1px solid rgba(255,106,0,0.3);"></div>
+        <div style="width:60px;height:60px;border-radius:8px;background:#111 url('${f.profilePic || "/assets/img/default-avatar.png"}') center/cover no-repeat;margin-bottom:4px;border:1px solid rgba(255,106,0,0.3);"></div>
         <div style="font-size:12px;color:#ff6a00;">${f.name}</div>
       </div>
     </a>`).join("");
@@ -1208,11 +1208,11 @@ app.get("/profile", requireLogin, async (req, res) => {
       </div>
       <div class="comment-section" id="cs-${p._id}" style="display:none;margin-top:10px;">
         <div class="comment-list" id="cl-${p._id}" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;max-height:200px;overflow-y:auto;"></div>
-        <div style="display:flex;gap:8px;align-items:center;width:100%;">
+        <div style="display:grid;grid-template-columns:1fr auto;gap:8px;width:100%;">
           <input class="comment-input" data-post-id="${p._id}" type="text" placeholder="Write a comment..." maxlength="300"
-            style="flex:1;min-width:0;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;min-height:unset;"
+            style="width:100%;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;"
             onkeydown="if(event.key==='Enter'){event.preventDefault();submitPostComment('${p._id}',this);}"/>
-          <button class="btn-primary" style="font-size:12px;padding:6px 10px;height:44px;box-sizing:border-box;flex-shrink:0;white-space:nowrap;"
+          <button class="btn-primary" style="height:44px;padding:0 16px;white-space:nowrap;"
             onclick="submitPostComment('${p._id}', document.querySelector('.comment-input[data-post-id=\\'${p._id}\\']'))">Post</button>
         </div>
       </div>
@@ -1294,7 +1294,9 @@ app.get("/profile", requireLogin, async (req, res) => {
         .comment-text { font-size: 13px; color: #f0f0f0; word-break: break-word; margin-top: 2px; }
         .comment-time { font-size: 11px; color: #555; margin-top: 2px; }
         textarea { width: 100%; background: rgba(255,255,255,0.06); border: 1px solid #444; border-radius: 8px; color: #fff; padding: 10px; font-size: 14px; resize: vertical; box-sizing: border-box; }
-        textarea:focus, input[type=text]:focus { border-color: #ff6a00; outline: none; }
+        textarea:focus { border-color: #ff6a00; outline: none; }
+        input[type=text] { box-sizing: border-box !important; }
+        input[type=text]:focus { border-color: #ff6a00 !important; outline: none !important; }
         .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px,1fr)); gap: 8px; }
         .gallery-thumb { aspect-ratio: 1; border-radius: 10px; overflow: hidden; cursor: pointer; border: 1px solid rgba(255,106,0,0.2); transition: border-color .15s; }
         .gallery-thumb:hover { border-color: #ff6a00; }
@@ -1302,6 +1304,8 @@ app.get("/profile", requireLogin, async (req, res) => {
         .react-btn { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; padding: 6px 14px; font-size: 18px; cursor: pointer; color: #fff; transition: all .15s; display: inline-flex; align-items: center; gap: 5px; }
         .react-btn:hover { border-color: #ff6a00; background: rgba(255,106,0,0.15); }
         .react-btn.mine { border-color: #ff6a00; background: rgba(255,106,0,0.2); }
+        .comment-input-row { display: grid !important; grid-template-columns: 1fr auto !important; gap: 8px !important; width: 100% !important; }
+        .comment-input-row input { width: 100% !important; box-sizing: border-box !important; }
       </style>
     </head>
     <body>
@@ -1414,11 +1418,11 @@ app.get("/profile", requireLogin, async (req, res) => {
           <div style="margin-top:16px;">
             <h4 style="color:#ff6a00;margin:0 0 10px;">💬 Comments</h4>
             <div id="profile-comment-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;max-height:220px;overflow-y:auto;"></div>
-            <div style="display:flex;gap:8px;align-items:center;width:100%;">
+            <div class="comment-input-row">
               <input id="profile-comment-input" type="text" placeholder="Add a comment..." maxlength="300"
-                style="flex:1;min-width:0;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;min-height:unset;"
+                style="background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;"
                 onkeydown="if(event.key==='Enter'){event.preventDefault();submitProfileComment();}"/>
-              <button class="btn-primary" style="height:44px;padding:0 14px;flex-shrink:0;white-space:nowrap;" onclick="submitProfileComment()">Post</button>
+              <button class="btn-primary" style="height:44px;padding:0 16px;white-space:nowrap;" onclick="submitProfileComment()">Post</button>
             </div>
           </div>
         </div>
@@ -1673,11 +1677,11 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
       </div>
       <div class="comment-section" id="cs-${p._id}" style="display:none;margin-top:10px;">
         <div class="comment-list" id="cl-${p._id}" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;max-height:200px;overflow-y:auto;"></div>
-        <div style="display:flex;gap:8px;align-items:center;width:100%;">
+        <div class="comment-input-row">
           <input class="comment-input" data-post-id="${p._id}" type="text" placeholder="Write a comment..." maxlength="300"
-            style="flex:1;min-width:0;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;min-height:unset;"
+            style="background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;"
             onkeydown="if(event.key==='Enter'){event.preventDefault();submitPostComment('${p._id}',this);}"/>
-          <button class="btn-primary" style="font-size:12px;padding:6px 10px;height:44px;box-sizing:border-box;flex-shrink:0;white-space:nowrap;"
+          <button class="btn-primary" style="height:44px;padding:0 16px;white-space:nowrap;"
             onclick="submitPostComment('${p._id}', document.querySelector('.comment-input[data-post-id=\\'${p._id}\\']'))">Post</button>
         </div>
       </div>
@@ -1728,7 +1732,9 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
         .comment-text { font-size: 13px; color: #f0f0f0; word-break: break-word; margin-top: 2px; }
         .comment-time { font-size: 11px; color: #555; margin-top: 2px; }
         textarea { width: 100%; background: rgba(255,255,255,0.06); border: 1px solid #444; border-radius: 8px; color: #fff; padding: 10px; font-size: 14px; resize: vertical; box-sizing: border-box; }
-        textarea:focus, input[type=text]:focus { border-color: #ff6a00; outline: none; }
+        textarea:focus { border-color: #ff6a00; outline: none; }
+        input[type=text] { box-sizing: border-box !important; }
+        input[type=text]:focus { border-color: #ff6a00 !important; outline: none !important; }
         .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px,1fr)); gap: 8px; }
         .gallery-thumb { aspect-ratio: 1; border-radius: 10px; overflow: hidden; cursor: pointer; border: 1px solid rgba(255,106,0,0.2); transition: border-color .15s; }
         .gallery-thumb:hover { border-color: #ff6a00; }
@@ -1736,6 +1742,8 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
         .react-btn { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; padding: 6px 14px; font-size: 18px; cursor: pointer; color: #fff; transition: all .15s; display: inline-flex; align-items: center; gap: 5px; }
         .react-btn:hover { border-color: #ff6a00; background: rgba(255,106,0,0.15); }
         .react-btn.mine { border-color: #ff6a00; background: rgba(255,106,0,0.2); }
+        .comment-input-row { display: grid !important; grid-template-columns: 1fr auto !important; gap: 8px !important; width: 100% !important; }
+        .comment-input-row input { width: 100% !important; box-sizing: border-box !important; }
       </style>
     </head>
     <body>
@@ -1845,11 +1853,11 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
           <div style="margin-top:16px;">
             <h4 style="color:#ff6a00;margin:0 0 10px;">💬 Comments</h4>
             <div id="profile-comment-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;max-height:220px;overflow-y:auto;"></div>
-            <div style="display:flex;gap:8px;align-items:center;width:100%;">
+            <div class="comment-input-row">
               <input id="profile-comment-input" type="text" placeholder="Add a comment..." maxlength="300"
-                style="flex:1;min-width:0;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;min-height:unset;"
+                style="background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;"
                 onkeydown="if(event.key==='Enter'){event.preventDefault();submitProfileComment();}"/>
-              <button class="btn-primary" style="height:44px;padding:0 14px;flex-shrink:0;white-space:nowrap;" onclick="submitProfileComment()">Post</button>
+              <button class="btn-primary" style="height:44px;padding:0 16px;white-space:nowrap;" onclick="submitProfileComment()">Post</button>
             </div>
           </div>
         </div>
