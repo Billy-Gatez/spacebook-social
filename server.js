@@ -1162,7 +1162,9 @@ app.post("/remove-friend/:id", requireLogin, async (req, res) => {
 
 // ====== YOUR OWN PROFILE ======
 app.get("/profile", requireLogin, async (req, res) => {
-  const user = await User.findById(req.session.userId).populate("friends").populate("topFriends");
+  const user = await User.findById(req.session.userId)
+    .populate("friends")
+    .populate("topFriends");
   const posts = await Post.find({ userId: user._id }).sort({ createdAt: -1 });
 
   const topFriendsHtml = user.topFriends.map(f => `
@@ -1173,7 +1175,7 @@ app.get("/profile", requireLogin, async (req, res) => {
 
   const friendsGridHtml = user.friends.map(f => `
     <div class="friend-tile">
-      <div style="width:60px;height:60px;border-radius:8px;background:#111 url('${f.profilePic || "/assets/img/default-avatar.png"}') center/cover no-repeat;margin-bottom:4px;border:1px solid rgba(255,106,0,0.3);"></div>
+      <div class="friend-avatar" style="width:60px;height:60px;border-radius:8px;background:#111 url('${f.profilePic || "/assets/img/default-avatar.png"}') center/cover no-repeat;margin-bottom:4px;border:1px solid rgba(255,106,0,0.3);"></div>
       <div style="font-size:12px;"><a href="/profile/${f._id}" style="color:#ff6a00;">${f.name}</a></div>
     </div>`).join("");
 
@@ -1186,7 +1188,7 @@ app.get("/profile", requireLogin, async (req, res) => {
         <div class="post-image-wrapper">
           ${p.imagePath ? `<img class="post-image" src="${p.imagePath}" style="max-width:100%;margin-top:8px;border-radius:6px;">` : ""}
         </div>
-        <div class="post-actions" style="margin-top:8px;">
+        <div class="post-actions" style="margin-top:8px;font-size:13px;">
           <button class="btn-secondary edit-post-btn" type="button">Edit</button>
           <button class="btn-secondary delete-post-btn" type="button" style="margin-left:6px;">Delete</button>
         </div>
@@ -1204,10 +1206,10 @@ app.get("/profile", requireLogin, async (req, res) => {
         <div class="comment-list" id="cl-${p._id}" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;max-height:200px;overflow-y:auto;"></div>
         <div style="display:flex;gap:8px;align-items:center;">
           <input class="comment-input" data-post-id="${p._id}" type="text" placeholder="Write a comment..." maxlength="300"
-            style="flex:1;min-width:0;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;"
+            style="flex:1;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;min-height:unset;"
             onkeydown="if(event.key==='Enter'){event.preventDefault();submitPostComment('${p._id}',this);}"/>
-          <button class="btn-primary" style="height:44px;padding:0 14px;box-sizing:border-box;flex-shrink:0;white-space:nowrap;"
-            onclick="submitPostComment('${p._id}', this.previousElementSibling)">Post</button>
+          <button class="btn-primary" style="font-size:12px;padding:6px 10px;height:44px;box-sizing:border-box;flex-shrink:0;white-space:nowrap;"
+            onclick="submitPostComment('${p._id}', document.querySelector('.comment-input[data-post-id=\\'${p._id}\\']'))">Post</button>
         </div>
       </div>
       <div class="post-editor" id="editor-${p._id}">
@@ -1236,431 +1238,395 @@ app.get("/profile", requireLogin, async (req, res) => {
 
   const topFriendsSelector = user.friends.map(f => `
     <label style="display:block;font-size:13px;margin-bottom:4px;">
-      <input type="checkbox" name="topFriends" value="${f._id}" ${user.topFriends.some(t => t._id.toString() === f._id.toString()) ? "checked" : ""}> ${f.name}
+      <input type="checkbox" name="topFriends" value="${f._id}"
+        ${user.topFriends.some(tf => tf._id.toString() === f._id.toString()) ? "checked" : ""}>
+      ${f.name}
     </label>`).join("");
 
   const pic = user.profilePic || "/assets/img/default-avatar.png";
 
-  res.send(`<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${user.name} – Spacebook</title>
-  <link rel="stylesheet" href="/assets/css/styles.css">
-  <style>
-    html,body{background:#000!important;margin:0;padding:0;color:#fff;font-family:Arial,sans-serif;overflow-x:hidden;}
-    #starfield{position:fixed;top:0;left:0;width:100%;height:100%;z-index:-1;background:#000;}
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>${user.name} – Spacebook</title>
+      <link rel="stylesheet" href="/assets/css/styles.css">
+      <style>
+        html, body { background: #000 !important; margin: 0; padding: 0; color: #fff; font-family: Arial, sans-serif; overflow-x: hidden; }
+        #starfield { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: #000; }
+        .navbar { width: 100%; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.65); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 100; box-sizing: border-box; }
+        .navbar .logo a { color: #ff6a00; text-decoration: none; font-size: 20px; font-weight: bold; }
+        .nav-links { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+        .nav-links a { color: #ccc; text-decoration: none; font-size: 13px; }
+        .nav-links a:hover { color: #ff6a00; }
 
-    /* NAVBAR */
-    .navbar{width:100%;padding:14px 24px;display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,0.65);backdrop-filter:blur(10px);position:sticky;top:0;z-index:100;box-sizing:border-box;}
-    .navbar .logo a{color:#ff6a00;text-decoration:none;font-size:20px;font-weight:bold;}
-    .nav-links{display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
-    .nav-links a{color:#ccc;text-decoration:none;font-size:13px;}
-    .nav-links a:hover{color:#ff6a00;}
+        /* PC: 3-column grid. Mobile: single column */
+        .profile-page { max-width: 1200px; margin: 30px auto; padding: 0 20px; box-sizing: border-box; display: grid; grid-template-columns: 220px 1fr 260px; gap: 20px; }
+        .col-left { grid-column: 1; }
+        .col-mid { grid-column: 2; }
+        .col-right { grid-column: 3; }
+        @media (max-width: 860px) {
+          .profile-page { grid-template-columns: 1fr; padding: 0 12px; }
+          .col-left, .col-mid, .col-right { grid-column: 1; }
+        }
 
-    /* LAYOUT: 3 col on PC, 1 col on mobile */
-    .profile-page{max-width:1200px;margin:0 auto;padding:28px 24px;display:grid;grid-template-columns:240px 1fr 260px;grid-template-rows:auto;gap:20px;box-sizing:border-box;}
-    .col-left{grid-column:1;}
-    .col-mid{grid-column:2;}
-    .col-right{grid-column:3;}
+        .card { border-radius: 12px; background: rgba(0,0,0,0.45); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.15); padding: 20px; margin-bottom: 20px; }
+        .profile-avatar { width: 100px; height: 100px; border-radius: 50%; background: #111 url('${pic}') center/cover no-repeat; border: 3px solid #ff6a00; flex-shrink: 0; }
+        .friend-tile { width: 70px; text-align: center; }
+        .top-friends-bar { display: flex; flex-wrap: wrap; gap: 10px; }
+        .post-card { margin-bottom: 16px; }
+        .post-editor { margin-top: 8px; border-radius: 12px; background: rgba(0,0,0,0.55); backdrop-filter: blur(10px); border: 1px solid rgba(255,106,0,0.6); padding: 12px; max-height: 0; opacity: 0; overflow: hidden; transition: max-height 0.25s ease, opacity 0.2s ease; }
+        .post-editor.open { max-height: 500px; opacity: 1; }
+        .btn-primary { display: inline-block; padding: 8px 14px; background: #ff6a00; color: #000; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; transition: 0.2s; font-size: 14px; }
+        .btn-primary:hover { background: #ff8c32; }
+        .btn-secondary { padding: 6px 10px; background: rgba(255,255,255,0.08); border-radius: 6px; border: none; color: #ff6a00; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn-secondary:hover { background: rgba(255,255,255,0.18); }
+        .react-pill { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; padding: 4px 12px; font-size: 16px; cursor: pointer; color: #fff; transition: all .15s; display: inline-flex; align-items: center; gap: 5px; }
+        .react-pill:hover { border-color: #ff6a00; background: rgba(255,106,0,0.15); }
+        .react-pill.mine { border-color: #ff6a00; background: rgba(255,106,0,0.2); }
+        .rpill-count { font-size: 12px; color: #ccc; }
+        .comment-item { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 8px 12px; display: flex; gap: 10px; align-items: flex-start; }
+        .comment-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1px solid rgba(255,106,0,0.3); }
+        .comment-name { font-size: 12px; color: #ff6a00; font-weight: bold; }
+        .comment-text { font-size: 13px; color: #f0f0f0; word-break: break-word; margin-top: 2px; }
+        .comment-time { font-size: 11px; color: #555; margin-top: 2px; }
+        textarea { width: 100%; background: rgba(255,255,255,0.06); border: 1px solid #444; border-radius: 8px; color: #fff; padding: 10px; font-size: 14px; resize: vertical; box-sizing: border-box; }
+        textarea:focus { border-color: #ff6a00; outline: none; }
+        .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px,1fr)); gap: 8px; }
+        .gallery-thumb { aspect-ratio: 1; border-radius: 10px; overflow: hidden; cursor: pointer; border: 1px solid rgba(255,106,0,0.2); transition: border-color .15s; }
+        .gallery-thumb:hover { border-color: #ff6a00; }
+        .gallery-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .react-btn { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; padding: 6px 14px; font-size: 18px; cursor: pointer; color: #fff; transition: all .15s; display: inline-flex; align-items: center; gap: 5px; }
+        .react-btn:hover { border-color: #ff6a00; background: rgba(255,106,0,0.15); }
+        .react-btn.mine { border-color: #ff6a00; background: rgba(255,106,0,0.2); }
+      </style>
+    </head>
+    <body>
+      <canvas id="starfield"></canvas>
+      <script>
+        const canvas = document.getElementById("starfield");
+        const ctx = canvas.getContext("2d");
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+        window.addEventListener("resize", () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
+        const stars = Array.from({ length: 200 }, () => ({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, r: Math.random() * 1.5 + 0.3, alpha: Math.random(), speed: Math.random() * 0.3 + 0.1 }));
+        const shootingStars = [];
+        function spawnShootingStar() { shootingStars.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height * 0.5, len: Math.random() * 120 + 80, speed: Math.random() * 8 + 6, angle: Math.PI / 4, alpha: 1 }); }
+        setInterval(spawnShootingStar, 2500);
+        function draw() {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.fillStyle = "#000"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+          stars.forEach(s => { s.alpha += s.speed * 0.02 * (Math.random() > 0.5 ? 1 : -1); s.alpha = Math.max(0.1, Math.min(1, s.alpha)); ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fillStyle = "rgba(255,255,255," + s.alpha + ")"; ctx.fill(); });
+          for (let i = shootingStars.length - 1; i >= 0; i--) { const s = shootingStars[i]; ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(s.x - Math.cos(s.angle) * s.len, s.y - Math.sin(s.angle) * s.len); const grad = ctx.createLinearGradient(s.x, s.y, s.x - Math.cos(s.angle) * s.len, s.y - Math.sin(s.angle) * s.len); grad.addColorStop(0, "rgba(255,150,50," + s.alpha + ")"); grad.addColorStop(1, "rgba(255,150,50,0)"); ctx.strokeStyle = grad; ctx.lineWidth = 2; ctx.stroke(); s.x += Math.cos(s.angle) * s.speed; s.y += Math.sin(s.angle) * s.speed; s.alpha -= 0.015; if (s.alpha <= 0) shootingStars.splice(i, 1); }
+          requestAnimationFrame(draw);
+        }
+        draw();
+      </script>
 
-    /* CARDS */
-    .card{border-radius:12px;background:rgba(0,0,0,0.45);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.15);padding:20px;margin-bottom:20px;}
-
-    /* PROFILE HEADER */
-    .profile-avatar{width:90px;height:90px;border-radius:50%;background:#111 url('${pic}') center/cover no-repeat;border:3px solid #ff6a00;margin:0 auto 12px;}
-
-    /* FRIENDS */
-    .friend-grid{display:flex;flex-wrap:wrap;gap:10px;}
-    .friend-tile{width:68px;text-align:center;}
-
-    /* POSTS */
-    .post-card{margin-bottom:16px;}
-    .post-editor{margin-top:8px;border-radius:12px;background:rgba(0,0,0,0.55);border:1px solid rgba(255,106,0,0.6);padding:12px;max-height:0;opacity:0;overflow:hidden;transition:max-height 0.25s ease,opacity 0.2s ease;}
-    .post-editor.open{max-height:520px;opacity:1;}
-
-    /* BUTTONS */
-    .btn-primary{display:inline-block;padding:8px 14px;background:#ff6a00;color:#000;border-radius:6px;font-weight:bold;border:none;cursor:pointer;transition:0.2s;font-size:14px;text-decoration:none;}
-    .btn-primary:hover{background:#ff8c32;}
-    .btn-secondary{padding:6px 10px;background:rgba(255,255,255,0.08);border-radius:6px;border:none;color:#ff6a00;cursor:pointer;font-weight:bold;transition:0.2s;font-size:13px;}
-    .btn-secondary:hover{background:rgba(255,255,255,0.18);}
-
-    /* REACTIONS */
-    .react-pill{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:4px 12px;font-size:16px;cursor:pointer;color:#fff;transition:all .15s;display:inline-flex;align-items:center;gap:5px;}
-    .react-pill:hover{border-color:#ff6a00;background:rgba(255,106,0,0.15);}
-    .react-pill.mine{border-color:#ff6a00;background:rgba(255,106,0,0.2);}
-    .rpill-count{font-size:12px;color:#ccc;}
-    .react-btn{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:6px 14px;font-size:18px;cursor:pointer;color:#fff;transition:all .15s;display:inline-flex;align-items:center;gap:5px;}
-    .react-btn:hover{border-color:#ff6a00;background:rgba(255,106,0,0.15);}
-    .react-btn.mine{border-color:#ff6a00;background:rgba(255,106,0,0.2);}
-
-    /* COMMENTS */
-    .comment-item{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:8px 12px;display:flex;gap:10px;align-items:flex-start;}
-    .comment-avatar{width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid rgba(255,106,0,0.3);}
-    .comment-name{font-size:12px;color:#ff6a00;font-weight:bold;}
-    .comment-text{font-size:13px;color:#f0f0f0;word-break:break-word;margin-top:2px;}
-    .comment-time{font-size:11px;color:#555;margin-top:2px;}
-
-    /* FORMS */
-    textarea{width:100%;background:rgba(255,255,255,0.06);border:1px solid #444;border-radius:8px;color:#fff;padding:10px;font-size:14px;resize:vertical;box-sizing:border-box;}
-    textarea:focus,input[type=text]:focus{border-color:#ff6a00;outline:none;}
-
-    /* GALLERY */
-    .gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px;}
-    .gallery-thumb{aspect-ratio:1;border-radius:8px;overflow:hidden;cursor:pointer;border:1px solid rgba(255,106,0,0.2);transition:border-color .15s;}
-    .gallery-thumb:hover{border-color:#ff6a00;}
-    .gallery-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
-
-    /* MOBILE: stack to single column */
-    @media(max-width:860px){
-      .profile-page{grid-template-columns:1fr;padding:16px;}
-      .col-left,.col-mid,.col-right{grid-column:1;}
-    }
-  </style>
-</head>
-<body>
-  <canvas id="starfield"></canvas>
-
-  <div class="navbar">
-    <div class="logo"><a href="/feed">Spacebook</a></div>
-    <div class="nav-links">
-      <a href="/home">Home</a><a href="/feed">Feed</a><a href="/profile">Profile</a>
-      <a href="/messages">Messages</a><a href="/gallery">Gallery</a><a href="/stories">Stories</a>
-      <a href="/listen-together">Listen Together</a><a href="/artist-dashboard">Artist</a>
-      <a href="/activity">Activity</a><a href="/logout">Log Out</a>
-    </div>
-  </div>
-
-  <div class="profile-page">
-
-    <!-- LEFT COLUMN -->
-    <div class="col-left">
-      <div class="card" style="text-align:center;">
-        <div class="profile-avatar"></div>
-        <h2 style="margin:0;color:#ff6a00;font-size:20px;">${user.name}</h2>
-        <p style="margin:4px 0;color:#aaa;font-size:13px;">${user.network || "Unknown network"}</p>
-        <p style="margin:6px 0;color:#ccc;font-size:13px;font-style:italic;">"Exploring the universe via Spacebook."</p>
-        <form action="/upload-profile-pic" method="post" enctype="multipart/form-data" style="margin-top:14px;text-align:left;">
-          <label style="color:#ccc;font-size:13px;">Update profile picture</label><br>
-          <input type="file" name="profilePic" accept="image/*" style="margin-top:6px;font-size:12px;color:#ccc;width:100%;">
-          <button class="btn-primary" style="margin-top:8px;width:100%;">Upload</button>
-        </form>
-        <a href="/gallery" class="btn-secondary" style="display:block;margin-top:10px;text-align:center;">📷 My Gallery</a>
-      </div>
-    </div>
-
-    <!-- MIDDLE COLUMN: Posts -->
-    <div class="col-mid">
-      <div class="card">
-        <h3 style="color:#ff6a00;margin:0 0 14px;">📝 Your Posts</h3>
-        ${postsHtml || "<p style='color:#ccc;font-size:13px;'>You haven't posted yet.</p>"}
-      </div>
-    </div>
-
-    <!-- RIGHT COLUMN: Friends + Gallery + Top Friends -->
-    <div class="col-right">
-      <div class="card">
-        <h3 style="color:#ff6a00;margin:0 0 10px;">⭐ Top Friends</h3>
-        <div class="friend-grid">
-          ${topFriendsHtml || "<p style='color:#ccc;font-size:13px;'>No top friends yet.</p>"}
+      <div class="navbar">
+        <div class="logo"><a href="/feed">Spacebook</a></div>
+        <div class="nav-links">
+          <a href="/home">Home</a>
+          <a href="/feed">Feed</a>
+          <a href="/profile">Profile</a>
+          <a href="/messages">Messages</a>
+          <a href="/gallery">Gallery</a>
+          <a href="/stories">Stories</a>
+          <a href="/listen-together">Listen Together</a>
+          <a href="/artist-dashboard">Artist</a>
+          <a href="/activity">Activity</a>
+          <a href="/logout">Log Out</a>
         </div>
       </div>
 
-      <div class="card">
-        <h3 style="color:#ff6a00;margin:0 0 10px;">👥 Friends (${user.friends.length})</h3>
-        <div class="friend-grid">
-          ${friendsGridHtml || "<p style='color:#ccc;font-size:13px;'>No friends yet.</p>"}
-        </div>
-      </div>
+      <div class="profile-page">
 
-      <div class="card">
-        <h3 style="color:#ff6a00;margin:0 0 10px;">📷 Gallery</h3>
-        <div id="profile-own-gallery" class="gallery-grid">
-          <p style="color:#888;font-size:13px;">Loading...</p>
-        </div>
-        <a href="/gallery" style="display:inline-block;margin-top:10px;color:#ff6a00;font-size:13px;">View full gallery →</a>
-      </div>
-
-      <div class="card">
-        <h3 style="color:#ff6a00;margin:0 0 10px;">✏️ Select Top 8 Friends</h3>
-        <form action="/set-top-friends" method="post">
-          <div style="max-height:200px;overflow-y:auto;border:1px solid #333;padding:10px;border-radius:6px;">
-            ${topFriendsSelector || "<p style='color:#ccc;font-size:13px;'>Add some friends first.</p>"}
+        <!-- LEFT: Profile info -->
+        <div class="col-left">
+          <div class="card">
+            <div style="display:flex;flex-direction:column;align-items:center;text-align:center;">
+              <div class="profile-avatar"></div>
+              <h2 style="margin:8px 0 4px;color:#ff6a00;">${user.name}</h2>
+              <p style="margin:4px 0;color:#aaa;">${user.network || "Unknown network"}</p>
+              <p style="margin:4px 0;color:#ccc;font-size:13px;">"Exploring the universe via Spacebook."</p>
+            </div>
+            <form action="/upload-profile-pic" method="post" enctype="multipart/form-data" style="margin-top:16px;">
+              <label style="color:#ccc;font-size:14px;">Update profile picture</label><br>
+              <input type="file" name="profilePic" accept="image/*" style="margin-top:6px;">
+              <button class="btn-primary" style="margin-top:10px;width:100%;">Upload</button>
+            </form>
           </div>
-          <button class="btn-primary" style="margin-top:10px;width:100%;">Save Top Friends</button>
-        </form>
-      </div>
-    </div>
+        </div>
 
-  </div>
+        <!-- MIDDLE: Posts -->
+        <div class="col-mid">
+          <div class="card">
+            <h3 style="color:#ff6a00;margin-bottom:10px;">📝 Your Posts</h3>
+            ${postsHtml || "<p style='color:#ccc;font-size:13px;'>You haven't posted yet.</p>"}
+          </div>
+        </div>
 
-  <!-- Gallery overlay -->
-  <div id="profile-media-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:1000;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px 0;">
-    <div style="max-width:860px;width:100%;padding:0 16px;box-sizing:border-box;">
-      <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
-        <div onclick="closeProfileGallery()" style="font-size:28px;cursor:pointer;color:#fff;background:rgba(255,255,255,0.1);border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;">✕</div>
+        <!-- RIGHT: Friends + Gallery + Top Friends -->
+        <div class="col-right">
+          <div class="card">
+            <h3 style="color:#ff6a00;margin-bottom:10px;">⭐ Top Friends</h3>
+            <div class="top-friends-bar">
+              ${topFriendsHtml || "<p style='color:#ccc;font-size:13px;'>No top friends yet. Pick some below.</p>"}
+            </div>
+            <hr style="margin:16px 0;border:none;border-top:1px solid #333;">
+            <h3 style="color:#ff6a00;margin-bottom:10px;">👥 Friends</h3>
+            <div style="display:flex;flex-wrap:wrap;gap:10px;">
+              ${friendsGridHtml || "<p style='color:#ccc;font-size:13px;'>No friends yet.</p>"}
+            </div>
+            <form action="/set-top-friends" method="post" style="margin-top:20px;">
+              <h4 style="color:#ff6a00;margin-bottom:8px;">Select Top 8 Friends</h4>
+              <div style="max-height:200px;overflow-y:auto;border:1px solid #333;padding:10px;border-radius:6px;">
+                ${topFriendsSelector || "<p style='color:#ccc;font-size:13px;'>Add some friends first.</p>"}
+              </div>
+              <button class="btn-primary" style="margin-top:10px;">Save Top Friends</button>
+            </form>
+          </div>
+
+          <div class="card">
+            <h3 style="color:#ff6a00;margin-bottom:10px;">📷 Gallery</h3>
+            <div id="profile-own-gallery" class="gallery-grid">
+              <p style="color:#888;font-size:13px;">Loading...</p>
+            </div>
+            <a href="/gallery" style="display:inline-block;margin-top:12px;color:#ff6a00;font-size:13px;">View full gallery →</a>
+          </div>
+        </div>
+
       </div>
-      <div id="profile-overlay-media"></div>
-      <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;justify-content:center;">
-        <button onclick="reactProfilePhoto('❤️')" class="react-btn" id="prb-❤️">❤️ <span id="prc-❤️">0</span></button>
-        <button onclick="reactProfilePhoto('🔥')" class="react-btn" id="prb-🔥">🔥 <span id="prc-🔥">0</span></button>
-        <button onclick="reactProfilePhoto('😂')" class="react-btn" id="prb-😂">😂 <span id="prc-😂">0</span></button>
-        <button onclick="reactProfilePhoto('🤝')" class="react-btn" id="prb-🤝">🤝 <span id="prc-🤝">0</span></button>
-        <button onclick="reactProfilePhoto('🚀')" class="react-btn" id="prb-🚀">🚀 <span id="prc-🚀">0</span></button>
-      </div>
-      <div style="margin-top:16px;">
-        <h4 style="color:#ff6a00;margin:0 0 10px;">💬 Comments</h4>
-        <div id="profile-comment-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;max-height:220px;overflow-y:auto;"></div>
-        <div style="display:flex;gap:8px;align-items:center;">
-          <input id="profile-comment-input" type="text" placeholder="Add a comment..." maxlength="300"
-            style="flex:1;min-width:0;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;"
-            onkeydown="if(event.key==='Enter'){event.preventDefault();submitProfileComment();}"/>
-          <button class="btn-primary" style="height:44px;padding:0 14px;box-sizing:border-box;flex-shrink:0;" onclick="submitProfileComment()">Post</button>
+
+      <!-- Gallery overlay -->
+      <div id="profile-media-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:1000;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px 0;">
+        <div style="max-width:860px;width:100%;padding:0 16px;box-sizing:border-box;">
+          <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+            <div onclick="closeProfileGallery()" style="font-size:28px;cursor:pointer;color:#fff;background:rgba(255,255,255,0.1);border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;">✕</div>
+          </div>
+          <div id="profile-overlay-media"></div>
+          <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;justify-content:center;">
+            <button onclick="reactProfilePhoto('❤️')" class="react-btn" id="prb-❤️">❤️ <span id="prc-❤️">0</span></button>
+            <button onclick="reactProfilePhoto('🔥')" class="react-btn" id="prb-🔥">🔥 <span id="prc-🔥">0</span></button>
+            <button onclick="reactProfilePhoto('😂')" class="react-btn" id="prb-😂">😂 <span id="prc-😂">0</span></button>
+            <button onclick="reactProfilePhoto('🤝')" class="react-btn" id="prb-🤝">🤝 <span id="prc-🤝">0</span></button>
+            <button onclick="reactProfilePhoto('🚀')" class="react-btn" id="prb-🚀">🚀 <span id="prc-🚀">0</span></button>
+          </div>
+          <div style="margin-top:16px;">
+            <h4 style="color:#ff6a00;margin:0 0 10px;">💬 Comments</h4>
+            <div id="profile-comment-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;max-height:220px;overflow-y:auto;"></div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <input id="profile-comment-input" type="text" placeholder="Add a comment..." maxlength="300"
+                style="flex:1;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;min-height:unset;"
+                onkeydown="if(event.key==='Enter'){event.preventDefault();submitProfileComment();}"/>
+              <button class="btn-primary" onclick="submitProfileComment()">Post</button>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-  </div>
 
-  <script>
-    // ====== STARFIELD ======
-    const canvas = document.getElementById("starfield");
-    const ctx = canvas.getContext("2d");
-    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-    window.addEventListener("resize", () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
-    const stars = Array.from({length:200},()=>({x:Math.random()*canvas.width,y:Math.random()*canvas.height,r:Math.random()*1.5+0.3,alpha:Math.random(),speed:Math.random()*0.3+0.1}));
-    const shootingStars = [];
-    function spawnShootingStar(){shootingStars.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height*0.5,len:Math.random()*120+80,speed:Math.random()*8+6,angle:Math.PI/4,alpha:1});}
-    setInterval(spawnShootingStar,2500);
-    function draw(){
-      ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle="#000";ctx.fillRect(0,0,canvas.width,canvas.height);
-      stars.forEach(s=>{s.alpha+=s.speed*0.02*(Math.random()>0.5?1:-1);s.alpha=Math.max(0.1,Math.min(1,s.alpha));ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle="rgba(255,255,255,"+s.alpha+")";ctx.fill();});
-      for(let i=shootingStars.length-1;i>=0;i--){const s=shootingStars[i];ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(s.x-Math.cos(s.angle)*s.len,s.y-Math.sin(s.angle)*s.len);const g=ctx.createLinearGradient(s.x,s.y,s.x-Math.cos(s.angle)*s.len,s.y-Math.sin(s.angle)*s.len);g.addColorStop(0,"rgba(255,150,50,"+s.alpha+")");g.addColorStop(1,"rgba(255,150,50,0)");ctx.strokeStyle=g;ctx.lineWidth=2;ctx.stroke();s.x+=Math.cos(s.angle)*s.speed;s.y+=Math.sin(s.angle)*s.speed;s.alpha-=0.015;if(s.alpha<=0)shootingStars.splice(i,1);}
-      requestAnimationFrame(draw);
-    }
-    draw();
+      <script>
+        let profileGalleryAlbumId = null;
+        let profileGalleryPhotoIndex = null;
 
-    // ====== GALLERY ======
-    let profileGalleryAlbumId = null;
-    let profileGalleryPhotoIndex = null;
-
-    async function loadOwnGallery() {
-      const albums = await fetch("/api/albums", {credentials:"include"}).then(r=>r.json()).catch(()=>[]);
-      const grid = document.getElementById("profile-own-gallery");
-      const allPhotos = [];
-      albums.forEach(function(a){ a.photos.forEach(function(p,i){ allPhotos.push({url:p.url,albumId:a._id,photoIndex:i}); }); });
-      if (!allPhotos.length) { grid.innerHTML = "<p style='color:#888;font-size:13px;'>No photos yet.</p>"; return; }
-      grid.innerHTML = allPhotos.slice(0,9).map(function(p){
-        return "<div class='gallery-thumb' onclick=\\"openProfileGallery('" + p.albumId + "'," + p.photoIndex + ",'" + p.url + "')\\">" +
-          "<img src='" + p.url + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/></div>";
-      }).join("");
-    }
-
-    async function openProfileGallery(albumId, photoIndex, url) {
-      profileGalleryAlbumId = albumId;
-      profileGalleryPhotoIndex = photoIndex;
-      const overlay = document.getElementById("profile-media-overlay");
-      const media = document.getElementById("profile-overlay-media");
-      const isVideo = url.match(/\.(mp4|webm|ogg)(\?|$)/i);
-      media.innerHTML = isVideo
-        ? "<video src='" + url + "' controls autoplay style='max-width:100%;max-height:65vh;border-radius:10px;display:block;margin:0 auto;'></video>"
-        : "<img src='" + url + "' style='max-width:100%;max-height:65vh;border-radius:10px;display:block;margin:0 auto;' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/>";
-      overlay.style.display = "flex";
-      await loadProfileReactions();
-      await loadProfileComments();
-    }
-
-    function closeProfileGallery() {
-      document.getElementById("profile-media-overlay").style.display = "none";
-      document.getElementById("profile-overlay-media").innerHTML = "";
-      document.getElementById("profile-comment-list").innerHTML = "";
-      profileGalleryAlbumId = null;
-      profileGalleryPhotoIndex = null;
-    }
-
-    async function loadProfileReactions() {
-      const data = await fetch("/api/albums/" + profileGalleryAlbumId + "/photos/" + profileGalleryPhotoIndex + "/reactions", {credentials:"include"})
-        .then(r=>r.json()).catch(()=>({counts:{},myReaction:null}));
-      ["❤️","🔥","😂","🤝","🚀"].forEach(function(e){
-        const el = document.getElementById("prc-" + e);
-        const btn = document.getElementById("prb-" + e);
-        if (el) el.textContent = data.counts[e] || 0;
-        if (btn) btn.classList.toggle("mine", data.myReaction === e);
-      });
-    }
-
-    async function reactProfilePhoto(emoji) {
-      if (!profileGalleryAlbumId) return;
-      await fetch("/api/albums/" + profileGalleryAlbumId + "/photos/" + profileGalleryPhotoIndex + "/react", {
-        method:"POST", credentials:"include",
-        headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({emoji:emoji})
-      });
-      await loadProfileReactions();
-    }
-
-    async function loadProfileComments() {
-      const comments = await fetch("/api/albums/" + profileGalleryAlbumId + "/photos/" + profileGalleryPhotoIndex + "/comments", {credentials:"include"})
-        .then(r=>r.json()).catch(()=>[]);
-      const list = document.getElementById("profile-comment-list");
-      if (!comments.length) { list.innerHTML = "<div style='color:#666;font-size:13px;padding:8px;'>No comments yet.</div>"; return; }
-      list.innerHTML = comments.map(function(c){
-        return "<div class='comment-item'><img class='comment-avatar' src='" + (c.userPic||"/assets/img/default-avatar.png") + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/>" +
-          "<div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div></div>";
-      }).join("");
-      list.scrollTop = list.scrollHeight;
-    }
-
-    async function submitProfileComment() {
-      const input = document.getElementById("profile-comment-input");
-      const text = input.value.trim();
-      if (!text || !profileGalleryAlbumId) return;
-      await fetch("/api/albums/" + profileGalleryAlbumId + "/photos/" + profileGalleryPhotoIndex + "/comments", {
-        method:"POST", credentials:"include",
-        headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({text:text})
-      });
-      input.value = "";
-      await loadProfileComments();
-    }
-
-    // ====== POST REACTIONS ======
-    async function loadPostReactions(postId) {
-      const data = await fetch("/api/posts/" + postId + "/reactions", {credentials:"include"}).then(r=>r.json()).catch(()=>({counts:{},myReaction:null}));
-      ["❤️","🔥","😂","🤝","🚀"].forEach(function(e){
-        const el = document.getElementById("rp-" + postId + "-" + e.codePointAt(0));
-        if (el) el.textContent = data.counts[e] || 0;
-        const btn = document.querySelector(".react-pill[data-post-id='" + postId + "'][data-emoji='" + e + "']");
-        if (btn) btn.classList.toggle("mine", data.myReaction === e);
-      });
-    }
-
-    // ====== POST COMMENTS ======
-    async function loadPostComments(postId) {
-      const comments = await fetch("/api/posts/" + postId + "/comments", {credentials:"include"}).then(r=>r.json()).catch(()=>[]);
-      const list = document.getElementById("cl-" + postId);
-      if (!list) return;
-      list.innerHTML = !comments.length
-        ? "<div style='color:#666;font-size:13px;padding:6px;'>No comments yet.</div>"
-        : comments.map(function(c){
-            return "<div class='comment-item'><img class='comment-avatar' src='" + (c.userPic||"/assets/img/default-avatar.png") + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/><div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div></div>";
+        async function loadOwnGallery() {
+          const albums = await fetch("/api/albums", { credentials: "include" }).then(r => r.json()).catch(() => []);
+          const grid = document.getElementById("profile-own-gallery");
+          const allPhotos = [];
+          albums.forEach(function(a) { a.photos.forEach(function(p, i) { allPhotos.push({ url: p.url, albumId: a._id, photoIndex: i }); }); });
+          if (!allPhotos.length) { grid.innerHTML = "<p style='color:#888;font-size:13px;'>No photos yet.</p>"; return; }
+          grid.innerHTML = allPhotos.slice(0, 9).map(function(p) {
+            return "<div class='gallery-thumb' onclick=\\"openProfileGallery('" + p.albumId + "'," + p.photoIndex + ",'" + p.url + "')\\">" +
+              "<img src='" + p.url + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/></div>";
           }).join("");
-      list.scrollTop = list.scrollHeight;
-    }
+        }
 
-    async function submitPostComment(postId, inputEl) {
-      const text = inputEl.value.trim();
-      if (!text) return;
-      await fetch("/api/posts/" + postId + "/comments", {
-        method:"POST", credentials:"include",
-        headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({text:text})
-      });
-      inputEl.value = "";
-      loadPostComments(postId);
-    }
+        async function openProfileGallery(albumId, photoIndex, url) {
+          profileGalleryAlbumId = albumId;
+          profileGalleryPhotoIndex = photoIndex;
+          const overlay = document.getElementById("profile-media-overlay");
+          const media = document.getElementById("profile-overlay-media");
+          const isVideo = url.match(/\\.(mp4|webm|ogg)(\\?|$)/i);
+          media.innerHTML = isVideo
+            ? "<video src='" + url + "' controls autoplay style='max-width:100%;max-height:65vh;border-radius:10px;display:block;margin:0 auto;'></video>"
+            : "<img src='" + url + "' style='max-width:100%;max-height:65vh;border-radius:10px;display:block;margin:0 auto;' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/>";
+          overlay.style.display = "flex";
+          await loadProfileReactions();
+          await loadProfileComments();
+        }
 
-    function timeAgo(date) {
-      const diff = Date.now() - new Date(date).getTime();
-      const mins = Math.floor(diff/60000);
-      if (mins < 1) return "just now";
-      if (mins < 60) return mins + "m ago";
-      const hrs = Math.floor(mins/60);
-      if (hrs < 24) return hrs + "h ago";
-      return Math.floor(hrs/24) + "d ago";
-    }
+        function closeProfileGallery() {
+          document.getElementById("profile-media-overlay").style.display = "none";
+          document.getElementById("profile-overlay-media").innerHTML = "";
+          document.getElementById("profile-comment-list").innerHTML = "";
+          profileGalleryAlbumId = null; profileGalleryPhotoIndex = null;
+        }
 
-    // ====== UNIFIED CLICK HANDLER ======
-    document.addEventListener("click", async function(e) {
-      const pill = e.target.closest(".react-pill");
-      if (pill && pill.dataset.postId) {
-        await fetch("/api/posts/" + pill.dataset.postId + "/react", {
-          method:"POST", credentials:"include",
-          headers:{"Content-Type":"application/json"},
-          body: JSON.stringify({emoji:pill.dataset.emoji})
+        async function loadProfileReactions() {
+          const data = await fetch("/api/albums/" + profileGalleryAlbumId + "/photos/" + profileGalleryPhotoIndex + "/reactions", { credentials: "include" })
+            .then(r => r.json()).catch(() => ({ counts: {}, myReaction: null }));
+          ["❤️","🔥","😂","🤝","🚀"].forEach(function(e) {
+            const el = document.getElementById("prc-" + e);
+            const btn = document.getElementById("prb-" + e);
+            if (el) el.textContent = data.counts[e] || 0;
+            if (btn) btn.classList.toggle("mine", data.myReaction === e);
+          });
+        }
+
+        async function reactProfilePhoto(emoji) {
+          if (!profileGalleryAlbumId && profileGalleryPhotoIndex === null) return;
+          await fetch("/api/albums/" + profileGalleryAlbumId + "/photos/" + profileGalleryPhotoIndex + "/react", {
+            method: "POST", credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ emoji: emoji })
+          });
+          await loadProfileReactions();
+        }
+
+        async function loadProfileComments() {
+          const comments = await fetch("/api/albums/" + profileGalleryAlbumId + "/photos/" + profileGalleryPhotoIndex + "/comments", { credentials: "include" })
+            .then(r => r.json()).catch(() => []);
+          const list = document.getElementById("profile-comment-list");
+          if (!comments.length) { list.innerHTML = "<div style='color:#666;font-size:13px;padding:8px;'>No comments yet.</div>"; return; }
+          list.innerHTML = comments.map(function(c) {
+            return "<div class='comment-item'>" +
+              "<img class='comment-avatar' src='" + (c.userPic || "/assets/img/default-avatar.png") + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/>" +
+              "<div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div>" +
+            "</div>";
+          }).join("");
+          list.scrollTop = list.scrollHeight;
+        }
+
+        async function submitProfileComment() {
+          const input = document.getElementById("profile-comment-input");
+          const text = input.value.trim();
+          if (!text || !profileGalleryAlbumId) return;
+          await fetch("/api/albums/" + profileGalleryAlbumId + "/photos/" + profileGalleryPhotoIndex + "/comments", {
+            method: "POST", credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text: text })
+          });
+          input.value = "";
+          await loadProfileComments();
+        }
+
+        document.addEventListener("click", async function(e) {
+          const pill = e.target.closest(".react-pill");
+          if (pill) {
+            await fetch("/api/posts/" + pill.dataset.postId + "/react", {
+              method: "POST", credentials: "include",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ emoji: pill.dataset.emoji })
+            });
+            loadPostReactions(pill.dataset.postId);
+          }
+          const toggleBtn = e.target.closest(".comment-toggle-btn");
+          if (toggleBtn) {
+            const postId = toggleBtn.dataset.postId;
+            const section = document.getElementById("cs-" + postId);
+            if (section.style.display === "none") { section.style.display = "block"; loadPostComments(postId); }
+            else section.style.display = "none";
+          }
+          const editBtn = e.target.closest(".edit-post-btn");
+          if (editBtn) { const editor = editBtn.closest(".post-card").querySelector(".post-editor"); if (editor) editor.classList.toggle("open"); }
+          const cancelBtn = e.target.closest(".cancel-edit-btn");
+          if (cancelBtn) { const editor = cancelBtn.closest(".post-editor"); if (editor) editor.classList.remove("open"); }
+          const deleteBtn = e.target.closest(".delete-post-btn");
+          if (deleteBtn) {
+            const card = deleteBtn.closest(".post-card");
+            if (!confirm("Delete this post?")) return;
+            fetch("/delete-post/" + card.dataset.postId, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) })
+              .then(r => r.json()).then(d => { if (d.success) card.remove(); });
+          }
+          const deleteImageBtn = e.target.closest(".delete-image-btn");
+          if (deleteImageBtn) {
+            const form = deleteImageBtn.closest(".post-editor-form");
+            form.querySelector("input[name=deleteImage]").value = "true";
+            const preview = form.querySelector(".current-image-preview");
+            if (preview) preview.innerHTML = "<p style='font-size:12px;color:#777;'>Image will be removed.</p>";
+          }
         });
-        loadPostReactions(pill.dataset.postId);
-        return;
-      }
-      const toggleBtn = e.target.closest(".comment-toggle-btn");
-      if (toggleBtn) {
-        const postId = toggleBtn.dataset.postId;
-        const section = document.getElementById("cs-" + postId);
-        if (section.style.display === "none") { section.style.display = "block"; loadPostComments(postId); }
-        else section.style.display = "none";
-        return;
-      }
-      const editBtn = e.target.closest(".edit-post-btn");
-      if (editBtn) {
-        const editor = editBtn.closest(".post-card").querySelector(".post-editor");
-        if (editor) editor.classList.toggle("open");
-        return;
-      }
-      const cancelBtn = e.target.closest(".cancel-edit-btn");
-      if (cancelBtn) {
-        cancelBtn.closest(".post-editor").classList.remove("open");
-        return;
-      }
-      const deleteBtn = e.target.closest(".delete-post-btn");
-      if (deleteBtn) {
-        const card = deleteBtn.closest(".post-card");
-        if (!confirm("Delete this post?")) return;
-        fetch("/delete-post/" + card.dataset.postId, {method:"POST", headers:{"Content-Type":"application/json"}, body:"{}"})
-          .then(r=>r.json()).then(d=>{ if (d.success) card.remove(); });
-        return;
-      }
-      const deleteImageBtn = e.target.closest(".delete-image-btn");
-      if (deleteImageBtn) {
-        const form = deleteImageBtn.closest(".post-editor-form");
-        form.querySelector("input[name=deleteImage]").value = "true";
-        const preview = form.querySelector(".current-image-preview");
-        if (preview) preview.innerHTML = "<p style='font-size:12px;color:#777;'>Image will be removed.</p>";
-        return;
-      }
-    });
 
-    document.addEventListener("change", function(e) {
-      const fileInput = e.target.closest("input[type=file][name=image]");
-      if (!fileInput) return;
-      const form = fileInput.closest(".post-editor-form");
-      form.querySelector("input[name=deleteImage]").value = "false";
-      const preview = form.querySelector(".current-image-preview");
-      if (fileInput.files && fileInput.files[0]) {
-        const reader = new FileReader();
-        reader.onload = function(ev){ if (preview) preview.innerHTML = "<img src='" + ev.target.result + "' style='max-width:100%;border-radius:6px;margin-bottom:6px;'>"; };
-        reader.readAsDataURL(fileInput.files[0]);
-      }
-    });
+        document.addEventListener("change", function(e) {
+          const fileInput = e.target.closest("input[type=file][name=image]");
+          if (fileInput) {
+            const form = fileInput.closest(".post-editor-form");
+            form.querySelector("input[name=deleteImage]").value = "false";
+            const preview = form.querySelector(".current-image-preview");
+            if (fileInput.files && fileInput.files[0]) {
+              const reader = new FileReader();
+              reader.onload = function(ev) { if (preview) preview.innerHTML = "<img src='" + ev.target.result + "' style='max-width:100%;border-radius:6px;margin-bottom:6px;'>"; };
+              reader.readAsDataURL(fileInput.files[0]);
+            }
+          }
+        });
 
-    document.addEventListener("submit", function(e) {
-      const form = e.target.closest(".post-editor-form");
-      if (!form) return;
-      e.preventDefault();
-      const postId = form.getAttribute("data-post-id");
-      const card = form.closest(".post-card");
-      fetch("/edit-post/" + postId, {method:"POST", body: new FormData(form)})
-        .then(r=>r.json()).then(function(data){
-          if (!data.success) { alert("Error saving changes"); return; }
-          const contentEl = card.querySelector(".post-content");
-          const imageWrapper = card.querySelector(".post-image-wrapper");
-          if (contentEl) contentEl.textContent = data.content;
-          if (imageWrapper) imageWrapper.innerHTML = data.imagePath ? "<img class='post-image' src='" + data.imagePath + "' style='max-width:100%;margin-top:8px;border-radius:6px;'>" : "";
-          card.querySelector(".post-editor").classList.remove("open");
-        }).catch(()=>alert("Error saving changes"));
-    });
+        document.addEventListener("submit", function(e) {
+          const form = e.target.closest(".post-editor-form");
+          if (!form) return;
+          e.preventDefault();
+          const postId = form.getAttribute("data-post-id");
+          const card = form.closest(".post-card");
+          fetch("/edit-post/" + postId, { method: "POST", body: new FormData(form) })
+            .then(r => r.json()).then(data => {
+              if (!data.success) { alert("Error saving"); return; }
+              const contentEl = card.querySelector(".post-content");
+              const imageWrapper = card.querySelector(".post-image-wrapper");
+              if (contentEl) contentEl.textContent = data.content;
+              if (imageWrapper) imageWrapper.innerHTML = data.imagePath ? "<img class='post-image' src='" + data.imagePath + "' style='max-width:100%;margin-top:8px;border-radius:6px;'>" : "";
+              card.querySelector(".post-editor").classList.remove("open");
+            });
+        });
 
-    document.addEventListener("keydown", function(e){ if (e.key === "Escape") closeProfileGallery(); });
+        async function loadPostReactions(postId) {
+          const data = await fetch("/api/posts/" + postId + "/reactions", { credentials: "include" }).then(r => r.json()).catch(() => ({ counts: {}, myReaction: null }));
+          ["❤️","🔥","😂","🤝","🚀"].forEach(function(e) {
+            const el = document.getElementById("rp-" + postId + "-" + e.codePointAt(0));
+            if (el) el.textContent = data.counts[e] || 0;
+            const btn = document.querySelector(".react-pill[data-post-id='" + postId + "'][data-emoji='" + e + "']");
+            if (btn) btn.classList.toggle("mine", data.myReaction === e);
+          });
+        }
 
-    // ====== INIT ======
-    document.querySelectorAll(".post-card").forEach(function(card){
-      if (card.dataset.postId) loadPostReactions(card.dataset.postId);
-    });
-    loadOwnGallery();
-  </script>
-</body>
-</html>`);
+        async function loadPostComments(postId) {
+          const comments = await fetch("/api/posts/" + postId + "/comments", { credentials: "include" }).then(r => r.json()).catch(() => []);
+          const list = document.getElementById("cl-" + postId);
+          if (!list) return;
+          list.innerHTML = !comments.length
+            ? "<div style='color:#666;font-size:13px;padding:6px;'>No comments yet.</div>"
+            : comments.map(function(c) {
+                return "<div class='comment-item'><img class='comment-avatar' src='" + (c.userPic || "/assets/img/default-avatar.png") + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/><div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div></div>";
+              }).join("");
+          list.scrollTop = list.scrollHeight;
+        }
+
+        async function submitPostComment(postId, inputEl) {
+          const text = inputEl.value.trim();
+          if (!text) return;
+          await fetch("/api/posts/" + postId + "/comments", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: text }) });
+          inputEl.value = "";
+          loadPostComments(postId);
+        }
+
+        function timeAgo(date) {
+          const diff = Date.now() - new Date(date).getTime();
+          const mins = Math.floor(diff / 60000);
+          if (mins < 1) return "just now";
+          if (mins < 60) return mins + "m ago";
+          const hrs = Math.floor(mins / 60);
+          if (hrs < 24) return hrs + "h ago";
+          return Math.floor(hrs / 24) + "d ago";
+        }
+
+        document.addEventListener("keydown", function(e) { if (e.key === "Escape") closeProfileGallery(); });
+        document.querySelectorAll(".post-card").forEach(function(card) { const id = card.dataset.postId; if (id) loadPostReactions(id); });
+        loadOwnGallery();
+      </script>
+    </body>
+    </html>
+  `);
 });
-
 
 // ====== OTHER USER'S PROFILE ======
 app.get("/profile/:id", requireLogin, async (req, res) => {
@@ -1687,7 +1653,7 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
   const postsHtml = posts.map(p => `
     <div class="post-card" data-post-id="${p._id}">
       <div class="post">
-        <div class="author">${p.userName}</div>
+        <div class="author" style="color:#ff6a00;">${p.userName}</div>
         <div class="meta">${p.createdAt.toLocaleString()}</div>
         <p class="post-content" style="margin-top:6px;">${p.content || ""}</p>
         <div class="post-image-wrapper">
@@ -1707,370 +1673,344 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
         <div class="comment-list" id="cl-${p._id}" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;max-height:200px;overflow-y:auto;"></div>
         <div style="display:flex;gap:8px;align-items:center;">
           <input class="comment-input" data-post-id="${p._id}" type="text" placeholder="Write a comment..." maxlength="300"
-            style="flex:1;min-width:0;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;"
+            style="flex:1;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;min-height:unset;"
             onkeydown="if(event.key==='Enter'){event.preventDefault();submitPostComment('${p._id}',this);}"/>
-          <button class="btn-primary" style="height:44px;padding:0 14px;box-sizing:border-box;flex-shrink:0;white-space:nowrap;"
-            onclick="submitPostComment('${p._id}', this.previousElementSibling)">Post</button>
+          <button class="btn-primary" style="font-size:12px;padding:6px 10px;height:44px;box-sizing:border-box;flex-shrink:0;white-space:nowrap;"
+            onclick="submitPostComment('${p._id}', document.querySelector('.comment-input[data-post-id=\\'${p._id}\\']'))">Post</button>
         </div>
       </div>
     </div>`).join("");
 
   const pic = target.profilePic || "/assets/img/default-avatar.png";
 
-  res.send(`<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${target.name} – Spacebook</title>
-  <link rel="stylesheet" href="/assets/css/styles.css">
-  <style>
-    html,body{background:#000!important;margin:0;padding:0;color:#fff;font-family:Arial,sans-serif;overflow-x:hidden;}
-    #starfield{position:fixed;top:0;left:0;width:100%;height:100%;z-index:-1;background:#000;}
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>${target.name} – Spacebook</title>
+      <link rel="stylesheet" href="/assets/css/styles.css">
+      <style>
+        html, body { background: #000 !important; margin: 0; padding: 0; color: #fff; font-family: Arial, sans-serif; overflow-x: hidden; }
+        #starfield { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: #000; }
+        .navbar { width: 100%; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.65); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 100; box-sizing: border-box; }
+        .navbar .logo a { color: #ff6a00; text-decoration: none; font-size: 20px; font-weight: bold; }
+        .nav-links { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+        .nav-links a { color: #ccc; text-decoration: none; font-size: 13px; }
+        .nav-links a:hover { color: #ff6a00; }
 
-    /* NAVBAR */
-    .navbar{width:100%;padding:14px 24px;display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,0.65);backdrop-filter:blur(10px);position:sticky;top:0;z-index:100;box-sizing:border-box;}
-    .navbar .logo a{color:#ff6a00;text-decoration:none;font-size:20px;font-weight:bold;}
-    .nav-links{display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
-    .nav-links a{color:#ccc;text-decoration:none;font-size:13px;}
-    .nav-links a:hover{color:#ff6a00;}
+        /* PC: 3-column grid. Mobile: single column */
+        .profile-page { max-width: 1200px; margin: 30px auto; padding: 0 20px; box-sizing: border-box; display: grid; grid-template-columns: 220px 1fr 260px; gap: 20px; }
+        .col-left { grid-column: 1; }
+        .col-mid { grid-column: 2; }
+        .col-right { grid-column: 3; }
+        @media (max-width: 860px) {
+          .profile-page { grid-template-columns: 1fr; padding: 0 12px; }
+          .col-left, .col-mid, .col-right { grid-column: 1; }
+        }
 
-    /* LAYOUT */
-    .profile-page{max-width:1200px;margin:0 auto;padding:28px 24px;display:grid;grid-template-columns:240px 1fr 260px;gap:20px;box-sizing:border-box;}
-    .col-left{grid-column:1;}
-    .col-mid{grid-column:2;}
-    .col-right{grid-column:3;}
+        .card { border-radius: 12px; background: rgba(0,0,0,0.45); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.15); padding: 20px; margin-bottom: 20px; }
+        .profile-avatar { width: 100px; height: 100px; border-radius: 50%; background: #111 url('${pic}') center/cover no-repeat; border: 3px solid #ff6a00; flex-shrink: 0; }
+        .friend-tile { width: 70px; text-align: center; }
+        .top-friends-bar { display: flex; flex-wrap: wrap; gap: 10px; }
+        .post-card { margin-bottom: 16px; }
+        .btn-primary { display: inline-block; padding: 8px 14px; background: #ff6a00; color: #000; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; transition: 0.2s; font-size: 14px; }
+        .btn-primary:hover { background: #ff8c32; }
+        .btn-secondary { padding: 6px 10px; background: rgba(255,255,255,0.08); border-radius: 6px; border: none; color: #ff6a00; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn-secondary:hover { background: rgba(255,255,255,0.18); }
+        .react-pill { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; padding: 4px 12px; font-size: 16px; cursor: pointer; color: #fff; transition: all .15s; display: inline-flex; align-items: center; gap: 5px; }
+        .react-pill:hover { border-color: #ff6a00; background: rgba(255,106,0,0.15); }
+        .react-pill.mine { border-color: #ff6a00; background: rgba(255,106,0,0.2); }
+        .rpill-count { font-size: 12px; color: #ccc; }
+        .comment-item { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 8px 12px; display: flex; gap: 10px; align-items: flex-start; }
+        .comment-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1px solid rgba(255,106,0,0.3); }
+        .comment-name { font-size: 12px; color: #ff6a00; font-weight: bold; }
+        .comment-text { font-size: 13px; color: #f0f0f0; word-break: break-word; margin-top: 2px; }
+        .comment-time { font-size: 11px; color: #555; margin-top: 2px; }
+        textarea { width: 100%; background: rgba(255,255,255,0.06); border: 1px solid #444; border-radius: 8px; color: #fff; padding: 10px; font-size: 14px; resize: vertical; box-sizing: border-box; }
+        textarea:focus { border-color: #ff6a00; outline: none; }
+        .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px,1fr)); gap: 8px; }
+        .gallery-thumb { aspect-ratio: 1; border-radius: 10px; overflow: hidden; cursor: pointer; border: 1px solid rgba(255,106,0,0.2); transition: border-color .15s; }
+        .gallery-thumb:hover { border-color: #ff6a00; }
+        .gallery-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .react-btn { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; padding: 6px 14px; font-size: 18px; cursor: pointer; color: #fff; transition: all .15s; display: inline-flex; align-items: center; gap: 5px; }
+        .react-btn:hover { border-color: #ff6a00; background: rgba(255,106,0,0.15); }
+        .react-btn.mine { border-color: #ff6a00; background: rgba(255,106,0,0.2); }
+      </style>
+    </head>
+    <body>
+      <canvas id="starfield"></canvas>
+      <script>
+        const canvas = document.getElementById("starfield");
+        const ctx = canvas.getContext("2d");
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+        window.addEventListener("resize", () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
+        const stars = Array.from({ length: 200 }, () => ({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, r: Math.random() * 1.5 + 0.3, alpha: Math.random(), speed: Math.random() * 0.3 + 0.1 }));
+        const shootingStars = [];
+        function spawnShootingStar() { shootingStars.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height * 0.5, len: Math.random() * 120 + 80, speed: Math.random() * 8 + 6, angle: Math.PI / 4, alpha: 1 }); }
+        setInterval(spawnShootingStar, 2500);
+        function draw() {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.fillStyle = "#000"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+          stars.forEach(s => { s.alpha += s.speed * 0.02 * (Math.random() > 0.5 ? 1 : -1); s.alpha = Math.max(0.1, Math.min(1, s.alpha)); ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fillStyle = "rgba(255,255,255," + s.alpha + ")"; ctx.fill(); });
+          for (let i = shootingStars.length - 1; i >= 0; i--) { const s = shootingStars[i]; ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(s.x - Math.cos(s.angle) * s.len, s.y - Math.sin(s.angle) * s.len); const grad = ctx.createLinearGradient(s.x, s.y, s.x - Math.cos(s.angle) * s.len, s.y - Math.sin(s.angle) * s.len); grad.addColorStop(0, "rgba(255,150,50," + s.alpha + ")"); grad.addColorStop(1, "rgba(255,150,50,0)"); ctx.strokeStyle = grad; ctx.lineWidth = 2; ctx.stroke(); s.x += Math.cos(s.angle) * s.speed; s.y += Math.sin(s.angle) * s.speed; s.alpha -= 0.015; if (s.alpha <= 0) shootingStars.splice(i, 1); }
+          requestAnimationFrame(draw);
+        }
+        draw();
+      </script>
 
-    /* CARDS */
-    .card{border-radius:12px;background:rgba(0,0,0,0.45);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.15);padding:20px;margin-bottom:20px;}
-
-    /* PROFILE */
-    .profile-avatar{width:90px;height:90px;border-radius:50%;background:#111 url('${pic}') center/cover no-repeat;border:3px solid #ff6a00;margin:0 auto 12px;}
-
-    /* FRIENDS */
-    .friend-grid{display:flex;flex-wrap:wrap;gap:10px;}
-    .friend-tile{width:68px;text-align:center;}
-
-    /* POSTS */
-    .post-card{margin-bottom:16px;}
-
-    /* BUTTONS */
-    .btn-primary{display:inline-block;padding:8px 14px;background:#ff6a00;color:#000;border-radius:6px;font-weight:bold;border:none;cursor:pointer;transition:0.2s;font-size:14px;text-decoration:none;}
-    .btn-primary:hover{background:#ff8c32;}
-    .btn-secondary{padding:6px 10px;background:rgba(255,255,255,0.08);border-radius:6px;border:none;color:#ff6a00;cursor:pointer;font-weight:bold;transition:0.2s;font-size:13px;}
-    .btn-secondary:hover{background:rgba(255,255,255,0.18);}
-
-    /* REACTIONS */
-    .react-pill{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:4px 12px;font-size:16px;cursor:pointer;color:#fff;transition:all .15s;display:inline-flex;align-items:center;gap:5px;}
-    .react-pill:hover{border-color:#ff6a00;background:rgba(255,106,0,0.15);}
-    .react-pill.mine{border-color:#ff6a00;background:rgba(255,106,0,0.2);}
-    .rpill-count{font-size:12px;color:#ccc;}
-    .react-btn{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:6px 14px;font-size:18px;cursor:pointer;color:#fff;transition:all .15s;display:inline-flex;align-items:center;gap:5px;}
-    .react-btn:hover{border-color:#ff6a00;background:rgba(255,106,0,0.15);}
-    .react-btn.mine{border-color:#ff6a00;background:rgba(255,106,0,0.2);}
-
-    /* COMMENTS */
-    .comment-item{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:8px 12px;display:flex;gap:10px;align-items:flex-start;}
-    .comment-avatar{width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid rgba(255,106,0,0.3);}
-    .comment-name{font-size:12px;color:#ff6a00;font-weight:bold;}
-    .comment-text{font-size:13px;color:#f0f0f0;word-break:break-word;margin-top:2px;}
-    .comment-time{font-size:11px;color:#555;margin-top:2px;}
-
-    /* FORMS */
-    textarea{width:100%;background:rgba(255,255,255,0.06);border:1px solid #444;border-radius:8px;color:#fff;padding:10px;font-size:14px;resize:vertical;box-sizing:border-box;}
-    textarea:focus,input[type=text]:focus{border-color:#ff6a00;outline:none;}
-
-    /* GALLERY */
-    .gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px;}
-    .gallery-thumb{aspect-ratio:1;border-radius:8px;overflow:hidden;cursor:pointer;border:1px solid rgba(255,106,0,0.2);transition:border-color .15s;}
-    .gallery-thumb:hover{border-color:#ff6a00;}
-    .gallery-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
-
-    /* MOBILE */
-    @media(max-width:860px){
-      .profile-page{grid-template-columns:1fr;padding:16px;}
-      .col-left,.col-mid,.col-right{grid-column:1;}
-    }
-  </style>
-</head>
-<body>
-  <canvas id="starfield"></canvas>
-
-  <div class="navbar">
-    <div class="logo"><a href="/feed">Spacebook</a></div>
-    <div class="nav-links">
-      <a href="/home">Home</a><a href="/feed">Feed</a><a href="/profile">Profile</a>
-      <a href="/messages">Messages</a><a href="/gallery">Gallery</a><a href="/stories">Stories</a>
-      <a href="/listen-together">Listen Together</a><a href="/artist-dashboard">Artist</a>
-      <a href="/activity">Activity</a><a href="/logout">Log Out</a>
-    </div>
-  </div>
-
-  <div class="profile-page">
-
-    <!-- LEFT COLUMN -->
-    <div class="col-left">
-      <div class="card" style="text-align:center;">
-        <div class="profile-avatar"></div>
-        <h2 style="margin:0;color:#ff6a00;font-size:20px;">${target.name}</h2>
-        <p style="margin:4px 0;color:#aaa;font-size:13px;">${target.network || "Unknown network"}</p>
-        <p style="margin:6px 0;color:#ccc;font-size:13px;font-style:italic;">"Exploring the universe via Spacebook."</p>
-        <div style="margin-top:14px;">
-          ${isFriend
-            ? `<form action="/remove-friend/${target._id}" method="post">
-                <button class="btn-primary" style="background:#111;color:#ff6a00;border:1px solid #ff6a00;width:100%;">✕ Remove Friend</button>
-               </form>`
-            : `<form action="/add-friend/${target._id}" method="post">
-                <button class="btn-primary" style="width:100%;">+ Add Friend</button>
-               </form>`}
-          <a href="/gallery/${target._id}" class="btn-secondary" style="display:block;margin-top:8px;text-align:center;">📷 View Gallery</a>
-        </div>
-      </div>
-    </div>
-
-    <!-- MIDDLE COLUMN: Posts -->
-    <div class="col-mid">
-      <div class="card">
-        <h3 style="color:#ff6a00;margin:0 0 14px;">📝 ${target.name}'s Posts</h3>
-        ${postsHtml || "<p style='color:#ccc;font-size:13px;'>No posts yet.</p>"}
-      </div>
-    </div>
-
-    <!-- RIGHT COLUMN: Friends + Gallery -->
-    <div class="col-right">
-      <div class="card">
-        <h3 style="color:#ff6a00;margin:0 0 10px;">⭐ Top Friends</h3>
-        <div class="friend-grid">
-          ${topFriendsHtml || "<p style='color:#ccc;font-size:13px;'>None set.</p>"}
+      <div class="navbar">
+        <div class="logo"><a href="/feed">Spacebook</a></div>
+        <div class="nav-links">
+          <a href="/home">Home</a>
+          <a href="/feed">Feed</a>
+          <a href="/profile">Profile</a>
+          <a href="/messages">Messages</a>
+          <a href="/gallery">Gallery</a>
+          <a href="/stories">Stories</a>
+          <a href="/listen-together">Listen Together</a>
+          <a href="/artist-dashboard">Artist</a>
+          <a href="/activity">Activity</a>
+          <a href="/logout">Log Out</a>
         </div>
       </div>
 
-      <div class="card">
-        <h3 style="color:#ff6a00;margin:0 0 10px;">👥 Friends (${target.friends.length})</h3>
-        <div class="friend-grid">
-          ${friendsGridHtml || "<p style='color:#ccc;font-size:13px;'>No friends yet.</p>"}
+      <div class="profile-page">
+
+        <!-- LEFT: Profile info + add/remove friend -->
+        <div class="col-left">
+          <div class="card">
+            <div style="display:flex;flex-direction:column;align-items:center;text-align:center;">
+              <div class="profile-avatar"></div>
+              <h2 style="margin:8px 0 4px;color:#ff6a00;">${target.name}</h2>
+              <p style="margin:4px 0;color:#aaa;">${target.network || "Unknown network"}</p>
+              <p style="margin:4px 0;color:#ccc;font-size:13px;">"Exploring the universe via Spacebook."</p>
+            </div>
+            <div style="margin-top:14px;">
+              ${isFriend
+                ? `<form action="/remove-friend/${target._id}" method="post">
+                    <button class="btn-primary" style="width:100%;background:#111;color:#ff6a00;border:1px solid #ff6a00;">✕ Remove Friend</button>
+                   </form>`
+                : `<form action="/add-friend/${target._id}" method="post">
+                    <button class="btn-primary" style="width:100%;">+ Add Friend</button>
+                   </form>`}
+            </div>
+          </div>
+        </div>
+
+        <!-- MIDDLE: Posts -->
+        <div class="col-mid">
+          <div class="card">
+            <h3 style="color:#ff6a00;margin-bottom:10px;">📝 ${target.name}'s Posts</h3>
+            ${postsHtml || "<p style='color:#ccc;font-size:13px;'>No posts yet.</p>"}
+          </div>
+        </div>
+
+        <!-- RIGHT: Top Friends + Friends + Gallery -->
+        <div class="col-right">
+          <div class="card">
+            <h3 style="color:#ff6a00;margin-bottom:10px;">⭐ Top Friends</h3>
+            <div class="top-friends-bar">
+              ${topFriendsHtml || "<p style='color:#ccc;font-size:13px;'>None set.</p>"}
+            </div>
+            <hr style="margin:16px 0;border:none;border-top:1px solid #333;">
+            <h3 style="color:#ff6a00;margin-bottom:10px;">👥 Friends (${target.friends.length})</h3>
+            <div style="display:flex;flex-wrap:wrap;gap:10px;">
+              ${friendsGridHtml || "<p style='color:#ccc;font-size:13px;'>No friends yet.</p>"}
+            </div>
+          </div>
+
+          <div class="card">
+            <h3 style="color:#ff6a00;margin-bottom:10px;">📷 Gallery</h3>
+            <div id="target-gallery-grid" class="gallery-grid">
+              <p style="color:#888;font-size:13px;">Loading...</p>
+            </div>
+            <a href="/gallery/${target._id}" style="display:inline-block;margin-top:12px;color:#ff6a00;font-size:13px;">View full gallery →</a>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Gallery overlay -->
+      <div id="profile-media-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:1000;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px 0;">
+        <div style="max-width:860px;width:100%;padding:0 16px;box-sizing:border-box;">
+          <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+            <div onclick="closeProfileGallery()" style="font-size:28px;cursor:pointer;color:#fff;background:rgba(255,255,255,0.1);border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;">✕</div>
+          </div>
+          <div id="profile-overlay-media"></div>
+          <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;justify-content:center;">
+            <button onclick="reactProfilePhoto('❤️')" class="react-btn" id="prb-❤️">❤️ <span id="prc-❤️">0</span></button>
+            <button onclick="reactProfilePhoto('🔥')" class="react-btn" id="prb-🔥">🔥 <span id="prc-🔥">0</span></button>
+            <button onclick="reactProfilePhoto('😂')" class="react-btn" id="prb-😂">😂 <span id="prc-😂">0</span></button>
+            <button onclick="reactProfilePhoto('🤝')" class="react-btn" id="prb-🤝">🤝 <span id="prc-🤝">0</span></button>
+            <button onclick="reactProfilePhoto('🚀')" class="react-btn" id="prb-🚀">🚀 <span id="prc-🚀">0</span></button>
+          </div>
+          <div style="margin-top:16px;">
+            <h4 style="color:#ff6a00;margin:0 0 10px;">💬 Comments</h4>
+            <div id="profile-comment-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;max-height:220px;overflow-y:auto;"></div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <input id="profile-comment-input" type="text" placeholder="Add a comment..." maxlength="300"
+                style="flex:1;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;min-height:unset;"
+                onkeydown="if(event.key==='Enter'){event.preventDefault();submitProfileComment();}"/>
+              <button class="btn-primary" onclick="submitProfileComment()">Post</button>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="card">
-        <h3 style="color:#ff6a00;margin:0 0 10px;">📷 Gallery</h3>
-        <div id="target-gallery-grid" class="gallery-grid">
-          <p style="color:#888;font-size:13px;">Loading...</p>
-        </div>
-      </div>
-    </div>
+      <script>
+        let profileGalleryAlbumId = null;
+        let profileGalleryPhotoIndex = null;
 
-  </div>
-
-  <!-- Gallery overlay -->
-  <div id="profile-media-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:1000;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px 0;">
-    <div style="max-width:860px;width:100%;padding:0 16px;box-sizing:border-box;">
-      <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
-        <div onclick="closeProfileGallery()" style="font-size:28px;cursor:pointer;color:#fff;background:rgba(255,255,255,0.1);border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;">✕</div>
-      </div>
-      <div id="profile-overlay-media"></div>
-      <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;justify-content:center;">
-        <button onclick="reactProfilePhoto('❤️')" class="react-btn" id="prb-❤️">❤️ <span id="prc-❤️">0</span></button>
-        <button onclick="reactProfilePhoto('🔥')" class="react-btn" id="prb-🔥">🔥 <span id="prc-🔥">0</span></button>
-        <button onclick="reactProfilePhoto('😂')" class="react-btn" id="prb-😂">😂 <span id="prc-😂">0</span></button>
-        <button onclick="reactProfilePhoto('🤝')" class="react-btn" id="prb-🤝">🤝 <span id="prc-🤝">0</span></button>
-        <button onclick="reactProfilePhoto('🚀')" class="react-btn" id="prb-🚀">🚀 <span id="prc-🚀">0</span></button>
-      </div>
-      <div style="margin-top:16px;">
-        <h4 style="color:#ff6a00;margin:0 0 10px;">💬 Comments</h4>
-        <div id="profile-comment-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;max-height:220px;overflow-y:auto;"></div>
-        <div style="display:flex;gap:8px;align-items:center;">
-          <input id="profile-comment-input" type="text" placeholder="Add a comment..." maxlength="300"
-            style="flex:1;min-width:0;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;"
-            onkeydown="if(event.key==='Enter'){event.preventDefault();submitProfileComment();}"/>
-          <button class="btn-primary" style="height:44px;padding:0 14px;box-sizing:border-box;flex-shrink:0;" onclick="submitProfileComment()">Post</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    // ====== STARFIELD ======
-    const canvas = document.getElementById("starfield");
-    const ctx = canvas.getContext("2d");
-    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-    window.addEventListener("resize", () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
-    const stars = Array.from({length:200},()=>({x:Math.random()*canvas.width,y:Math.random()*canvas.height,r:Math.random()*1.5+0.3,alpha:Math.random(),speed:Math.random()*0.3+0.1}));
-    const shootingStars = [];
-    function spawnShootingStar(){shootingStars.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height*0.5,len:Math.random()*120+80,speed:Math.random()*8+6,angle:Math.PI/4,alpha:1});}
-    setInterval(spawnShootingStar,2500);
-    function draw(){
-      ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle="#000";ctx.fillRect(0,0,canvas.width,canvas.height);
-      stars.forEach(s=>{s.alpha+=s.speed*0.02*(Math.random()>0.5?1:-1);s.alpha=Math.max(0.1,Math.min(1,s.alpha));ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle="rgba(255,255,255,"+s.alpha+")";ctx.fill();});
-      for(let i=shootingStars.length-1;i>=0;i--){const s=shootingStars[i];ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(s.x-Math.cos(s.angle)*s.len,s.y-Math.sin(s.angle)*s.len);const g=ctx.createLinearGradient(s.x,s.y,s.x-Math.cos(s.angle)*s.len,s.y-Math.sin(s.angle)*s.len);g.addColorStop(0,"rgba(255,150,50,"+s.alpha+")");g.addColorStop(1,"rgba(255,150,50,0)");ctx.strokeStyle=g;ctx.lineWidth=2;ctx.stroke();s.x+=Math.cos(s.angle)*s.speed;s.y+=Math.sin(s.angle)*s.speed;s.alpha-=0.015;if(s.alpha<=0)shootingStars.splice(i,1);}
-      requestAnimationFrame(draw);
-    }
-    draw();
-
-    // ====== TARGET GALLERY ======
-    let profileGalleryAlbumId = null;
-    let profileGalleryPhotoIndex = null;
-
-    async function loadTargetGallery() {
-      const albums = await fetch("/api/albums/user/${target._id}", {credentials:"include"}).then(r=>r.json()).catch(()=>[]);
-      const grid = document.getElementById("target-gallery-grid");
-      const allPhotos = [];
-      albums.forEach(function(a){ a.photos.forEach(function(p,i){ allPhotos.push({url:p.url,albumId:a._id,photoIndex:i}); }); });
-      if (!allPhotos.length) { grid.innerHTML = "<p style='color:#888;font-size:13px;'>No photos yet.</p>"; return; }
-      grid.innerHTML = allPhotos.slice(0,9).map(function(p){
-        return "<div class='gallery-thumb' onclick=\\"openProfileGallery('" + p.albumId + "'," + p.photoIndex + ",'" + p.url + "')\\">" +
-          "<img src='" + p.url + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/></div>";
-      }).join("");
-    }
-
-    async function openProfileGallery(albumId, photoIndex, url) {
-      profileGalleryAlbumId = albumId;
-      profileGalleryPhotoIndex = photoIndex;
-      const overlay = document.getElementById("profile-media-overlay");
-      const media = document.getElementById("profile-overlay-media");
-      const isVideo = url.match(/\.(mp4|webm|ogg)(\?|$)/i);
-      media.innerHTML = isVideo
-        ? "<video src='" + url + "' controls autoplay style='max-width:100%;max-height:65vh;border-radius:10px;display:block;margin:0 auto;'></video>"
-        : "<img src='" + url + "' style='max-width:100%;max-height:65vh;border-radius:10px;display:block;margin:0 auto;' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/>";
-      overlay.style.display = "flex";
-      await loadProfileReactions();
-      await loadProfileComments();
-    }
-
-    function closeProfileGallery() {
-      document.getElementById("profile-media-overlay").style.display = "none";
-      document.getElementById("profile-overlay-media").innerHTML = "";
-      document.getElementById("profile-comment-list").innerHTML = "";
-      profileGalleryAlbumId = null;
-      profileGalleryPhotoIndex = null;
-    }
-
-    async function loadProfileReactions() {
-      const data = await fetch("/api/albums/" + profileGalleryAlbumId + "/photos/" + profileGalleryPhotoIndex + "/reactions", {credentials:"include"})
-        .then(r=>r.json()).catch(()=>({counts:{},myReaction:null}));
-      ["❤️","🔥","😂","🤝","🚀"].forEach(function(e){
-        const el = document.getElementById("prc-" + e);
-        const btn = document.getElementById("prb-" + e);
-        if (el) el.textContent = data.counts[e] || 0;
-        if (btn) btn.classList.toggle("mine", data.myReaction === e);
-      });
-    }
-
-    async function reactProfilePhoto(emoji) {
-      if (!profileGalleryAlbumId) return;
-      await fetch("/api/albums/" + profileGalleryAlbumId + "/photos/" + profileGalleryPhotoIndex + "/react", {
-        method:"POST", credentials:"include",
-        headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({emoji:emoji})
-      });
-      await loadProfileReactions();
-    }
-
-    async function loadProfileComments() {
-      const comments = await fetch("/api/albums/" + profileGalleryAlbumId + "/photos/" + profileGalleryPhotoIndex + "/comments", {credentials:"include"})
-        .then(r=>r.json()).catch(()=>[]);
-      const list = document.getElementById("profile-comment-list");
-      if (!comments.length) { list.innerHTML = "<div style='color:#666;font-size:13px;padding:8px;'>No comments yet.</div>"; return; }
-      list.innerHTML = comments.map(function(c){
-        return "<div class='comment-item'><img class='comment-avatar' src='" + (c.userPic||"/assets/img/default-avatar.png") + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/>" +
-          "<div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div></div>";
-      }).join("");
-      list.scrollTop = list.scrollHeight;
-    }
-
-    async function submitProfileComment() {
-      const input = document.getElementById("profile-comment-input");
-      const text = input.value.trim();
-      if (!text || !profileGalleryAlbumId) return;
-      await fetch("/api/albums/" + profileGalleryAlbumId + "/photos/" + profileGalleryPhotoIndex + "/comments", {
-        method:"POST", credentials:"include",
-        headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({text:text})
-      });
-      input.value = "";
-      await loadProfileComments();
-    }
-
-    // ====== POST REACTIONS ======
-    async function loadPostReactions(postId) {
-      const data = await fetch("/api/posts/" + postId + "/reactions", {credentials:"include"}).then(r=>r.json()).catch(()=>({counts:{},myReaction:null}));
-      ["❤️","🔥","😂","🤝","🚀"].forEach(function(e){
-        const el = document.getElementById("rp-" + postId + "-" + e.codePointAt(0));
-        if (el) el.textContent = data.counts[e] || 0;
-        const btn = document.querySelector(".react-pill[data-post-id='" + postId + "'][data-emoji='" + e + "']");
-        if (btn) btn.classList.toggle("mine", data.myReaction === e);
-      });
-    }
-
-    // ====== POST COMMENTS ======
-    async function loadPostComments(postId) {
-      const comments = await fetch("/api/posts/" + postId + "/comments", {credentials:"include"}).then(r=>r.json()).catch(()=>[]);
-      const list = document.getElementById("cl-" + postId);
-      if (!list) return;
-      list.innerHTML = !comments.length
-        ? "<div style='color:#666;font-size:13px;padding:6px;'>No comments yet.</div>"
-        : comments.map(function(c){
-            return "<div class='comment-item'><img class='comment-avatar' src='" + (c.userPic||"/assets/img/default-avatar.png") + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/><div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div></div>";
+        async function loadTargetGallery() {
+          const albums = await fetch("/api/albums/user/${target._id}", { credentials: "include" }).then(r => r.json()).catch(() => []);
+          const grid = document.getElementById("target-gallery-grid");
+          const allPhotos = [];
+          albums.forEach(function(a) { a.photos.forEach(function(p, i) { allPhotos.push({ url: p.url, albumId: a._id, photoIndex: i }); }); });
+          if (!allPhotos.length) { grid.innerHTML = "<p style='color:#888;font-size:13px;'>No photos yet.</p>"; return; }
+          grid.innerHTML = allPhotos.slice(0, 9).map(function(p) {
+            return "<div class='gallery-thumb' onclick=\\"openProfileGallery('" + p.albumId + "'," + p.photoIndex + ",'" + p.url + "')\\">" +
+              "<img src='" + p.url + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/></div>";
           }).join("");
-      list.scrollTop = list.scrollHeight;
-    }
+        }
 
-    async function submitPostComment(postId, inputEl) {
-      const text = inputEl.value.trim();
-      if (!text) return;
-      await fetch("/api/posts/" + postId + "/comments", {
-        method:"POST", credentials:"include",
-        headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({text:text})
-      });
-      inputEl.value = "";
-      loadPostComments(postId);
-    }
+        async function openProfileGallery(albumId, photoIndex, url) {
+          profileGalleryAlbumId = albumId;
+          profileGalleryPhotoIndex = photoIndex;
+          const overlay = document.getElementById("profile-media-overlay");
+          const media = document.getElementById("profile-overlay-media");
+          const isVideo = url.match(/\\.(mp4|webm|ogg)(\\?|$)/i);
+          media.innerHTML = isVideo
+            ? "<video src='" + url + "' controls autoplay style='max-width:100%;max-height:65vh;border-radius:10px;display:block;margin:0 auto;'></video>"
+            : "<img src='" + url + "' style='max-width:100%;max-height:65vh;border-radius:10px;display:block;margin:0 auto;' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/>";
+          overlay.style.display = "flex";
+          await loadProfileReactions();
+          await loadProfileComments();
+        }
 
-    function timeAgo(date) {
-      const diff = Date.now() - new Date(date).getTime();
-      const mins = Math.floor(diff/60000);
-      if (mins < 1) return "just now";
-      if (mins < 60) return mins + "m ago";
-      const hrs = Math.floor(mins/60);
-      if (hrs < 24) return hrs + "h ago";
-      return Math.floor(hrs/24) + "d ago";
-    }
+        function closeProfileGallery() {
+          document.getElementById("profile-media-overlay").style.display = "none";
+          document.getElementById("profile-overlay-media").innerHTML = "";
+          document.getElementById("profile-comment-list").innerHTML = "";
+          profileGalleryAlbumId = null; profileGalleryPhotoIndex = null;
+        }
 
-    // ====== CLICK HANDLER ======
-    document.addEventListener("click", async function(e) {
-      const pill = e.target.closest(".react-pill");
-      if (pill && pill.dataset.postId) {
-        await fetch("/api/posts/" + pill.dataset.postId + "/react", {
-          method:"POST", credentials:"include",
-          headers:{"Content-Type":"application/json"},
-          body: JSON.stringify({emoji:pill.dataset.emoji})
+        async function loadProfileReactions() {
+          const data = await fetch("/api/albums/" + profileGalleryAlbumId + "/photos/" + profileGalleryPhotoIndex + "/reactions", { credentials: "include" })
+            .then(r => r.json()).catch(() => ({ counts: {}, myReaction: null }));
+          ["❤️","🔥","😂","🤝","🚀"].forEach(function(e) {
+            const el = document.getElementById("prc-" + e);
+            const btn = document.getElementById("prb-" + e);
+            if (el) el.textContent = data.counts[e] || 0;
+            if (btn) btn.classList.toggle("mine", data.myReaction === e);
+          });
+        }
+
+        async function reactProfilePhoto(emoji) {
+          if (!profileGalleryAlbumId && profileGalleryPhotoIndex === null) return;
+          await fetch("/api/albums/" + profileGalleryAlbumId + "/photos/" + profileGalleryPhotoIndex + "/react", {
+            method: "POST", credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ emoji: emoji })
+          });
+          await loadProfileReactions();
+        }
+
+        async function loadProfileComments() {
+          const comments = await fetch("/api/albums/" + profileGalleryAlbumId + "/photos/" + profileGalleryPhotoIndex + "/comments", { credentials: "include" })
+            .then(r => r.json()).catch(() => []);
+          const list = document.getElementById("profile-comment-list");
+          if (!comments.length) { list.innerHTML = "<div style='color:#666;font-size:13px;padding:8px;'>No comments yet.</div>"; return; }
+          list.innerHTML = comments.map(function(c) {
+            return "<div class='comment-item'>" +
+              "<img class='comment-avatar' src='" + (c.userPic || "/assets/img/default-avatar.png") + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/>" +
+              "<div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div>" +
+            "</div>";
+          }).join("");
+          list.scrollTop = list.scrollHeight;
+        }
+
+        async function submitProfileComment() {
+          const input = document.getElementById("profile-comment-input");
+          const text = input.value.trim();
+          if (!text || !profileGalleryAlbumId) return;
+          await fetch("/api/albums/" + profileGalleryAlbumId + "/photos/" + profileGalleryPhotoIndex + "/comments", {
+            method: "POST", credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text: text })
+          });
+          input.value = "";
+          await loadProfileComments();
+        }
+
+        document.addEventListener("click", async function(e) {
+          const pill = e.target.closest(".react-pill");
+          if (pill) {
+            await fetch("/api/posts/" + pill.dataset.postId + "/react", {
+              method: "POST", credentials: "include",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ emoji: pill.dataset.emoji })
+            });
+            loadPostReactions(pill.dataset.postId);
+          }
+          const toggleBtn = e.target.closest(".comment-toggle-btn");
+          if (toggleBtn) {
+            const postId = toggleBtn.dataset.postId;
+            const section = document.getElementById("cs-" + postId);
+            if (section.style.display === "none") { section.style.display = "block"; loadPostComments(postId); }
+            else section.style.display = "none";
+          }
         });
-        loadPostReactions(pill.dataset.postId);
-        return;
-      }
-      const toggleBtn = e.target.closest(".comment-toggle-btn");
-      if (toggleBtn) {
-        const postId = toggleBtn.dataset.postId;
-        const section = document.getElementById("cs-" + postId);
-        if (section.style.display === "none") { section.style.display = "block"; loadPostComments(postId); }
-        else section.style.display = "none";
-        return;
-      }
-    });
 
-    document.addEventListener("keydown", function(e){ if (e.key === "Escape") closeProfileGallery(); });
+        async function loadPostReactions(postId) {
+          const data = await fetch("/api/posts/" + postId + "/reactions", { credentials: "include" }).then(r => r.json()).catch(() => ({ counts: {}, myReaction: null }));
+          ["❤️","🔥","😂","🤝","🚀"].forEach(function(e) {
+            const el = document.getElementById("rp-" + postId + "-" + e.codePointAt(0));
+            if (el) el.textContent = data.counts[e] || 0;
+            const btn = document.querySelector(".react-pill[data-post-id='" + postId + "'][data-emoji='" + e + "']");
+            if (btn) btn.classList.toggle("mine", data.myReaction === e);
+          });
+        }
 
-    // ====== INIT ======
-    document.querySelectorAll(".post-card").forEach(function(card){
-      if (card.dataset.postId) loadPostReactions(card.dataset.postId);
-    });
-    loadTargetGallery();
-  </script>
-</body>
-</html>`);
+        async function loadPostComments(postId) {
+          const comments = await fetch("/api/posts/" + postId + "/comments", { credentials: "include" }).then(r => r.json()).catch(() => []);
+          const list = document.getElementById("cl-" + postId);
+          if (!list) return;
+          list.innerHTML = !comments.length
+            ? "<div style='color:#666;font-size:13px;padding:6px;'>No comments yet.</div>"
+            : comments.map(function(c) {
+                return "<div class='comment-item'><img class='comment-avatar' src='" + (c.userPic || "/assets/img/default-avatar.png") + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/><div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div></div>";
+              }).join("");
+          list.scrollTop = list.scrollHeight;
+        }
+
+        async function submitPostComment(postId, inputEl) {
+          const text = inputEl.value.trim();
+          if (!text) return;
+          await fetch("/api/posts/" + postId + "/comments", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: text }) });
+          inputEl.value = "";
+          loadPostComments(postId);
+        }
+
+        function timeAgo(date) {
+          const diff = Date.now() - new Date(date).getTime();
+          const mins = Math.floor(diff / 60000);
+          if (mins < 1) return "just now";
+          if (mins < 60) return mins + "m ago";
+          const hrs = Math.floor(mins / 60);
+          if (hrs < 24) return hrs + "h ago";
+          return Math.floor(hrs / 24) + "d ago";
+        }
+
+        document.addEventListener("keydown", function(e) { if (e.key === "Escape") closeProfileGallery(); });
+        document.querySelectorAll(".post-card").forEach(function(card) { const id = card.dataset.postId; if (id) loadPostReactions(id); });
+        loadTargetGallery();
+      </script>
+    </body>
+    </html>
+  `);
 });
-
 // ====== CHESS LEADERBOARD ROUTES ======
 app.post("/api/chess/registerPlayer", async (req, res) => {
   try {
