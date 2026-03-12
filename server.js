@@ -367,17 +367,13 @@ app.get("/home", requireLogin, async (req, res) => {
     _id: { $ne: user._id, $nin: friendIds }
   }).limit(8);
 
-  const currentUserId = user._id.toString();
-
   const latestPostsHtml = latestPosts.map(p => `
   <div class="post-card" data-post-id="${p._id}">
     <div class="post">
       <div class="author"><a href="/profile/${p.userId}" style="color:#ff6a00;text-decoration:none;">${p.userName}</a></div>
       <div class="meta">${p.createdAt.toLocaleString()}</div>
       <p class="post-content" style="margin-top:6px;">${p.content || ""}</p>
-      <div class="post-image-wrapper">
-        ${p.imagePath ? `<img src="${p.imagePath}" style="max-width:100%;margin-top:8px;border-radius:6px;">` : ""}
-      </div>
+      ${p.imagePath ? `<img src="${p.imagePath}" style="max-width:100%;margin-top:8px;border-radius:6px;">` : ""}
     </div>
     <div class="post-reactions" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
       ${["❤️","🔥","😂","🤝","🚀"].map(e => `
@@ -390,12 +386,9 @@ app.get("/home", requireLogin, async (req, res) => {
     </div>
     <div class="comment-section" id="cs-${p._id}" style="display:none;margin-top:10px;">
       <div class="comment-list" id="cl-${p._id}" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;max-height:200px;overflow-y:auto;"></div>
-      <div style="display:grid;grid-template-columns:1fr auto;gap:8px;width:100%;">
-        <input class="comment-input" data-post-id="${p._id}" type="text" placeholder="Write a comment..." maxlength="300"
-          style="width:100%;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;"
-          onkeydown="if(event.key==='Enter'){event.preventDefault();submitPostComment('${p._id}',this);}"/>
-        <button class="btn-primary" style="height:44px;padding:0 16px;white-space:nowrap;"
-          onclick="submitPostComment('${p._id}', document.querySelector('.comment-input[data-post-id=\\'${p._id}\\']'))">Post</button>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <input class="comment-input" data-post-id="${p._id}" type="text" placeholder="Write a comment..." maxlength="300" style="flex:1;min-width:0;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;"/>
+        <button class="btn-primary" style="font-size:12px;padding:6px 10px;height:44px;box-sizing:border-box;flex-shrink:0;" onclick="submitPostComment('${p._id}', this.previousElementSibling)">Post</button>
       </div>
     </div>
   </div>`).join("");
@@ -446,8 +439,7 @@ app.get("/home", requireLogin, async (req, res) => {
     .comment-name{font-size:12px;color:#ff6a00;font-weight:bold;}
     .comment-text{font-size:13px;color:#f0f0f0;word-break:break-word;margin-top:2px;}
     .comment-time{font-size:11px;color:#555;margin-top:2px;}
-    .comment-del-btn{background:none;border:none;color:#555;cursor:pointer;font-size:13px;flex-shrink:0;padding:0 2px;line-height:1;}
-    .comment-del-btn:hover{color:#e55;}
+    .comment-input{height:44px!important;min-height:44px!important;box-sizing:border-box!important;}
     @media(max-width:600px){.page{flex-direction:column;padding:16px;}.sidebar{width:100%;}}
   </style>
 </head>
@@ -514,8 +506,7 @@ app.get("/home", requireLogin, async (req, res) => {
   </div>
 
   <script>
-    const CURRENT_USER_ID = "${currentUserId}";
-
+    // ====== STARFIELD ======
     const canvas = document.getElementById("starfield");
     const ctx = canvas.getContext("2d");
     canvas.width = window.innerWidth; canvas.height = window.innerHeight;
@@ -532,6 +523,7 @@ app.get("/home", requireLogin, async (req, res) => {
     }
     draw();
 
+    // ====== POST REACTIONS ======
     async function loadPostReactions(postId) {
       const data = await fetch("/api/posts/" + postId + "/reactions", {credentials:"include"}).then(r=>r.json()).catch(()=>({counts:{},myReaction:null}));
       ["❤️","🔥","😂","🤝","🚀"].forEach(function(e) {
@@ -542,25 +534,15 @@ app.get("/home", requireLogin, async (req, res) => {
       });
     }
 
+    // ====== POST COMMENTS ======
     async function loadPostComments(postId) {
       const comments = await fetch("/api/posts/" + postId + "/comments", {credentials:"include"}).then(r=>r.json()).catch(()=>[]);
       const list = document.getElementById("cl-" + postId);
       if (!list) return;
-      if (!comments.length) { list.innerHTML = "<div style='color:#666;font-size:13px;padding:6px;'>No comments yet.</div>"; return; }
-      list.innerHTML = comments.map(function(c) {
-        const canDel = c.userId && c.userId.toString() === CURRENT_USER_ID;
-        return "<div class='comment-item' id='pcmt-" + c._id + "'>" +
-          "<img class='comment-avatar' src='" + (c.userPic || "/assets/img/default-avatar.png") + "' onerror=\"this.src='/assets/img/default-avatar.png'\"/>" +
-          "<div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div>" +
-          (canDel ? "<button class='comment-del-btn' onclick=\"deletePostComment('" + c._id + "','" + postId + "')\">✕</button>" : "") +
-        "</div>";
-      }).join("");
+      list.innerHTML = !comments.length
+        ? "<div style='color:#666;font-size:13px;padding:6px;'>No comments yet.</div>"
+        : comments.map(c => "<div class='comment-item'><img class='comment-avatar' src='" + (c.userPic||"/assets/img/default-avatar.png") + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/><div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div></div>").join("");
       list.scrollTop = list.scrollHeight;
-    }
-
-    async function deletePostComment(commentId, postId) {
-      await fetch("/api/post-comments/" + commentId, { method: "DELETE", credentials: "include" });
-      loadPostComments(postId);
     }
 
     async function submitPostComment(postId, inputEl) {
@@ -585,6 +567,7 @@ app.get("/home", requireLogin, async (req, res) => {
       return Math.floor(hrs/24) + "d ago";
     }
 
+    // ====== CLICK HANDLER ======
     document.addEventListener("click", async function(e) {
       const pill = e.target.closest(".react-pill");
       if (pill) {
@@ -600,11 +583,16 @@ app.get("/home", requireLogin, async (req, res) => {
       if (toggleBtn) {
         const postId = toggleBtn.dataset.postId;
         const section = document.getElementById("cs-" + postId);
-        if (section.style.display === "none") { section.style.display = "block"; loadPostComments(postId); }
-        else section.style.display = "none";
+        if (section.style.display === "none") {
+          section.style.display = "block";
+          loadPostComments(postId);
+        } else {
+          section.style.display = "none";
+        }
       }
     });
 
+    // ====== INIT ======
     document.querySelectorAll(".post-card").forEach(function(card) {
       if (card.dataset.postId) loadPostReactions(card.dataset.postId);
     });
@@ -619,7 +607,6 @@ app.get("/feed", requireLogin, async (req, res) => {
   const friendIds = user.friends.map(f => f._id);
   friendIds.push(user._id);
   const posts = await Post.find({ userId: { $in: friendIds } }).sort({ createdAt: -1 });
-  const currentUserId = user._id.toString();
 
   const htmlPosts = posts.map(p => {
     const isOwner = p.userId.toString() === user._id.toString();
@@ -649,12 +636,11 @@ app.get("/feed", requireLogin, async (req, res) => {
       </div>
       <div class="comment-section" id="cs-${p._id}" style="display:none;margin-top:10px;">
         <div class="comment-list" id="cl-${p._id}" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;max-height:200px;overflow-y:auto;"></div>
-        <div style="display:grid;grid-template-columns:1fr auto;gap:8px;width:100%;">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
           <input class="comment-input" data-post-id="${p._id}" type="text" placeholder="Write a comment..." maxlength="300"
-            style="width:100%;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;"
-            onkeydown="if(event.key==='Enter'){event.preventDefault();submitPostComment('${p._id}',this);}"/>
-          <button class="btn-primary" style="height:44px;padding:0 16px;white-space:nowrap;"
-            onclick="submitPostComment('${p._id}', document.querySelector('.comment-input[data-post-id=\\'${p._id}\\']'))">Post</button>
+            style="flex:1;min-width:0;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;"/>
+          <button class="btn-primary" style="font-size:12px;padding:6px 10px;height:44px;box-sizing:border-box;flex-shrink:0;"
+            onclick="submitPostComment('${p._id}', this.previousElementSibling)">Post</button>
         </div>
       </div>
       ${isOwner ? `
@@ -718,8 +704,7 @@ app.get("/feed", requireLogin, async (req, res) => {
     .comment-name{font-size:12px;color:#ff6a00;font-weight:bold;}
     .comment-text{font-size:13px;color:#f0f0f0;word-break:break-word;margin-top:2px;}
     .comment-time{font-size:11px;color:#555;margin-top:2px;}
-    .comment-del-btn{background:none;border:none;color:#555;cursor:pointer;font-size:13px;flex-shrink:0;padding:0 2px;line-height:1;}
-    .comment-del-btn:hover{color:#e55;}
+    .comment-input{height:44px!important;min-height:44px!important;box-sizing:border-box!important;}
     textarea{width:100%;background:rgba(255,255,255,0.06);border:1px solid #444;border-radius:8px;color:#fff;padding:10px;font-size:14px;resize:vertical;box-sizing:border-box;}
     textarea:focus,input[type=text]:focus{border-color:#ff6a00;outline:none;}
     .notif-panel{position:absolute;right:0;top:36px;width:300px;background:rgba(10,10,10,0.97);border:1px solid rgba(255,106,0,0.3);border-radius:12px;backdrop-filter:blur(12px);z-index:500;max-height:400px;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.6);}
@@ -777,8 +762,7 @@ app.get("/feed", requireLogin, async (req, res) => {
   </div>
 
   <script>
-    const CURRENT_USER_ID = "${currentUserId}";
-
+    // ====== STARFIELD ======
     const canvas = document.getElementById("starfield");
     const ctx = canvas.getContext("2d");
     canvas.width = window.innerWidth; canvas.height = window.innerHeight;
@@ -795,6 +779,7 @@ app.get("/feed", requireLogin, async (req, res) => {
     }
     draw();
 
+    // ====== REACTIONS ======
     async function loadPostReactions(postId) {
       const data = await fetch("/api/posts/" + postId + "/reactions", {credentials:"include"}).then(r=>r.json()).catch(()=>({counts:{},myReaction:null}));
       ["❤️","🔥","😂","🤝","🚀"].forEach(function(e) {
@@ -805,25 +790,15 @@ app.get("/feed", requireLogin, async (req, res) => {
       });
     }
 
+    // ====== COMMENTS ======
     async function loadPostComments(postId) {
       const comments = await fetch("/api/posts/" + postId + "/comments", {credentials:"include"}).then(r=>r.json()).catch(()=>[]);
       const list = document.getElementById("cl-" + postId);
       if (!list) return;
-      if (!comments.length) { list.innerHTML = "<div style='color:#666;font-size:13px;padding:6px;'>No comments yet. Be first!</div>"; return; }
-      list.innerHTML = comments.map(function(c) {
-        const canDel = c.userId && c.userId.toString() === CURRENT_USER_ID;
-        return "<div class='comment-item' id='pcmt-" + c._id + "'>" +
-          "<img class='comment-avatar' src='" + (c.userPic || "/assets/img/default-avatar.png") + "' onerror=\"this.src='/assets/img/default-avatar.png'\"/>" +
-          "<div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div>" +
-          (canDel ? "<button class='comment-del-btn' onclick=\"deletePostComment('" + c._id + "','" + postId + "')\">✕</button>" : "") +
-        "</div>";
-      }).join("");
+      list.innerHTML = !comments.length
+        ? "<div style='color:#666;font-size:13px;padding:6px;'>No comments yet. Be first!</div>"
+        : comments.map(c => "<div class='comment-item'><img class='comment-avatar' src='" + (c.userPic||"/assets/img/default-avatar.png") + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/><div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div></div>").join("");
       list.scrollTop = list.scrollHeight;
-    }
-
-    async function deletePostComment(commentId, postId) {
-      await fetch("/api/post-comments/" + commentId, { method: "DELETE", credentials: "include" });
-      loadPostComments(postId);
     }
 
     async function submitPostComment(postId, inputEl) {
@@ -848,6 +823,7 @@ app.get("/feed", requireLogin, async (req, res) => {
       return Math.floor(hrs/24) + "d ago";
     }
 
+    // ====== NOTIFICATIONS ======
     async function loadNotifCount() {
       const data = await fetch("/api/notifications/unread-count", {credentials:"include"}).then(r=>r.json()).catch(()=>({count:0}));
       const badge = document.getElementById("notif-badge");
@@ -869,6 +845,7 @@ app.get("/feed", requireLogin, async (req, res) => {
       }
     }
 
+    // ====== CLICK HANDLER ======
     document.addEventListener("click", async function(e) {
       const pill = e.target.closest(".react-pill");
       if (pill) {
@@ -957,6 +934,7 @@ app.get("/feed", requireLogin, async (req, res) => {
         }).catch(()=>alert("Error saving changes"));
     });
 
+    // ====== INIT ======
     document.querySelectorAll(".post-card").forEach(function(card) {
       if (card.dataset.postId) loadPostReactions(card.dataset.postId);
     });
@@ -966,6 +944,7 @@ app.get("/feed", requireLogin, async (req, res) => {
 </body>
 </html>`);
 });
+
 
 // ====== POST ======
 app.post("/post", requireLogin, upload.single("image"), async (req, res) => {
