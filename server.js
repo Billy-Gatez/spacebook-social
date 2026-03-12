@@ -1058,28 +1058,34 @@ app.get("/api/posts/:postId/comments", requireLogin, async (req, res) => {
   }
 });
 
-app.post("/api/posts/:postId/comments", requireLogin, async (req, res) => {
+app.get("/api/posts/:postId/comments", requireLogin, async (req, res) => {
   try {
-    const user = await User.findById(req.session.userId);
-    if (!user) return res.status(401).json({ error: "Not logged in" });
-    const comment = await PostComment.create({
-      postId: req.params.postId,
-      userId: user._id,
-      userName: user.name,
-      userPic: user.profilePic || "",
-      text: req.body.text
-    });
-    const post = await Post.findById(req.params.postId);
-    if (post && post.userId.toString() !== user._id.toString()) {
-      await Notification.create({
-        toUserId: post.userId, fromUserId: user._id, fromUserName: user.name,
-        type: "comment", postId: post._id,
-        text: "commented on your post: \"" + (req.body.text || "").slice(0, 60) + "\""
-      });
-    }
-    res.json(comment);
+    const comments = await PostComment.find({ postId: req.params.postId }).sort({ createdAt: 1 });
+    res.json(comments.map(c => ({
+      _id: c._id.toString(),
+      userId: c.userId ? c.userId.toString() : null,
+      userName: c.userName,
+      userPic: c.userPic || null,
+      text: c.text,
+      createdAt: c.createdAt
+    })));
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+
+app.delete("/api/post-comments/:id", requireLogin, async (req, res) => {
+  try {
+    const comment = await PostComment.findById(req.params.id);
+    if (!comment) return res.status(404).json({ error: "Not found" });
+    if (comment.userId.toString() !== req.session.userId.toString()) {
+      return res.status(403).json({ error: "Not allowed" });
+    }
+    await PostComment.findByIdAndDelete(req.params.id);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
   }
 });
 
