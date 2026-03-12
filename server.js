@@ -386,223 +386,220 @@ app.get("/home", requireLogin, async (req, res) => {
     </div>
     <div class="comment-section" id="cs-${p._id}" style="display:none;margin-top:10px;">
       <div class="comment-list" id="cl-${p._id}" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;max-height:200px;overflow-y:auto;"></div>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <input class="comment-input" data-post-id="${p._id}" type="text" placeholder="Write a comment..." maxlength="300"
-          style="flex:1;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;min-height:unset;"
-          onkeydown="if(event.key==='Enter'){event.preventDefault();submitPostComment('${p._id}',this);}"/>
-        <button class="btn-primary" style="font-size:12px;padding:6px 10px;height:44px;box-sizing:border-box;"
-          onclick="submitPostComment('${p._id}', document.querySelector('.comment-input[data-post-id=\\'${p._id}\\']'))">Post</button>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <input class="comment-input" data-post-id="${p._id}" type="text" placeholder="Write a comment..." maxlength="300" style="flex:1;min-width:0;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;"/>
+        <button class="btn-primary" style="font-size:12px;padding:6px 10px;height:44px;box-sizing:border-box;flex-shrink:0;" onclick="submitPostComment('${p._id}', this.previousElementSibling)">Post</button>
       </div>
     </div>
   </div>`).join("");
 
   const suggestedHtml = suggestedFriends.map(f => `
     <div class="friend-tile">
-      <div class="friend-avatar" style="
-        width:50px; height:50px; border-radius:8px;
-        background:#111 url('${f.profilePic || "/assets/img/default-avatar.png"}') center/cover no-repeat;
-        margin-bottom:4px;
-      "></div>
-      <div style="font-size:12px;">
-        <a href="/profile/${f._id}" style="color:#ff6a00; text-decoration:none;">${f.name}</a>
-      </div>
+      <div style="width:50px;height:50px;border-radius:8px;background:#111 url('${f.profilePic || "/assets/img/default-avatar.png"}') center/cover no-repeat;margin-bottom:4px;"></div>
+      <div style="font-size:12px;"><a href="/profile/${f._id}" style="color:#ff6a00;text-decoration:none;">${f.name}</a></div>
       <form action="/add-friend/${f._id}" method="post" style="margin-top:4px;">
-        <button class="btn-primary" style="padding:4px 8px; font-size:11px;">Add Friend</button>
+        <button class="btn-primary" style="padding:4px 8px;font-size:11px;">Add Friend</button>
       </form>
     </div>
   `).join("");
 
   const pic = user.profilePic || "/assets/img/default-avatar.png";
 
-  res.send(`
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Home – Spacebook</title>
-      <link rel="stylesheet" href="/assets/css/styles.css">
-      <style>
-        html, body { background: #000 !important; margin: 0; padding: 0; color: #fff; font-family: Arial, sans-serif; overflow-x: hidden; }
-        #starfield { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: #000; }
-        .navbar { width: 100%; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.65); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 100; box-sizing: border-box; }
-        .navbar a { color: #ff6a00; text-decoration: none; font-weight: bold; }
-        .nav-links { display: flex; flex-wrap: wrap; gap: 10px; }
-        .nav-links a { color: #ccc; font-size: 13px; font-weight: normal; }
-        .nav-links a:hover { color: #ff6a00; }
-        .page { width: 100%; min-height: 100vh; display: flex; gap: 30px; padding: 40px; background: transparent !important; box-sizing: border-box; }
-        .sidebar .card, .feed .card { border-radius: 12px; background: rgba(0,0,0,0.45); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.15); padding: 20px; margin-bottom: 20px; }
-        .profile-summary { display: flex; align-items: center; gap: 16px; }
-        .profile-summary-avatar { width: 64px; height: 64px; border-radius: 50%; background: #111 url('${pic}') center/cover no-repeat; border: 2px solid #ff6a00; }
-        .friend-grid { display: flex; flex-wrap: wrap; gap: 10px; }
-        .friend-tile { width: 80px; text-align: center; }
-        .btn-primary { display: inline-block; padding: 8px 14px; background: #ff6a00; color: #000; border-radius: 6px; text-decoration: none; font-weight: bold; border: none; cursor: pointer; transition: 0.2s; }
-        .btn-primary:hover { background: #ff8c32; }
-        @media (max-width: 600px) { .page { flex-direction: column; padding: 16px; } .sidebar { width: 100%; } }
-      </style>
-    </head>
-    <body>
-      <canvas id="starfield"></canvas>
-      <script>
-        const canvas = document.getElementById("starfield");
-        const ctx = canvas.getContext("2d");
-        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-        window.addEventListener("resize", () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
-        const stars = Array.from({ length: 200 }, () => ({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, r: Math.random() * 1.5 + 0.3, alpha: Math.random(), speed: Math.random() * 0.3 + 0.1 }));
-        const shootingStars = [];
-        function spawnShootingStar() { shootingStars.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height * 0.5, len: Math.random() * 120 + 80, speed: Math.random() * 8 + 6, angle: Math.PI / 4, alpha: 1 }); }
-        setInterval(spawnShootingStar, 2500);
-        function draw() {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.fillStyle = "#000"; ctx.fillRect(0, 0, canvas.width, canvas.height);
-          stars.forEach(s => { s.alpha += s.speed * 0.02 * (Math.random() > 0.5 ? 1 : -1); s.alpha = Math.max(0.1, Math.min(1, s.alpha)); ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fillStyle = "rgba(255,255,255," + s.alpha + ")"; ctx.fill(); });
-          for (let i = shootingStars.length - 1; i >= 0; i--) { const s = shootingStars[i]; ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(s.x - Math.cos(s.angle) * s.len, s.y - Math.sin(s.angle) * s.len); const grad = ctx.createLinearGradient(s.x, s.y, s.x - Math.cos(s.angle) * s.len, s.y - Math.sin(s.angle) * s.len); grad.addColorStop(0, "rgba(255,150,50," + s.alpha + ")"); grad.addColorStop(1, "rgba(255,150,50,0)"); ctx.strokeStyle = grad; ctx.lineWidth = 2; ctx.stroke(); s.x += Math.cos(s.angle) * s.speed; s.y += Math.sin(s.angle) * s.speed; s.alpha -= 0.015; if (s.alpha <= 0) shootingStars.splice(i, 1); }
-          requestAnimationFrame(draw);
-        }
-        draw();
-      </script>
+  res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Home – Spacebook</title>
+  <link rel="stylesheet" href="/assets/css/styles.css">
+  <style>
+    html,body{background:#000!important;margin:0;padding:0;color:#fff;font-family:Arial,sans-serif;overflow-x:hidden;}
+    #starfield{position:fixed;top:0;left:0;width:100%;height:100%;z-index:-1;background:#000;}
+    .navbar{width:100%;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,0.65);backdrop-filter:blur(10px);position:sticky;top:0;z-index:100;box-sizing:border-box;}
+    .navbar a{color:#ff6a00;text-decoration:none;font-weight:bold;}
+    .nav-links{display:flex;flex-wrap:wrap;gap:10px;}
+    .nav-links a{color:#ccc;font-size:13px;font-weight:normal;}
+    .nav-links a:hover{color:#ff6a00;}
+    .page{width:100%;min-height:100vh;display:flex;gap:30px;padding:40px;background:transparent!important;box-sizing:border-box;}
+    .sidebar .card,.feed .card{border-radius:12px;background:rgba(0,0,0,0.45);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.15);padding:20px;margin-bottom:20px;}
+    .profile-summary{display:flex;align-items:center;gap:16px;}
+    .profile-summary-avatar{width:64px;height:64px;border-radius:50%;background:#111 url('${pic}') center/cover no-repeat;border:2px solid #ff6a00;}
+    .friend-grid{display:flex;flex-wrap:wrap;gap:10px;}
+    .friend-tile{width:80px;text-align:center;}
+    .btn-primary{display:inline-block;padding:8px 14px;background:#ff6a00;color:#000;border-radius:6px;text-decoration:none;font-weight:bold;border:none;cursor:pointer;transition:0.2s;}
+    .btn-primary:hover{background:#ff8c32;}
+    .btn-secondary{padding:6px 10px;background:rgba(255,255,255,0.08);border-radius:6px;border:none;color:#ff6a00;cursor:pointer;font-weight:bold;transition:0.2s;}
+    .btn-secondary:hover{background:rgba(255,255,255,0.18);}
+    .react-pill{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:4px 12px;font-size:16px;cursor:pointer;color:#fff;transition:all .15s;display:inline-flex;align-items:center;gap:5px;}
+    .react-pill:hover{border-color:#ff6a00;background:rgba(255,106,0,0.15);}
+    .react-pill.mine{border-color:#ff6a00;background:rgba(255,106,0,0.2);}
+    .rpill-count{font-size:12px;color:#ccc;}
+    .comment-item{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:8px 12px;display:flex;gap:10px;align-items:flex-start;}
+    .comment-avatar{width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid rgba(255,106,0,0.3);}
+    .comment-name{font-size:12px;color:#ff6a00;font-weight:bold;}
+    .comment-text{font-size:13px;color:#f0f0f0;word-break:break-word;margin-top:2px;}
+    .comment-time{font-size:11px;color:#555;margin-top:2px;}
+    .comment-input{height:44px!important;min-height:44px!important;box-sizing:border-box!important;}
+    @media(max-width:600px){.page{flex-direction:column;padding:16px;}.sidebar{width:100%;}}
+  </style>
+</head>
+<body>
+  <canvas id="starfield"></canvas>
 
-      <div class="navbar">
-        <div class="logo"><a href="/feed" style="color:#ff6a00;">Spacebook</a></div>
-        <div class="nav-links">
-          <a href="/home">Home</a>
-          <a href="/feed">Feed</a>
-          <a href="/profile">Profile</a>
-          <a href="/messages">Messages</a>
-          <a href="/gallery">Gallery</a>
-          <a href="/stories">Stories</a>
-          <a href="/listen-together">Listen Together</a>
-          <a href="/artist-dashboard">Artist</a>
-          <a href="/activity">Activity</a>
-          <a href="/logout">Log Out</a>
+  <div class="navbar">
+    <div class="logo"><a href="/feed">Spacebook</a></div>
+    <div class="nav-links">
+      <a href="/home">Home</a><a href="/feed">Feed</a><a href="/profile">Profile</a>
+      <a href="/messages">Messages</a><a href="/gallery">Gallery</a><a href="/stories">Stories</a>
+      <a href="/listen-together">Listen Together</a><a href="/artist-dashboard">Artist</a>
+      <a href="/activity">Activity</a><a href="/logout">Log Out</a>
+    </div>
+  </div>
+
+  <div class="page">
+    <aside class="sidebar">
+      <div class="card">
+        <div class="profile-summary">
+          <div class="profile-summary-avatar"></div>
+          <div>
+            <div style="font-size:18px;color:#ff6a00;">${user.name}</div>
+            <div style="font-size:13px;color:#ccc;">${user.network || "Unknown network"}</div>
+          </div>
+        </div>
+        <hr style="margin:16px 0;border:none;border-top:1px solid rgba(255,255,255,0.2);">
+        <strong style="color:#ff6a00;">Navigation</strong>
+        <ul style="list-style:none;margin-top:10px;font-size:14px;padding-left:0;">
+          <li><a href="/profile" style="color:#ff6a00;">Your Profile</a></li>
+          <li><a href="/feed" style="color:#ff6a00;">Feed</a></li>
+          <li><a href="/messages" style="color:#ff6a00;">Messages</a></li>
+          <li><a href="/gallery" style="color:#ff6a00;">Gallery</a></li>
+          <li><a href="/stories" style="color:#ff6a00;">Stories</a></li>
+          <li><a href="/listen-together" style="color:#ff6a00;">Listen Together</a></li>
+          <li><a href="/artist-dashboard" style="color:#ff6a00;">Artist</a></li>
+          <li><a href="/activity" style="color:#ff6a00;">Activity</a></li>
+        </ul>
+      </div>
+      <div class="card">
+        <strong style="color:#ff6a00;">Suggested Friends</strong>
+        <div class="friend-grid" style="margin-top:10px;">
+          ${suggestedHtml || "<p style='color:#ccc;font-size:13px;'>No suggestions right now.</p>"}
         </div>
       </div>
+    </aside>
 
-      <div class="page">
-        <aside class="sidebar">
-          <div class="card">
-            <div class="profile-summary">
-              <div class="profile-summary-avatar"></div>
-              <div>
-                <div style="font-size:18px; color:#ff6a00;">${user.name}</div>
-                <div style="font-size:13px; color:#ccc;">${user.network || "Unknown network"}</div>
-              </div>
-            </div>
-            <hr style="margin:16px 0; border:none; border-top:1px solid rgba(255,255,255,0.2);">
-            <strong style="color:#ff6a00;">Navigation</strong>
-            <ul style="list-style:none; margin-top:10px; font-size:14px; padding-left:0;">
-              <li><a href="/profile" style="color:#ff6a00;">Your Profile</a></li>
-              <li><a href="/feed" style="color:#ff6a00;">Feed</a></li>
-              <li><a href="/messages" style="color:#ff6a00;">Messages</a></li>
-              <li><a href="/gallery" style="color:#ff6a00;">Gallery</a></li>
-              <li><a href="/stories" style="color:#ff6a00;">Stories</a></li>
-              <li><a href="/listen-together" style="color:#ff6a00;">Listen Together</a></li>
-              <li><a href="/artist-dashboard" style="color:#ff6a00;">Artist</a></li>
-              <li><a href="/activity" style="color:#ff6a00;">Activity</a></li>
-            </ul>
-          </div>
-          <div class="card">
-            <strong style="color:#ff6a00;">Suggested Friends</strong>
-            <div class="friend-grid" style="margin-top:10px;">
-              ${suggestedHtml || "<p style='color:#ccc; font-size:13px;'>No suggestions right now.</p>"}
-            </div>
-          </div>
-        </aside>
-
-        <main class="feed">
-          <div class="card">
-            <h2 style="color:#ff6a00; margin-bottom:10px;">Welcome back, ${user.name} 👋</h2>
-            <p style="color:#ccc; font-size:14px;">Share what's happening in your universe.</p>
-            <form action="/post" method="post" enctype="multipart/form-data" style="margin-top:10px;">
-              <textarea name="content" placeholder="What's happening in your universe?" style="width:100%; min-height:80px;"></textarea>
-              <label style="color:#ccc; font-size:14px; margin-top:6px; display:block;">Upload an image (optional)</label>
-              <input type="file" name="image" accept="image/*">
-              <button class="btn-primary" style="margin-top:10px;">Post</button>
-            </form>
-          </div>
-          <div class="card">
-            <h3 style="color:#ff6a00; margin-bottom:10px;">Latest from your universe</h3>
-            ${latestPostsHtml || "<p style='color:#ccc; font-size:13px;'>No posts yet.</p>"}
-          </div>
-        </main>
+    <main class="feed">
+      <div class="card">
+        <h2 style="color:#ff6a00;margin-bottom:10px;">Welcome back, ${user.name} 👋</h2>
+        <p style="color:#ccc;font-size:14px;">Share what's happening in your universe.</p>
+        <form action="/post" method="post" enctype="multipart/form-data" style="margin-top:10px;">
+          <textarea name="content" placeholder="What's happening in your universe?" style="width:100%;min-height:80px;background:rgba(255,255,255,0.06);border:1px solid #444;border-radius:8px;color:#fff;padding:10px;font-size:14px;resize:vertical;box-sizing:border-box;"></textarea>
+          <label style="color:#ccc;font-size:14px;margin-top:6px;display:block;">Upload an image (optional)</label>
+          <input type="file" name="image" accept="image/*">
+          <button class="btn-primary" style="margin-top:10px;">Post</button>
+        </form>
       </div>
+      <div class="card">
+        <h3 style="color:#ff6a00;margin-bottom:10px;">Latest from your universe</h3>
+        ${latestPostsHtml || "<p style='color:#ccc;font-size:13px;'>No posts yet.</p>"}
+      </div>
+    </main>
+  </div>
 
-      <script>
-        async function loadPostReactions(postId) {
-          const data = await fetch("/api/posts/" + postId + "/reactions", { credentials: "include" })
-            .then(r => r.json()).catch(() => ({ counts: {}, myReaction: null }));
-          ["❤️","🔥","😂","🤝","🚀"].forEach(function(e) {
-            const el = document.getElementById("rp-" + postId + "-" + e.codePointAt(0));
-            if (el) el.textContent = data.counts[e] || 0;
-            const btn = document.querySelector(".react-pill[data-post-id='" + postId + "'][data-emoji='" + e + "']");
-            if (btn) btn.classList.toggle("mine", data.myReaction === e);
-          });
-        }
+  <script>
+    // ====== STARFIELD ======
+    const canvas = document.getElementById("starfield");
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    window.addEventListener("resize", () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
+    const stars = Array.from({length:200}, () => ({x:Math.random()*canvas.width,y:Math.random()*canvas.height,r:Math.random()*1.5+0.3,alpha:Math.random(),speed:Math.random()*0.3+0.1}));
+    const shootingStars = [];
+    function spawnShootingStar(){shootingStars.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height*0.5,len:Math.random()*120+80,speed:Math.random()*8+6,angle:Math.PI/4,alpha:1});}
+    setInterval(spawnShootingStar,2500);
+    function draw(){
+      ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle="#000";ctx.fillRect(0,0,canvas.width,canvas.height);
+      stars.forEach(s=>{s.alpha+=s.speed*0.02*(Math.random()>0.5?1:-1);s.alpha=Math.max(0.1,Math.min(1,s.alpha));ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle="rgba(255,255,255,"+s.alpha+")";ctx.fill();});
+      for(let i=shootingStars.length-1;i>=0;i--){const s=shootingStars[i];ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(s.x-Math.cos(s.angle)*s.len,s.y-Math.sin(s.angle)*s.len);const g=ctx.createLinearGradient(s.x,s.y,s.x-Math.cos(s.angle)*s.len,s.y-Math.sin(s.angle)*s.len);g.addColorStop(0,"rgba(255,150,50,"+s.alpha+")");g.addColorStop(1,"rgba(255,150,50,0)");ctx.strokeStyle=g;ctx.lineWidth=2;ctx.stroke();s.x+=Math.cos(s.angle)*s.speed;s.y+=Math.sin(s.angle)*s.speed;s.alpha-=0.015;if(s.alpha<=0)shootingStars.splice(i,1);}
+      requestAnimationFrame(draw);
+    }
+    draw();
 
-        document.addEventListener("click", async function(e) {
-          const pill = e.target.closest(".react-pill");
-          if (pill) {
-            await fetch("/api/posts/" + pill.dataset.postId + "/react", {
-              method: "POST", credentials: "include",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ emoji: pill.dataset.emoji })
-            });
-            loadPostReactions(pill.dataset.postId);
-          }
-          const toggleBtn = e.target.closest(".comment-toggle-btn");
-          if (toggleBtn) {
-            const postId = toggleBtn.dataset.postId;
-            const section = document.getElementById("cs-" + postId);
-            if (section.style.display === "none") { section.style.display = "block"; loadPostComments(postId); }
-            else section.style.display = "none";
-          }
+    // ====== POST REACTIONS ======
+    async function loadPostReactions(postId) {
+      const data = await fetch("/api/posts/" + postId + "/reactions", {credentials:"include"}).then(r=>r.json()).catch(()=>({counts:{},myReaction:null}));
+      ["❤️","🔥","😂","🤝","🚀"].forEach(function(e) {
+        const el = document.getElementById("rp-" + postId + "-" + e.codePointAt(0));
+        if (el) el.textContent = data.counts[e] || 0;
+        const btn = document.querySelector(".react-pill[data-post-id='" + postId + "'][data-emoji='" + e + "']");
+        if (btn) btn.classList.toggle("mine", data.myReaction === e);
+      });
+    }
+
+    // ====== POST COMMENTS ======
+    async function loadPostComments(postId) {
+      const comments = await fetch("/api/posts/" + postId + "/comments", {credentials:"include"}).then(r=>r.json()).catch(()=>[]);
+      const list = document.getElementById("cl-" + postId);
+      if (!list) return;
+      list.innerHTML = !comments.length
+        ? "<div style='color:#666;font-size:13px;padding:6px;'>No comments yet.</div>"
+        : comments.map(c => "<div class='comment-item'><img class='comment-avatar' src='" + (c.userPic||"/assets/img/default-avatar.png") + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/><div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div></div>").join("");
+      list.scrollTop = list.scrollHeight;
+    }
+
+    async function submitPostComment(postId, inputEl) {
+      const text = inputEl.value.trim();
+      if (!text) return;
+      await fetch("/api/posts/" + postId + "/comments", {
+        method:"POST", credentials:"include",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({text: text})
+      });
+      inputEl.value = "";
+      loadPostComments(postId);
+    }
+
+    function timeAgo(date) {
+      const diff = Date.now() - new Date(date).getTime();
+      const mins = Math.floor(diff/60000);
+      if (mins < 1) return "just now";
+      if (mins < 60) return mins + "m ago";
+      const hrs = Math.floor(mins/60);
+      if (hrs < 24) return hrs + "h ago";
+      return Math.floor(hrs/24) + "d ago";
+    }
+
+    // ====== CLICK HANDLER ======
+    document.addEventListener("click", async function(e) {
+      const pill = e.target.closest(".react-pill");
+      if (pill) {
+        await fetch("/api/posts/" + pill.dataset.postId + "/react", {
+          method:"POST", credentials:"include",
+          headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({emoji: pill.dataset.emoji})
         });
-
-        async function loadPostComments(postId) {
-          const comments = await fetch("/api/posts/" + postId + "/comments", { credentials: "include" })
-            .then(r => r.json()).catch(() => []);
-          const list = document.getElementById("cl-" + postId);
-          if (!list) return;
-          list.innerHTML = !comments.length
-            ? "<div style='color:#666;font-size:13px;padding:6px;'>No comments yet.</div>"
-            : comments.map(function(c) {
-                return "<div class='comment-item'><img class='comment-avatar' src='" + (c.userPic || "/assets/img/default-avatar.png") + "' onerror=\"this.src='/assets/img/default-avatar.png'\"/><div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div></div>";
-              }).join("");
-          list.scrollTop = list.scrollHeight;
-        }
-
-        async function submitPostComment(postId, inputEl) {
-          const text = inputEl.value.trim();
-          if (!text) return;
-          await fetch("/api/posts/" + postId + "/comments", {
-            method: "POST", credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text: text })
-          });
-          inputEl.value = "";
+        loadPostReactions(pill.dataset.postId);
+        return;
+      }
+      const toggleBtn = e.target.closest(".comment-toggle-btn");
+      if (toggleBtn) {
+        const postId = toggleBtn.dataset.postId;
+        const section = document.getElementById("cs-" + postId);
+        if (section.style.display === "none") {
+          section.style.display = "block";
           loadPostComments(postId);
+        } else {
+          section.style.display = "none";
         }
+      }
+    });
 
-        function timeAgo(date) {
-          const diff = Date.now() - new Date(date).getTime();
-          const mins = Math.floor(diff / 60000);
-          if (mins < 1) return "just now";
-          if (mins < 60) return mins + "m ago";
-          const hrs = Math.floor(mins / 60);
-          if (hrs < 24) return hrs + "h ago";
-          return Math.floor(hrs / 24) + "d ago";
-        }
-
-        document.querySelectorAll(".post-card").forEach(function(card) {
-          const id = card.dataset.postId;
-          if (id) loadPostReactions(id);
-        });
-      </script>
-    </body>
-    </html>
-  `);
+    // ====== INIT ======
+    document.querySelectorAll(".post-card").forEach(function(card) {
+      if (card.dataset.postId) loadPostReactions(card.dataset.postId);
+    });
+  </script>
+</body>
+</html>`);
 });
-
 
 // ====== FEED ======
 app.get("/feed", requireLogin, async (req, res) => {
@@ -616,9 +613,7 @@ app.get("/feed", requireLogin, async (req, res) => {
     return `
     <div class="post-card" data-post-id="${p._id}">
       <div class="post">
-        <div class="author">
-          <a href="/profile/${p.userId}" style="color:#ff6a00;text-decoration:none;">${p.userName}</a>
-        </div>
+        <div class="author"><a href="/profile/${p.userId}" style="color:#ff6a00;text-decoration:none;">${p.userName}</a></div>
         <div class="meta">${p.createdAt.toLocaleString()}</div>
         <p class="post-content" style="margin-top:6px;">${p.content || ""}</p>
         <div class="post-image-wrapper">
@@ -630,43 +625,32 @@ app.get("/feed", requireLogin, async (req, res) => {
           <button class="btn-secondary delete-post-btn" type="button" style="margin-left:6px;">Delete</button>
         </div>` : ""}
       </div>
-
       <div class="post-reactions" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
         ${["❤️","🔥","😂","🤝","🚀"].map(e => `
           <button class="react-pill" data-emoji="${e}" data-post-id="${p._id}">${e}
             <span class="rpill-count" id="rp-${p._id}-${e.codePointAt(0)}">0</span>
           </button>`).join("")}
       </div>
-
       <div style="margin-top:8px;">
-        <button class="btn-secondary comment-toggle-btn" data-post-id="${p._id}"
-          style="font-size:12px;padding:4px 10px;">💬 Comments</button>
+        <button class="btn-secondary comment-toggle-btn" data-post-id="${p._id}" style="font-size:12px;padding:4px 10px;">💬 Comments</button>
       </div>
-
       <div class="comment-section" id="cs-${p._id}" style="display:none;margin-top:10px;">
-        <div class="comment-list" id="cl-${p._id}"
-          style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;max-height:200px;overflow-y:auto;"></div>
-        <div style="display:flex;gap:8px;align-items:center;">
-          <input class="comment-input" data-post-id="${p._id}" type="text"
-            placeholder="Write a comment..." maxlength="300"
-            style="flex:1;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;min-height:unset;"
-            onkeydown="if(event.key==='Enter'){event.preventDefault();submitPostComment('${p._id}',this);}"/>
-          <button class="btn-primary" style="font-size:12px;padding:6px 10px;height:44px;box-sizing:border-box;"
-            onclick="submitPostComment('${p._id}', document.querySelector('.comment-input[data-post-id=\\'${p._id}\\']'))">Post</button>
+        <div class="comment-list" id="cl-${p._id}" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;max-height:200px;overflow-y:auto;"></div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <input class="comment-input" data-post-id="${p._id}" type="text" placeholder="Write a comment..." maxlength="300"
+            style="flex:1;min-width:0;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;"/>
+          <button class="btn-primary" style="font-size:12px;padding:6px 10px;height:44px;box-sizing:border-box;flex-shrink:0;"
+            onclick="submitPostComment('${p._id}', this.previousElementSibling)">Post</button>
         </div>
       </div>
-
       ${isOwner ? `
       <div class="post-editor" id="editor-${p._id}">
         <form class="post-editor-form" data-post-id="${p._id}">
           <label style="font-size:13px;color:#ccc;">Edit your post</label>
-          <textarea name="content" class="post-editor-text"
-            style="width:100%;min-height:80px;margin-top:4px;">${p.content || ""}</textarea>
+          <textarea name="content" class="post-editor-text" style="width:100%;min-height:80px;margin-top:4px;">${p.content}</textarea>
           <div class="editor-image-section" style="margin-top:8px;">
             <div class="current-image-preview">
-              ${p.imagePath
-                ? `<img src="${p.imagePath}" class="editor-image" style="max-width:100%;border-radius:6px;margin-bottom:6px;">`
-                : `<p style="font-size:12px;color:#777;">No image attached.</p>`}
+              ${p.imagePath ? `<img src="${p.imagePath}" class="editor-image" style="max-width:100%;border-radius:6px;margin-bottom:6px;">` : `<p style="font-size:12px;color:#777;">No image attached.</p>`}
             </div>
             <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:4px;">
               <button type="button" class="btn-secondary delete-image-btn" style="font-size:12px;">Delete Image</button>
@@ -685,324 +669,282 @@ app.get("/feed", requireLogin, async (req, res) => {
     </div>`;
   }).join("");
 
-  res.send(`
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Feed – Spacebook</title>
-      <link rel="stylesheet" href="/assets/css/styles.css">
-      <style>
-        html, body { background: #000 !important; margin: 0; padding: 0; color: #fff; font-family: Arial, sans-serif; overflow-x: hidden; }
-        #starfield { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: #000; }
-        .navbar { width: 100%; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.65); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 100; box-sizing: border-box; }
-        .navbar .logo a { color: #ff6a00; text-decoration: none; font-size: 20px; font-weight: bold; }
-        .nav-links { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-        .nav-links a { color: #ccc; text-decoration: none; font-size: 13px; }
-        .nav-links a:hover { color: #ff6a00; }
-        .page { width: 100%; min-height: 100vh; display: flex; gap: 30px; padding: 30px 40px; background: transparent !important; box-sizing: border-box; }
-        .sidebar { width: 240px; flex-shrink: 0; }
-        .feed { flex: 1; min-width: 0; }
-        .card { border-radius: 12px; background: rgba(0,0,0,0.45); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.15); padding: 20px; margin-bottom: 20px; }
-        .post-card { margin-bottom: 16px; }
-        .post-editor { margin-top: 8px; border-radius: 12px; background: rgba(0,0,0,0.55); backdrop-filter: blur(10px); border: 1px solid rgba(255,106,0,0.6); padding: 12px; max-height: 0; opacity: 0; overflow: hidden; transition: max-height 0.25s ease, opacity 0.2s ease; }
-        .post-editor.open { max-height: 500px; opacity: 1; }
-        .btn-primary { display: inline-block; padding: 8px 14px; background: #ff6a00; color: #000; border-radius: 6px; text-decoration: none; font-weight: bold; border: none; cursor: pointer; transition: 0.2s; font-size: 14px; }
-        .btn-primary:hover { background: #ff8c32; }
-        .btn-secondary { padding: 6px 10px; background: rgba(255,255,255,0.08); border-radius: 6px; border: none; color: #ff6a00; cursor: pointer; font-weight: bold; text-decoration: none; transition: 0.2s; }
-        .btn-secondary:hover { background: rgba(255,255,255,0.18); }
-        .react-pill { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; padding: 4px 12px; font-size: 16px; cursor: pointer; color: #fff; transition: all .15s; display: inline-flex; align-items: center; gap: 5px; }
-        .react-pill:hover { border-color: #ff6a00; background: rgba(255,106,0,0.15); }
-        .react-pill.mine { border-color: #ff6a00; background: rgba(255,106,0,0.2); }
-        .rpill-count { font-size: 12px; color: #ccc; }
-        .comment-item { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 8px 12px; display: flex; gap: 10px; align-items: flex-start; }
-        .comment-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1px solid rgba(255,106,0,0.3); }
-        .comment-name { font-size: 12px; color: #ff6a00; font-weight: bold; }
-        .comment-text { font-size: 13px; color: #f0f0f0; word-break: break-word; margin-top: 2px; }
-        .comment-time { font-size: 11px; color: #555; margin-top: 2px; }
-        textarea { width: 100%; background: rgba(255,255,255,0.06); border: 1px solid #444; border-radius: 8px; color: #fff; padding: 10px; font-size: 14px; resize: vertical; box-sizing: border-box; }
-        textarea:focus { border-color: #ff6a00; outline: none; }
-        input[type=text]:focus { border-color: #ff6a00; outline: none; }
-        .notif-panel { position: absolute; right: 0; top: 36px; width: 300px; background: rgba(10,10,10,0.97); border: 1px solid rgba(255,106,0,0.3); border-radius: 12px; backdrop-filter: blur(12px); z-index: 500; max-height: 400px; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.6); }
-        @media (max-width: 600px) { .page { flex-direction: column; padding: 16px; } .sidebar { width: 100%; } .nav-links a { font-size: 12px; } }
-        .post-card { margin-bottom: 16px; }
-        .react-pill { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; padding: 4px 12px; font-size: 16px; cursor: pointer; color: #fff; transition: all .15s; display: inline-flex; align-items: center; gap: 5px; }
-        .react-pill:hover { border-color: #ff6a00; background: rgba(255,106,0,0.15); }
-        .react-pill.mine { border-color: #ff6a00; background: rgba(255,106,0,0.2); }
-        .rpill-count { font-size: 12px; color: #ccc; }
-        .comment-item { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 8px 12px; display: flex; gap: 10px; align-items: flex-start; }
-        .comment-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1px solid rgba(255,106,0,0.3); }
-        .comment-name { font-size: 12px; color: #ff6a00; font-weight: bold; }
-        .comment-text { font-size: 13px; color: #f0f0f0; word-break: break-word; margin-top: 2px; }
-        .comment-time { font-size: 11px; color: #555; margin-top: 2px; }
-        .comment-section { flex-direction: column; }
-        .comment-section > div:last-child { flex-wrap: wrap; }
-        .comment-section input { min-width: 0; width: 100%; }
-      </style>
-    </head>
-    <body>
-      <canvas id="starfield"></canvas>
-      <script>
-        const canvas = document.getElementById("starfield");
-        const ctx = canvas.getContext("2d");
-        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-        window.addEventListener("resize", () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
-        const stars = Array.from({ length: 200 }, () => ({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, r: Math.random() * 1.5 + 0.3, alpha: Math.random(), speed: Math.random() * 0.3 + 0.1 }));
-        const shootingStars = [];
-        function spawnShootingStar() { shootingStars.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height * 0.5, len: Math.random() * 120 + 80, speed: Math.random() * 8 + 6, angle: Math.PI / 4, alpha: 1 }); }
-        setInterval(spawnShootingStar, 2500);
-        function draw() {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.fillStyle = "#000"; ctx.fillRect(0, 0, canvas.width, canvas.height);
-          stars.forEach(s => { s.alpha += s.speed * 0.02 * (Math.random() > 0.5 ? 1 : -1); s.alpha = Math.max(0.1, Math.min(1, s.alpha)); ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fillStyle = "rgba(255,255,255," + s.alpha + ")"; ctx.fill(); });
-          for (let i = shootingStars.length - 1; i >= 0; i--) { const s = shootingStars[i]; ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(s.x - Math.cos(s.angle) * s.len, s.y - Math.sin(s.angle) * s.len); const grad = ctx.createLinearGradient(s.x, s.y, s.x - Math.cos(s.angle) * s.len, s.y - Math.sin(s.angle) * s.len); grad.addColorStop(0, "rgba(255,150,50," + s.alpha + ")"); grad.addColorStop(1, "rgba(255,150,50,0)"); ctx.strokeStyle = grad; ctx.lineWidth = 2; ctx.stroke(); s.x += Math.cos(s.angle) * s.speed; s.y += Math.sin(s.angle) * s.speed; s.alpha -= 0.015; if (s.alpha <= 0) shootingStars.splice(i, 1); }
-          requestAnimationFrame(draw);
-        }
-        draw();
-      </script>
+  res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Feed – Spacebook</title>
+  <link rel="stylesheet" href="/assets/css/styles.css">
+  <style>
+    html,body{background:#000!important;margin:0;padding:0;color:#fff;font-family:Arial,sans-serif;overflow-x:hidden;}
+    #starfield{position:fixed;top:0;left:0;width:100%;height:100%;z-index:-1;background:#000;}
+    .navbar{width:100%;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,0.65);backdrop-filter:blur(10px);position:sticky;top:0;z-index:100;box-sizing:border-box;}
+    .navbar .logo a{color:#ff6a00;text-decoration:none;font-size:20px;font-weight:bold;}
+    .nav-links{display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
+    .nav-links a{color:#ccc;text-decoration:none;font-size:13px;}
+    .nav-links a:hover{color:#ff6a00;}
+    .page{width:100%;min-height:100vh;display:flex;gap:30px;padding:30px 40px;background:transparent!important;box-sizing:border-box;}
+    .sidebar{width:240px;flex-shrink:0;}
+    .feed{flex:1;min-width:0;}
+    .card{border-radius:12px;background:rgba(0,0,0,0.45);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.15);padding:20px;margin-bottom:20px;}
+    .post-card{margin-bottom:16px;}
+    .post-editor{margin-top:8px;border-radius:12px;background:rgba(0,0,0,0.55);backdrop-filter:blur(10px);border:1px solid rgba(255,106,0,0.6);padding:12px;max-height:0;opacity:0;overflow:hidden;transition:max-height 0.25s ease,opacity 0.2s ease;}
+    .post-editor.open{max-height:500px;opacity:1;}
+    .btn-primary{display:inline-block;padding:8px 14px;background:#ff6a00;color:#000;border-radius:6px;text-decoration:none;font-weight:bold;border:none;cursor:pointer;transition:0.2s;font-size:14px;}
+    .btn-primary:hover{background:#ff8c32;}
+    .btn-secondary{padding:6px 10px;background:rgba(255,255,255,0.08);border-radius:6px;border:none;color:#ff6a00;cursor:pointer;font-weight:bold;text-decoration:none;transition:0.2s;}
+    .btn-secondary:hover{background:rgba(255,255,255,0.18);}
+    .react-pill{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:4px 12px;font-size:16px;cursor:pointer;color:#fff;transition:all .15s;display:inline-flex;align-items:center;gap:5px;}
+    .react-pill:hover{border-color:#ff6a00;background:rgba(255,106,0,0.15);}
+    .react-pill.mine{border-color:#ff6a00;background:rgba(255,106,0,0.2);}
+    .rpill-count{font-size:12px;color:#ccc;}
+    .comment-item{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:8px 12px;display:flex;gap:10px;align-items:flex-start;}
+    .comment-avatar{width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid rgba(255,106,0,0.3);}
+    .comment-name{font-size:12px;color:#ff6a00;font-weight:bold;}
+    .comment-text{font-size:13px;color:#f0f0f0;word-break:break-word;margin-top:2px;}
+    .comment-time{font-size:11px;color:#555;margin-top:2px;}
+    .comment-input{height:44px!important;min-height:44px!important;box-sizing:border-box!important;}
+    textarea{width:100%;background:rgba(255,255,255,0.06);border:1px solid #444;border-radius:8px;color:#fff;padding:10px;font-size:14px;resize:vertical;box-sizing:border-box;}
+    textarea:focus,input[type=text]:focus{border-color:#ff6a00;outline:none;}
+    .notif-panel{position:absolute;right:0;top:36px;width:300px;background:rgba(10,10,10,0.97);border:1px solid rgba(255,106,0,0.3);border-radius:12px;backdrop-filter:blur(12px);z-index:500;max-height:400px;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.6);}
+    @media(max-width:600px){.page{flex-direction:column;padding:16px;}.sidebar{width:100%;}.nav-links a{font-size:12px;}}
+  </style>
+</head>
+<body>
+  <canvas id="starfield"></canvas>
 
-      <div class="navbar">
-        <div class="logo"><a href="/feed">Spacebook</a></div>
-        <div class="nav-links">
-          <a href="/home">Home</a>
-          <a href="/feed">Feed</a>
-          <a href="/profile">Profile</a>
-          <a href="/messages">Messages</a>
-          <a href="/gallery">Gallery</a>
-          <a href="/stories">Stories</a>
-          <a href="/listen-together">Listen Together</a>
-          <a href="/artist-dashboard">Artist</a>
-          <a href="/activity">Activity</a>
-          <a href="/logout">Log Out</a>
-          <div style="position:relative;display:inline-block;">
-            <button onclick="toggleNotifPanel()"
-              style="background:none;border:none;cursor:pointer;font-size:20px;color:#ccc;padding:0 4px;"
-              title="Notifications">🔔</button>
-            <span id="notif-badge"
-              style="display:none;position:absolute;top:-4px;right:-4px;background:#ff6a00;color:#000;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:bold;align-items:center;justify-content:center;">0</span>
-            <div id="notif-panel" class="notif-panel" style="display:none;"></div>
-          </div>
-        </div>
+  <div class="navbar">
+    <div class="logo"><a href="/feed">Spacebook</a></div>
+    <div class="nav-links">
+      <a href="/home">Home</a><a href="/feed">Feed</a><a href="/profile">Profile</a>
+      <a href="/messages">Messages</a><a href="/gallery">Gallery</a><a href="/stories">Stories</a>
+      <a href="/listen-together">Listen Together</a><a href="/artist-dashboard">Artist</a>
+      <a href="/activity">Activity</a><a href="/logout">Log Out</a>
+      <div style="position:relative;display:inline-block;">
+        <button onclick="toggleNotifPanel()" style="background:none;border:none;cursor:pointer;font-size:20px;color:#ccc;padding:0 4px;" title="Notifications">🔔</button>
+        <span id="notif-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:#ff6a00;color:#000;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:bold;align-items:center;justify-content:center;">0</span>
+        <div id="notif-panel" class="notif-panel" style="display:none;"></div>
       </div>
+    </div>
+  </div>
 
-      <div class="page">
-        <aside class="sidebar">
-          <div class="card">
-            <strong style="color:#ff6a00;">Navigation</strong>
-            <ul style="list-style:none; margin-top:10px; font-size:14px; padding-left:0;">
-              <li><a href="/profile" style="color:#ff6a00;">Your Profile</a></li>
-              <li><a href="/feed" style="color:#ff6a00;">Feed</a></li>
-              <li><a href="/messages" style="color:#ff6a00;">Messages</a></li>
-              <li><a href="/gallery" style="color:#ff6a00;">Gallery</a></li>
-              <li><a href="/stories" style="color:#ff6a00;">Stories</a></li>
-              <li><a href="/listen-together" style="color:#ff6a00;">Listen Together</a></li>
-              <li><a href="/artist-dashboard" style="color:#ff6a00;">Artist</a></li>
-              <li><a href="/activity" style="color:#ff6a00;">Activity</a></li>
-            </ul>
-          </div>
-        </aside>
-
-        <main class="feed">
-          <div class="card">
-            <form action="/post" method="post" enctype="multipart/form-data">
-              <textarea name="content" placeholder="What's happening in your universe?"></textarea>
-              <label style="color:#ccc; font-size:14px; margin-top:6px; display:block;">Upload an image (optional)</label>
-              <input type="file" name="image" accept="image/*">
-              <button class="btn-primary" style="margin-top:10px;">Post</button>
-            </form>
-          </div>
-          <div class="card" style="margin-top:20px;">
-            ${htmlPosts || "<p style='color:#ccc;font-size:13px;'>No posts yet.</p>"}
-          </div>
-        </main>
+  <div class="page">
+    <aside class="sidebar">
+      <div class="card">
+        <strong style="color:#ff6a00;">Navigation</strong>
+        <ul style="list-style:none;margin-top:10px;font-size:14px;padding-left:0;">
+          <li><a href="/profile" style="color:#ff6a00;">Your Profile</a></li>
+          <li><a href="/feed" style="color:#ff6a00;">Feed</a></li>
+          <li><a href="/messages" style="color:#ff6a00;">Messages</a></li>
+          <li><a href="/gallery" style="color:#ff6a00;">Gallery</a></li>
+          <li><a href="/stories" style="color:#ff6a00;">Stories</a></li>
+          <li><a href="/listen-together" style="color:#ff6a00;">Listen Together</a></li>
+          <li><a href="/artist-dashboard" style="color:#ff6a00;">Artist</a></li>
+          <li><a href="/activity" style="color:#ff6a00;">Activity</a></li>
+        </ul>
       </div>
+    </aside>
 
-      <script>
-        async function loadPostReactions(postId) {
-          const data = await fetch("/api/posts/" + postId + "/reactions", { credentials: "include" })
-            .then(r => r.json()).catch(() => ({ counts: {}, myReaction: null }));
-          ["❤️","🔥","😂","🤝","🚀"].forEach(function(e) {
-            const el = document.getElementById("rp-" + postId + "-" + e.codePointAt(0));
-            if (el) el.textContent = data.counts[e] || 0;
-            const btn = document.querySelector(".react-pill[data-post-id='" + postId + "'][data-emoji='" + e + "']");
-            if (btn) btn.classList.toggle("mine", data.myReaction === e);
-          });
-        }
+    <main class="feed">
+      <div class="card">
+        <form action="/post" method="post" enctype="multipart/form-data">
+          <textarea name="content" placeholder="What's happening in your universe?"></textarea>
+          <label style="color:#ccc;font-size:14px;margin-top:6px;display:block;">Upload an image (optional)</label>
+          <input type="file" name="image" accept="image/*">
+          <button class="btn-primary" style="margin-top:10px;">Post</button>
+        </form>
+      </div>
+      <div class="card" style="margin-top:20px;">
+        ${htmlPosts || "<p style='color:#ccc;font-size:13px;'>No posts yet.</p>"}
+      </div>
+    </main>
+  </div>
 
-        document.addEventListener("click", async function(e) {
-          const pill = e.target.closest(".react-pill");
-          if (pill) {
-            await fetch("/api/posts/" + pill.dataset.postId + "/react", {
-              method: "POST", credentials: "include",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ emoji: pill.dataset.emoji })
-            });
-            loadPostReactions(pill.dataset.postId);
-          }
+  <script>
+    // ====== STARFIELD ======
+    const canvas = document.getElementById("starfield");
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    window.addEventListener("resize", () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
+    const stars = Array.from({length:200},()=>({x:Math.random()*canvas.width,y:Math.random()*canvas.height,r:Math.random()*1.5+0.3,alpha:Math.random(),speed:Math.random()*0.3+0.1}));
+    const shootingStars = [];
+    function spawnShootingStar(){shootingStars.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height*0.5,len:Math.random()*120+80,speed:Math.random()*8+6,angle:Math.PI/4,alpha:1});}
+    setInterval(spawnShootingStar,2500);
+    function draw(){
+      ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle="#000";ctx.fillRect(0,0,canvas.width,canvas.height);
+      stars.forEach(s=>{s.alpha+=s.speed*0.02*(Math.random()>0.5?1:-1);s.alpha=Math.max(0.1,Math.min(1,s.alpha));ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle="rgba(255,255,255,"+s.alpha+")";ctx.fill();});
+      for(let i=shootingStars.length-1;i>=0;i--){const s=shootingStars[i];ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(s.x-Math.cos(s.angle)*s.len,s.y-Math.sin(s.angle)*s.len);const g=ctx.createLinearGradient(s.x,s.y,s.x-Math.cos(s.angle)*s.len,s.y-Math.sin(s.angle)*s.len);g.addColorStop(0,"rgba(255,150,50,"+s.alpha+")");g.addColorStop(1,"rgba(255,150,50,0)");ctx.strokeStyle=g;ctx.lineWidth=2;ctx.stroke();s.x+=Math.cos(s.angle)*s.speed;s.y+=Math.sin(s.angle)*s.speed;s.alpha-=0.015;if(s.alpha<=0)shootingStars.splice(i,1);}
+      requestAnimationFrame(draw);
+    }
+    draw();
 
-          const toggleBtn = e.target.closest(".comment-toggle-btn");
-          if (toggleBtn) {
-            const postId = toggleBtn.dataset.postId;
-            const section = document.getElementById("cs-" + postId);
-            if (section.style.display === "none") { section.style.display = "block"; loadPostComments(postId); }
-            else section.style.display = "none";
-          }
+    // ====== REACTIONS ======
+    async function loadPostReactions(postId) {
+      const data = await fetch("/api/posts/" + postId + "/reactions", {credentials:"include"}).then(r=>r.json()).catch(()=>({counts:{},myReaction:null}));
+      ["❤️","🔥","😂","🤝","🚀"].forEach(function(e) {
+        const el = document.getElementById("rp-" + postId + "-" + e.codePointAt(0));
+        if (el) el.textContent = data.counts[e] || 0;
+        const btn = document.querySelector(".react-pill[data-post-id='" + postId + "'][data-emoji='" + e + "']");
+        if (btn) btn.classList.toggle("mine", data.myReaction === e);
+      });
+    }
 
-          const editBtn = e.target.closest(".edit-post-btn");
-          if (editBtn) {
-            const card = editBtn.closest(".post-card");
-            const editor = card.querySelector(".post-editor");
-            if (editor) editor.classList.toggle("open");
-          }
+    // ====== COMMENTS ======
+    async function loadPostComments(postId) {
+      const comments = await fetch("/api/posts/" + postId + "/comments", {credentials:"include"}).then(r=>r.json()).catch(()=>[]);
+      const list = document.getElementById("cl-" + postId);
+      if (!list) return;
+      list.innerHTML = !comments.length
+        ? "<div style='color:#666;font-size:13px;padding:6px;'>No comments yet. Be first!</div>"
+        : comments.map(c => "<div class='comment-item'><img class='comment-avatar' src='" + (c.userPic||"/assets/img/default-avatar.png") + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/><div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div></div>").join("");
+      list.scrollTop = list.scrollHeight;
+    }
 
-          const cancelBtn = e.target.closest(".cancel-edit-btn");
-          if (cancelBtn) {
-            const editor = cancelBtn.closest(".post-editor");
-            if (editor) editor.classList.remove("open");
-          }
+    async function submitPostComment(postId, inputEl) {
+      const text = inputEl.value.trim();
+      if (!text) return;
+      await fetch("/api/posts/" + postId + "/comments", {
+        method:"POST", credentials:"include",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({text: text})
+      });
+      inputEl.value = "";
+      loadPostComments(postId);
+    }
 
-          const deleteBtn = e.target.closest(".delete-post-btn");
-          if (deleteBtn) {
-            const card = deleteBtn.closest(".post-card");
-            const postId = card.getAttribute("data-post-id");
-            if (!postId || !confirm("Delete this post?")) return;
-            fetch("/delete-post/" + postId, {
-              method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({})
-            }).then(r => r.json()).then(data => { if (data.success) card.remove(); else alert("Error deleting post"); })
-              .catch(() => alert("Error deleting post"));
-          }
+    function timeAgo(date) {
+      const diff = Date.now() - new Date(date).getTime();
+      const mins = Math.floor(diff/60000);
+      if (mins < 1) return "just now";
+      if (mins < 60) return mins + "m ago";
+      const hrs = Math.floor(mins/60);
+      if (hrs < 24) return hrs + "h ago";
+      return Math.floor(hrs/24) + "d ago";
+    }
 
-          const deleteImageBtn = e.target.closest(".delete-image-btn");
-          if (deleteImageBtn) {
-            const form = deleteImageBtn.closest(".post-editor-form");
-            form.querySelector("input[name=deleteImage]").value = "true";
-            const preview = form.querySelector(".current-image-preview");
-            if (preview) preview.innerHTML = "<p style='font-size:12px;color:#777;'>Image will be removed.</p>";
-          }
+    // ====== NOTIFICATIONS ======
+    async function loadNotifCount() {
+      const data = await fetch("/api/notifications/unread-count", {credentials:"include"}).then(r=>r.json()).catch(()=>({count:0}));
+      const badge = document.getElementById("notif-badge");
+      if (badge) { badge.textContent = data.count; badge.style.display = data.count > 0 ? "flex" : "none"; }
+    }
+
+    async function toggleNotifPanel() {
+      const panel = document.getElementById("notif-panel");
+      if (panel.style.display === "none" || !panel.style.display) {
+        panel.style.display = "block";
+        await fetch("/api/notifications/mark-read", {method:"POST", credentials:"include"});
+        const notes = await fetch("/api/notifications", {credentials:"include"}).then(r=>r.json()).catch(()=>[]);
+        panel.innerHTML = notes.length
+          ? notes.map(n => "<div style='padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.07);font-size:13px;color:#ccc;'><span style='color:#ff6a00;font-weight:bold;'>" + n.fromUserName + "</span> " + n.text + "<div style='font-size:11px;color:#555;margin-top:2px;'>" + timeAgo(n.createdAt) + "</div></div>").join("")
+          : "<div style='padding:16px;color:#666;font-size:13px;text-align:center;'>No notifications yet.</div>";
+        document.getElementById("notif-badge").style.display = "none";
+      } else {
+        panel.style.display = "none";
+      }
+    }
+
+    // ====== CLICK HANDLER ======
+    document.addEventListener("click", async function(e) {
+      const pill = e.target.closest(".react-pill");
+      if (pill) {
+        await fetch("/api/posts/" + pill.dataset.postId + "/react", {
+          method:"POST", credentials:"include",
+          headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({emoji: pill.dataset.emoji})
         });
-
-        document.addEventListener("change", function(e) {
-          const fileInput = e.target.closest("input[type=file][name=image]");
-          if (fileInput) {
-            const form = fileInput.closest(".post-editor-form");
-            form.querySelector("input[name=deleteImage]").value = "false";
-            const preview = form.querySelector(".current-image-preview");
-            if (fileInput.files && fileInput.files[0]) {
-              const reader = new FileReader();
-              reader.onload = function(ev) {
-                if (preview) preview.innerHTML = "<img src='" + ev.target.result + "' style='max-width:100%;border-radius:6px;margin-bottom:6px;'>";
-              };
-              reader.readAsDataURL(fileInput.files[0]);
-            }
-          }
-        });
-
-        document.addEventListener("submit", function(e) {
-          const form = e.target.closest(".post-editor-form");
-          if (!form) return;
-          e.preventDefault();
-          const postId = form.getAttribute("data-post-id");
-          const card = form.closest(".post-card");
-          fetch("/edit-post/" + postId, { method: "POST", body: new FormData(form) })
-            .then(r => r.json()).then(data => {
-              if (!data.success) { alert("Error saving changes"); return; }
-              const contentEl = card.querySelector(".post-content");
-              const imageWrapper = card.querySelector(".post-image-wrapper");
-              if (contentEl) contentEl.textContent = data.content;
-              if (imageWrapper) {
-                if (data.imagePath) imageWrapper.innerHTML = "<img class='post-image' src='" + data.imagePath + "' style='max-width:100%;margin-top:8px;border-radius:6px;'>";
-                else imageWrapper.innerHTML = "";
-              }
-              card.querySelector(".post-editor").classList.remove("open");
-            }).catch(() => alert("Error saving changes"));
-        });
-
-        async function loadPostComments(postId) {
-          const comments = await fetch("/api/posts/" + postId + "/comments", { credentials: "include" })
-            .then(r => r.json()).catch(() => []);
-          const list = document.getElementById("cl-" + postId);
-          if (!list) return;
-          list.innerHTML = !comments.length
-            ? "<div style='color:#666;font-size:13px;padding:6px;'>No comments yet. Be first!</div>"
-            : comments.map(function(c) {
-                return "<div class='comment-item'><img class='comment-avatar' src='" + (c.userPic || "/assets/img/default-avatar.png") + "' onerror=\"this.src='/assets/img/default-avatar.png'\"/><div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div></div>";
-              }).join("");
-          list.scrollTop = list.scrollHeight;
+        loadPostReactions(pill.dataset.postId);
+        return;
+      }
+      const toggleBtn = e.target.closest(".comment-toggle-btn");
+      if (toggleBtn) {
+        const postId = toggleBtn.dataset.postId;
+        const section = document.getElementById("cs-" + postId);
+        if (section.style.display === "none") { section.style.display = "block"; loadPostComments(postId); }
+        else section.style.display = "none";
+        return;
+      }
+      const editBtn = e.target.closest(".edit-post-btn");
+      if (editBtn) {
+        const editor = editBtn.closest(".post-card").querySelector(".post-editor");
+        if (editor) editor.classList.toggle("open");
+        return;
+      }
+      const cancelBtn = e.target.closest(".cancel-edit-btn");
+      if (cancelBtn) {
+        const editor = cancelBtn.closest(".post-editor");
+        if (editor) editor.classList.remove("open");
+        return;
+      }
+      const deleteBtn = e.target.closest(".delete-post-btn");
+      if (deleteBtn) {
+        const card = deleteBtn.closest(".post-card");
+        const postId = card.getAttribute("data-post-id");
+        if (!postId || !confirm("Delete this post?")) return;
+        fetch("/delete-post/" + postId, {method:"POST", headers:{"Content-Type":"application/json"}, body:"{}"})
+          .then(r=>r.json()).then(data => { if (data.success) card.remove(); else alert("Error deleting post"); })
+          .catch(()=>alert("Error deleting post"));
+        return;
+      }
+      const deleteImageBtn = e.target.closest(".delete-image-btn");
+      if (deleteImageBtn) {
+        const form = deleteImageBtn.closest(".post-editor-form");
+        form.querySelector("input[name=deleteImage]").value = "true";
+        const preview = form.querySelector(".current-image-preview");
+        if (preview) preview.innerHTML = "<p style='font-size:12px;color:#777;'>Image will be removed.</p>";
+        return;
+      }
+      const panel = document.getElementById("notif-panel");
+      if (panel && panel.style.display === "block") {
+        if (!e.target.closest(".notif-panel") && !e.target.closest("button[onclick='toggleNotifPanel()']")) {
+          panel.style.display = "none";
         }
+      }
+    });
 
-        async function submitPostComment(postId, inputEl) {
-          const text = inputEl.value.trim();
-          if (!text) return;
-          await fetch("/api/posts/" + postId + "/comments", {
-            method: "POST", credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text: text })
-          });
-          inputEl.value = "";
-          loadPostComments(postId);
+    document.addEventListener("change", function(e) {
+      const fileInput = e.target.closest("input[type=file][name=image]");
+      if (fileInput) {
+        const form = fileInput.closest(".post-editor-form");
+        form.querySelector("input[name=deleteImage]").value = "false";
+        const preview = form.querySelector(".current-image-preview");
+        if (fileInput.files && fileInput.files[0]) {
+          const reader = new FileReader();
+          reader.onload = ev => { if (preview) preview.innerHTML = "<img src='" + ev.target.result + "' style='max-width:100%;border-radius:6px;margin-bottom:6px;'>"; };
+          reader.readAsDataURL(fileInput.files[0]);
         }
+      }
+    });
 
-        function timeAgo(date) {
-          const diff = Date.now() - new Date(date).getTime();
-          const mins = Math.floor(diff / 60000);
-          if (mins < 1) return "just now";
-          if (mins < 60) return mins + "m ago";
-          const hrs = Math.floor(mins / 60);
-          if (hrs < 24) return hrs + "h ago";
-          return Math.floor(hrs / 24) + "d ago";
-        }
+    document.addEventListener("submit", function(e) {
+      const form = e.target.closest(".post-editor-form");
+      if (!form) return;
+      e.preventDefault();
+      const postId = form.getAttribute("data-post-id");
+      const card = form.closest(".post-card");
+      fetch("/edit-post/" + postId, {method:"POST", body: new FormData(form)})
+        .then(r=>r.json()).then(data => {
+          if (!data.success) { alert("Error saving changes"); return; }
+          const contentEl = card.querySelector(".post-content");
+          const imageWrapper = card.querySelector(".post-image-wrapper");
+          if (contentEl) contentEl.textContent = data.content;
+          if (imageWrapper) imageWrapper.innerHTML = data.imagePath ? "<img class='post-image' src='" + data.imagePath + "' style='max-width:100%;margin-top:8px;border-radius:6px;'>" : "";
+          card.querySelector(".post-editor").classList.remove("open");
+        }).catch(()=>alert("Error saving changes"));
+    });
 
-        async function loadNotifCount() {
-          const data = await fetch("/api/notifications/unread-count", { credentials: "include" })
-            .then(r => r.json()).catch(() => ({ count: 0 }));
-          const badge = document.getElementById("notif-badge");
-          if (badge) {
-            badge.textContent = data.count > 0 ? data.count : "";
-            badge.style.display = data.count > 0 ? "flex" : "none";
-          }
-        }
-
-        async function toggleNotifPanel() {
-          const panel = document.getElementById("notif-panel");
-          if (panel.style.display === "none" || !panel.style.display) {
-            panel.style.display = "block";
-            await fetch("/api/notifications/mark-read", { method: "POST", credentials: "include" });
-            const notes = await fetch("/api/notifications", { credentials: "include" })
-              .then(r => r.json()).catch(() => []);
-            panel.innerHTML = notes.length
-              ? notes.map(function(n) {
-                  return "<div style='padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.07);font-size:13px;color:#ccc;'>" +
-                    "<span style='color:#ff6a00;font-weight:bold;'>" + n.fromUserName + "</span> " + n.text +
-                    "<div style='font-size:11px;color:#555;margin-top:2px;'>" + timeAgo(n.createdAt) + "</div></div>";
-                }).join("")
-              : "<div style='padding:16px;color:#666;font-size:13px;text-align:center;'>No notifications yet.</div>";
-            document.getElementById("notif-badge").style.display = "none";
-          } else {
-            panel.style.display = "none";
-          }
-        }
-
-        document.addEventListener("click", function(e) {
-          const panel = document.getElementById("notif-panel");
-          if (panel && panel.style.display === "block") {
-            if (!e.target.closest("#notif-panel") && !e.target.closest("button[onclick='toggleNotifPanel()']")) {
-              panel.style.display = "none";
-            }
-          }
-        });
-
-        document.querySelectorAll(".post-card").forEach(function(card) {
-          const id = card.dataset.postId;
-          if (id) loadPostReactions(id);
-        });
-        loadNotifCount();
-        setInterval(loadNotifCount, 30000);
-      </script>
-    </body>
-    </html>
-  `);
+    // ====== INIT ======
+    document.querySelectorAll(".post-card").forEach(function(card) {
+      if (card.dataset.postId) loadPostReactions(card.dataset.postId);
+    });
+    loadNotifCount();
+    setInterval(loadNotifCount, 30000);
+  </script>
+</body>
+</html>`);
 });
+
 
 // ====== POST ======
 app.post("/post", requireLogin, upload.single("image"), async (req, res) => {
