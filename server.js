@@ -1521,74 +1521,6 @@ app.get("/profile", requireLogin, async (req, res) => {
           await loadProfileComments();
         }
 
-        document.addEventListener("click", async function(e) {
-          const pill = e.target.closest(".react-pill");
-          if (pill) {
-            await fetch("/api/posts/" + pill.dataset.postId + "/react", {
-              method: "POST", credentials: "include",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ emoji: pill.dataset.emoji })
-            });
-            loadPostReactions(pill.dataset.postId);
-          }
-          const toggleBtn = e.target.closest(".comment-toggle-btn");
-          if (toggleBtn) {
-            const postId = toggleBtn.dataset.postId;
-            const section = document.getElementById("cs-" + postId);
-            if (section.style.display === "none") { section.style.display = "block"; loadPostComments(postId); }
-            else section.style.display = "none";
-          }
-          const editBtn = e.target.closest(".edit-post-btn");
-          if (editBtn) { const editor = editBtn.closest(".post-card").querySelector(".post-editor"); if (editor) editor.classList.toggle("open"); }
-          const cancelBtn = e.target.closest(".cancel-edit-btn");
-          if (cancelBtn) { const editor = cancelBtn.closest(".post-editor"); if (editor) editor.classList.remove("open"); }
-          const deleteBtn = e.target.closest(".delete-post-btn");
-          if (deleteBtn) {
-            const card = deleteBtn.closest(".post-card");
-            if (!confirm("Delete this post?")) return;
-            fetch("/delete-post/" + card.dataset.postId, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) })
-              .then(r => r.json()).then(d => { if (d.success) card.remove(); });
-          }
-          const deleteImageBtn = e.target.closest(".delete-image-btn");
-          if (deleteImageBtn) {
-            const form = deleteImageBtn.closest(".post-editor-form");
-            form.querySelector("input[name=deleteImage]").value = "true";
-            const preview = form.querySelector(".current-image-preview");
-            if (preview) preview.innerHTML = "<p style='font-size:12px;color:#777;'>Image will be removed.</p>";
-          }
-        });
-
-        document.addEventListener("change", function(e) {
-          const fileInput = e.target.closest("input[type=file][name=image]");
-          if (fileInput) {
-            const form = fileInput.closest(".post-editor-form");
-            form.querySelector("input[name=deleteImage]").value = "false";
-            const preview = form.querySelector(".current-image-preview");
-            if (fileInput.files && fileInput.files[0]) {
-              const reader = new FileReader();
-              reader.onload = function(ev) { if (preview) preview.innerHTML = "<img src='" + ev.target.result + "' style='max-width:100%;border-radius:6px;margin-bottom:6px;'>"; };
-              reader.readAsDataURL(fileInput.files[0]);
-            }
-          }
-        });
-
-        document.addEventListener("submit", function(e) {
-          const form = e.target.closest(".post-editor-form");
-          if (!form) return;
-          e.preventDefault();
-          const postId = form.getAttribute("data-post-id");
-          const card = form.closest(".post-card");
-          fetch("/edit-post/" + postId, { method: "POST", body: new FormData(form) })
-            .then(r => r.json()).then(data => {
-              if (!data.success) { alert("Error saving"); return; }
-              const contentEl = card.querySelector(".post-content");
-              const imageWrapper = card.querySelector(".post-image-wrapper");
-              if (contentEl) contentEl.textContent = data.content;
-              if (imageWrapper) imageWrapper.innerHTML = data.imagePath ? "<img class='post-image' src='" + data.imagePath + "' style='max-width:100%;margin-top:8px;border-radius:6px;'>" : "";
-              card.querySelector(".post-editor").classList.remove("open");
-            });
-        });
-
         async function loadPostReactions(postId) {
           const data = await fetch("/api/posts/" + postId + "/reactions", { credentials: "include" }).then(r => r.json()).catch(() => ({ counts: {}, myReaction: null }));
           ["❤️","🔥","😂","🤝","🚀"].forEach(function(e) {
@@ -1637,6 +1569,77 @@ app.get("/profile", requireLogin, async (req, res) => {
           if (hrs < 24) return hrs + "h ago";
           return Math.floor(hrs / 24) + "d ago";
         }
+
+        document.addEventListener("click", async function(e) {
+          const pill = e.target.closest(".react-pill");
+          if (pill) {
+            await fetch("/api/posts/" + pill.dataset.postId + "/react", {
+              method: "POST", credentials: "include",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ emoji: pill.dataset.emoji })
+            });
+            loadPostReactions(pill.dataset.postId);
+            return;
+          }
+          const toggleBtn = e.target.closest(".comment-toggle-btn");
+          if (toggleBtn) {
+            const postId = toggleBtn.dataset.postId;
+            const section = document.getElementById("cs-" + postId);
+            if (section.style.display === "none") { section.style.display = "block"; loadPostComments(postId); }
+            else section.style.display = "none";
+            return;
+          }
+          const editBtn = e.target.closest(".edit-post-btn");
+          if (editBtn) { const editor = editBtn.closest(".post-card").querySelector(".post-editor"); if (editor) editor.classList.toggle("open"); return; }
+          const cancelBtn = e.target.closest(".cancel-edit-btn");
+          if (cancelBtn) { const editor = cancelBtn.closest(".post-editor"); if (editor) editor.classList.remove("open"); return; }
+          const deleteBtn = e.target.closest(".delete-post-btn");
+          if (deleteBtn) {
+            const card = deleteBtn.closest(".post-card");
+            if (!confirm("Delete this post?")) return;
+            fetch("/delete-post/" + card.dataset.postId, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) })
+              .then(r => r.json()).then(d => { if (d.success) card.remove(); });
+            return;
+          }
+          const deleteImageBtn = e.target.closest(".delete-image-btn");
+          if (deleteImageBtn) {
+            const form = deleteImageBtn.closest(".post-editor-form");
+            form.querySelector("input[name=deleteImage]").value = "true";
+            const preview = form.querySelector(".current-image-preview");
+            if (preview) preview.innerHTML = "<p style='font-size:12px;color:#777;'>Image will be removed.</p>";
+          }
+        });
+
+        document.addEventListener("change", function(e) {
+          const fileInput = e.target.closest("input[type=file][name=image]");
+          if (fileInput) {
+            const form = fileInput.closest(".post-editor-form");
+            form.querySelector("input[name=deleteImage]").value = "false";
+            const preview = form.querySelector(".current-image-preview");
+            if (fileInput.files && fileInput.files[0]) {
+              const reader = new FileReader();
+              reader.onload = function(ev) { if (preview) preview.innerHTML = "<img src='" + ev.target.result + "' style='max-width:100%;border-radius:6px;margin-bottom:6px;'>"; };
+              reader.readAsDataURL(fileInput.files[0]);
+            }
+          }
+        });
+
+        document.addEventListener("submit", function(e) {
+          const form = e.target.closest(".post-editor-form");
+          if (!form) return;
+          e.preventDefault();
+          const postId = form.getAttribute("data-post-id");
+          const card = form.closest(".post-card");
+          fetch("/edit-post/" + postId, { method: "POST", body: new FormData(form) })
+            .then(r => r.json()).then(data => {
+              if (!data.success) { alert("Error saving"); return; }
+              const contentEl = card.querySelector(".post-content");
+              const imageWrapper = card.querySelector(".post-image-wrapper");
+              if (contentEl) contentEl.textContent = data.content;
+              if (imageWrapper) imageWrapper.innerHTML = data.imagePath ? "<img class='post-image' src='" + data.imagePath + "' style='max-width:100%;margin-top:8px;border-radius:6px;'>" : "";
+              card.querySelector(".post-editor").classList.remove("open");
+            });
+        });
 
         document.addEventListener("keydown", function(e) { if (e.key === "Escape") closeProfileGallery(); });
         document.querySelectorAll(".post-card").forEach(function(card) { const id = card.dataset.postId; if (id) loadPostReactions(id); });
@@ -1695,9 +1698,9 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
       </div>
       <div class="comment-section" id="cs-${p._id}" style="display:none;margin-top:10px;">
         <div class="comment-list" id="cl-${p._id}" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;max-height:200px;overflow-y:auto;"></div>
-        <div class="comment-input-row">
+        <div style="display:grid;grid-template-columns:1fr auto;gap:8px;width:100%;">
           <input class="comment-input" data-post-id="${p._id}" type="text" placeholder="Write a comment..." maxlength="300"
-            style="background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;"
+            style="width:100%;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;"
             onkeydown="if(event.key==='Enter'){event.preventDefault();submitPostComment('${p._id}',this);}"/>
           <button class="btn-primary" style="height:44px;padding:0 16px;white-space:nowrap;"
             onclick="submitPostComment('${p._id}', document.querySelector('.comment-input[data-post-id=\\'${p._id}\\']'))">Post</button>
@@ -1973,25 +1976,6 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
           await loadProfileComments();
         }
 
-        document.addEventListener("click", async function(e) {
-          const pill = e.target.closest(".react-pill");
-          if (pill) {
-            await fetch("/api/posts/" + pill.dataset.postId + "/react", {
-              method: "POST", credentials: "include",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ emoji: pill.dataset.emoji })
-            });
-            loadPostReactions(pill.dataset.postId);
-          }
-          const toggleBtn = e.target.closest(".comment-toggle-btn");
-          if (toggleBtn) {
-            const postId = toggleBtn.dataset.postId;
-            const section = document.getElementById("cs-" + postId);
-            if (section.style.display === "none") { section.style.display = "block"; loadPostComments(postId); }
-            else section.style.display = "none";
-          }
-        });
-
         async function loadPostReactions(postId) {
           const data = await fetch("/api/posts/" + postId + "/reactions", { credentials: "include" }).then(r => r.json()).catch(() => ({ counts: {}, myReaction: null }));
           ["❤️","🔥","😂","🤝","🚀"].forEach(function(e) {
@@ -2040,6 +2024,26 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
           if (hrs < 24) return hrs + "h ago";
           return Math.floor(hrs / 24) + "d ago";
         }
+
+        document.addEventListener("click", async function(e) {
+          const pill = e.target.closest(".react-pill");
+          if (pill) {
+            await fetch("/api/posts/" + pill.dataset.postId + "/react", {
+              method: "POST", credentials: "include",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ emoji: pill.dataset.emoji })
+            });
+            loadPostReactions(pill.dataset.postId);
+            return;
+          }
+          const toggleBtn = e.target.closest(".comment-toggle-btn");
+          if (toggleBtn) {
+            const postId = toggleBtn.dataset.postId;
+            const section = document.getElementById("cs-" + postId);
+            if (section.style.display === "none") { section.style.display = "block"; loadPostComments(postId); }
+            else section.style.display = "none";
+          }
+        });
 
         document.addEventListener("keydown", function(e) { if (e.key === "Escape") closeProfileGallery(); });
         document.querySelectorAll(".post-card").forEach(function(card) { const id = card.dataset.postId; if (id) loadPostReactions(id); });
