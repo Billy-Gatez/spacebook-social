@@ -1167,7 +1167,7 @@ app.get("/profile", requireLogin, async (req, res) => {
 
   const topFriendsHtml = user.topFriends.map(f => `
     <div class="friend-tile">
-      <div style="width:60px;height:60px;border-radius:8px;background:#111 url('${f.profilePic || "/assets/img/default-avatar.png"}') center/cover no-repeat;margin-bottom:4px;border:1px solid rgba(255,106,0,0.3);"></div>
+      <div class="friend-avatar" style="width:60px;height:60px;border-radius:8px;background:#111 url('${f.profilePic || "/assets/img/default-avatar.png"}') center/cover no-repeat;margin-bottom:4px;border:1px solid rgba(255,106,0,0.3);"></div>
       <div style="font-size:12px;"><a href="/profile/${f._id}" style="color:#ff6a00;">${f.name}</a></div>
     </div>`).join("");
 
@@ -1180,13 +1180,13 @@ app.get("/profile", requireLogin, async (req, res) => {
   const postsHtml = posts.map(p => `
     <div class="post-card" data-post-id="${p._id}">
       <div class="post">
-        <div class="author" style="color:#ff6a00;font-weight:bold;">${p.userName}</div>
-        <div class="meta" style="font-size:12px;color:#666;">${p.createdAt.toLocaleString()}</div>
+        <div class="author">${p.userName}</div>
+        <div class="meta">${p.createdAt.toLocaleString()}</div>
         <p class="post-content" style="margin-top:6px;">${p.content || ""}</p>
         <div class="post-image-wrapper">
           ${p.imagePath ? `<img class="post-image" src="${p.imagePath}" style="max-width:100%;margin-top:8px;border-radius:6px;">` : ""}
         </div>
-        <div class="post-actions" style="margin-top:8px;font-size:13px;">
+        <div class="post-actions" style="margin-top:8px;">
           <button class="btn-secondary edit-post-btn" type="button">Edit</button>
           <button class="btn-secondary delete-post-btn" type="button" style="margin-left:6px;">Delete</button>
         </div>
@@ -1204,20 +1204,21 @@ app.get("/profile", requireLogin, async (req, res) => {
         <div class="comment-list" id="cl-${p._id}" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;max-height:200px;overflow-y:auto;"></div>
         <div style="display:flex;gap:8px;align-items:center;">
           <input class="comment-input" data-post-id="${p._id}" type="text" placeholder="Write a comment..." maxlength="300"
-            style="flex:1;min-width:0;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;"/>
-          <button class="btn-primary" style="font-size:12px;padding:6px 10px;height:44px;box-sizing:border-box;flex-shrink:0;"
+            style="flex:1;min-width:0;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();submitPostComment('${p._id}',this);}"/>
+          <button class="btn-primary" style="height:44px;padding:0 14px;box-sizing:border-box;flex-shrink:0;white-space:nowrap;"
             onclick="submitPostComment('${p._id}', this.previousElementSibling)">Post</button>
         </div>
       </div>
       <div class="post-editor" id="editor-${p._id}">
         <form class="post-editor-form" data-post-id="${p._id}">
           <label style="font-size:13px;color:#ccc;">Edit your post</label>
-          <textarea name="content" style="width:100%;min-height:80px;margin-top:4px;">${p.content || ""}</textarea>
-          <div style="margin-top:8px;">
+          <textarea name="content" class="post-editor-text" style="width:100%;min-height:80px;margin-top:4px;">${p.content || ""}</textarea>
+          <div class="editor-image-section" style="margin-top:8px;">
             <div class="current-image-preview">
-              ${p.imagePath ? `<img src="${p.imagePath}" style="max-width:100%;border-radius:6px;margin-bottom:6px;">` : `<p style="font-size:12px;color:#777;">No image attached.</p>`}
+              ${p.imagePath ? `<img src="${p.imagePath}" class="editor-image" style="max-width:100%;border-radius:6px;margin-bottom:6px;">` : `<p style="font-size:12px;color:#777;">No image attached.</p>`}
             </div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:4px;">
+            <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:4px;">
               <button type="button" class="btn-secondary delete-image-btn" style="font-size:12px;">Delete Image</button>
               <label class="btn-secondary" style="font-size:12px;cursor:pointer;">Replace Image
                 <input type="file" name="image" accept="image/*" style="display:none;">
@@ -1233,55 +1234,89 @@ app.get("/profile", requireLogin, async (req, res) => {
       </div>
     </div>`).join("");
 
+  const topFriendsSelector = user.friends.map(f => `
+    <label style="display:block;font-size:13px;margin-bottom:4px;">
+      <input type="checkbox" name="topFriends" value="${f._id}" ${user.topFriends.some(t => t._id.toString() === f._id.toString()) ? "checked" : ""}> ${f.name}
+    </label>`).join("");
+
   const pic = user.profilePic || "/assets/img/default-avatar.png";
-  const friendOptions = user.friends.map(f => `
-    <div style="display:flex;align-items:center;gap:8px;padding:4px 0;">
-      <div style="width:32px;height:32px;border-radius:50%;background:#111 url('${f.profilePic || "/assets/img/default-avatar.png"}') center/cover no-repeat;flex-shrink:0;"></div>
-      <span style="font-size:13px;color:#ccc;">${f.name}</span>
-      <input type="checkbox" name="topFriends" value="${f._id}" ${user.topFriends.some(t => t._id.toString() === f._id.toString()) ? "checked" : ""} style="margin-left:auto;">
-    </div>`).join("");
 
   res.send(`<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Profile – Spacebook</title>
+  <title>${user.name} – Spacebook</title>
   <link rel="stylesheet" href="/assets/css/styles.css">
   <style>
     html,body{background:#000!important;margin:0;padding:0;color:#fff;font-family:Arial,sans-serif;overflow-x:hidden;}
     #starfield{position:fixed;top:0;left:0;width:100%;height:100%;z-index:-1;background:#000;}
-    .navbar{width:100%;padding:14px 28px;display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,0.65);backdrop-filter:blur(10px);position:sticky;top:0;z-index:100;box-sizing:border-box;}
+
+    /* NAVBAR */
+    .navbar{width:100%;padding:14px 24px;display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,0.65);backdrop-filter:blur(10px);position:sticky;top:0;z-index:100;box-sizing:border-box;}
     .navbar .logo a{color:#ff6a00;text-decoration:none;font-size:20px;font-weight:bold;}
-    .nav-links{display:flex;flex-wrap:wrap;gap:12px;align-items:center;}
+    .nav-links{display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
     .nav-links a{color:#ccc;text-decoration:none;font-size:13px;}
     .nav-links a:hover{color:#ff6a00;}
-    .profile-page{max-width:1100px;margin:0 auto;padding:30px 28px;display:grid;grid-template-columns:220px 1fr 320px;gap:20px;box-sizing:border-box;}
+
+    /* LAYOUT: 3 col on PC, 1 col on mobile */
+    .profile-page{max-width:1200px;margin:0 auto;padding:28px 24px;display:grid;grid-template-columns:240px 1fr 260px;grid-template-rows:auto;gap:20px;box-sizing:border-box;}
+    .col-left{grid-column:1;}
+    .col-mid{grid-column:2;}
+    .col-right{grid-column:3;}
+
+    /* CARDS */
     .card{border-radius:12px;background:rgba(0,0,0,0.45);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.15);padding:20px;margin-bottom:20px;}
-    .profile-avatar{width:90px;height:90px;border-radius:50%;background:#111 url('${pic}') center/cover no-repeat;border:3px solid #ff6a00;margin:0 auto 10px;}
-    .btn-primary{display:inline-block;padding:8px 16px;background:#ff6a00;color:#000;border-radius:6px;font-weight:bold;border:none;cursor:pointer;transition:0.2s;font-size:14px;text-decoration:none;}
+
+    /* PROFILE HEADER */
+    .profile-avatar{width:90px;height:90px;border-radius:50%;background:#111 url('${pic}') center/cover no-repeat;border:3px solid #ff6a00;margin:0 auto 12px;}
+
+    /* FRIENDS */
+    .friend-grid{display:flex;flex-wrap:wrap;gap:10px;}
+    .friend-tile{width:68px;text-align:center;}
+
+    /* POSTS */
+    .post-card{margin-bottom:16px;}
+    .post-editor{margin-top:8px;border-radius:12px;background:rgba(0,0,0,0.55);border:1px solid rgba(255,106,0,0.6);padding:12px;max-height:0;opacity:0;overflow:hidden;transition:max-height 0.25s ease,opacity 0.2s ease;}
+    .post-editor.open{max-height:520px;opacity:1;}
+
+    /* BUTTONS */
+    .btn-primary{display:inline-block;padding:8px 14px;background:#ff6a00;color:#000;border-radius:6px;font-weight:bold;border:none;cursor:pointer;transition:0.2s;font-size:14px;text-decoration:none;}
     .btn-primary:hover{background:#ff8c32;}
-    .btn-secondary{padding:6px 10px;background:rgba(255,255,255,0.08);border-radius:6px;border:none;color:#ff6a00;cursor:pointer;font-weight:bold;transition:0.2s;}
+    .btn-secondary{padding:6px 10px;background:rgba(255,255,255,0.08);border-radius:6px;border:none;color:#ff6a00;cursor:pointer;font-weight:bold;transition:0.2s;font-size:13px;}
     .btn-secondary:hover{background:rgba(255,255,255,0.18);}
+
+    /* REACTIONS */
     .react-pill{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:4px 12px;font-size:16px;cursor:pointer;color:#fff;transition:all .15s;display:inline-flex;align-items:center;gap:5px;}
     .react-pill:hover{border-color:#ff6a00;background:rgba(255,106,0,0.15);}
     .react-pill.mine{border-color:#ff6a00;background:rgba(255,106,0,0.2);}
     .rpill-count{font-size:12px;color:#ccc;}
+    .react-btn{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:6px 14px;font-size:18px;cursor:pointer;color:#fff;transition:all .15s;display:inline-flex;align-items:center;gap:5px;}
+    .react-btn:hover{border-color:#ff6a00;background:rgba(255,106,0,0.15);}
+    .react-btn.mine{border-color:#ff6a00;background:rgba(255,106,0,0.2);}
+
+    /* COMMENTS */
     .comment-item{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:8px 12px;display:flex;gap:10px;align-items:flex-start;}
     .comment-avatar{width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid rgba(255,106,0,0.3);}
     .comment-name{font-size:12px;color:#ff6a00;font-weight:bold;}
     .comment-text{font-size:13px;color:#f0f0f0;word-break:break-word;margin-top:2px;}
     .comment-time{font-size:11px;color:#555;margin-top:2px;}
-    .post-editor{margin-top:8px;border-radius:12px;background:rgba(0,0,0,0.55);border:1px solid rgba(255,106,0,0.6);padding:12px;max-height:0;opacity:0;overflow:hidden;transition:max-height 0.25s ease,opacity 0.2s ease;}
-    .post-editor.open{max-height:600px;opacity:1;}
-    .friend-grid{display:flex;flex-wrap:wrap;gap:8px;}
-    .friend-tile{width:65px;text-align:center;}
+
+    /* FORMS */
     textarea{width:100%;background:rgba(255,255,255,0.06);border:1px solid #444;border-radius:8px;color:#fff;padding:10px;font-size:14px;resize:vertical;box-sizing:border-box;}
     textarea:focus,input[type=text]:focus{border-color:#ff6a00;outline:none;}
-    .gallery-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
-    .gallery-thumb{aspect-ratio:1;border-radius:8px;overflow:hidden;cursor:pointer;border:1px solid rgba(255,106,0,0.2);}
+
+    /* GALLERY */
+    .gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px;}
+    .gallery-thumb{aspect-ratio:1;border-radius:8px;overflow:hidden;cursor:pointer;border:1px solid rgba(255,106,0,0.2);transition:border-color .15s;}
+    .gallery-thumb:hover{border-color:#ff6a00;}
     .gallery-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
-    @media(max-width:900px){.profile-page{grid-template-columns:1fr;padding:16px;}}
+
+    /* MOBILE: stack to single column */
+    @media(max-width:860px){
+      .profile-page{grid-template-columns:1fr;padding:16px;}
+      .col-left,.col-mid,.col-right{grid-column:1;}
+    }
   </style>
 </head>
 <body>
@@ -1299,36 +1334,36 @@ app.get("/profile", requireLogin, async (req, res) => {
 
   <div class="profile-page">
 
-    <!-- LEFT: Profile Info -->
-    <div class="left-col">
+    <!-- LEFT COLUMN -->
+    <div class="col-left">
       <div class="card" style="text-align:center;">
         <div class="profile-avatar"></div>
-        <div style="font-size:20px;font-weight:bold;color:#ff6a00;">${user.name}</div>
-        <div style="font-size:13px;color:#aaa;margin-top:4px;">${user.network || "Unknown network"}</div>
-        <div style="font-size:13px;color:#ccc;margin-top:6px;font-style:italic;">"Exploring the universe via Spacebook."</div>
-        <form action="/upload-profile-pic" method="post" enctype="multipart/form-data" style="margin-top:14px;">
+        <h2 style="margin:0;color:#ff6a00;font-size:20px;">${user.name}</h2>
+        <p style="margin:4px 0;color:#aaa;font-size:13px;">${user.network || "Unknown network"}</p>
+        <p style="margin:6px 0;color:#ccc;font-size:13px;font-style:italic;">"Exploring the universe via Spacebook."</p>
+        <form action="/upload-profile-pic" method="post" enctype="multipart/form-data" style="margin-top:14px;text-align:left;">
           <label style="color:#ccc;font-size:13px;">Update profile picture</label><br>
-          <input type="file" name="profilePic" accept="image/*" style="margin-top:6px;font-size:12px;color:#ccc;">
+          <input type="file" name="profilePic" accept="image/*" style="margin-top:6px;font-size:12px;color:#ccc;width:100%;">
           <button class="btn-primary" style="margin-top:8px;width:100%;">Upload</button>
         </form>
         <a href="/gallery" class="btn-secondary" style="display:block;margin-top:10px;text-align:center;">📷 My Gallery</a>
       </div>
     </div>
 
-    <!-- MIDDLE: Posts -->
-    <div class="mid-col">
+    <!-- MIDDLE COLUMN: Posts -->
+    <div class="col-mid">
       <div class="card">
-        <h3 style="color:#ff6a00;margin:0 0 12px;">📝 Your Posts</h3>
-        ${postsHtml || "<p style='color:#ccc;font-size:13px;'>No posts yet.</p>"}
+        <h3 style="color:#ff6a00;margin:0 0 14px;">📝 Your Posts</h3>
+        ${postsHtml || "<p style='color:#ccc;font-size:13px;'>You haven't posted yet.</p>"}
       </div>
     </div>
 
-    <!-- RIGHT: Friends + Gallery + Top Friends -->
-    <div class="right-col">
+    <!-- RIGHT COLUMN: Friends + Gallery + Top Friends -->
+    <div class="col-right">
       <div class="card">
         <h3 style="color:#ff6a00;margin:0 0 10px;">⭐ Top Friends</h3>
         <div class="friend-grid">
-          ${topFriendsHtml || "<p style='color:#ccc;font-size:13px;'>None set.</p>"}
+          ${topFriendsHtml || "<p style='color:#ccc;font-size:13px;'>No top friends yet.</p>"}
         </div>
       </div>
 
@@ -1341,16 +1376,17 @@ app.get("/profile", requireLogin, async (req, res) => {
 
       <div class="card">
         <h3 style="color:#ff6a00;margin:0 0 10px;">📷 Gallery</h3>
-        <div id="profile-gallery-grid" class="gallery-grid">
+        <div id="profile-own-gallery" class="gallery-grid">
           <p style="color:#888;font-size:13px;">Loading...</p>
         </div>
+        <a href="/gallery" style="display:inline-block;margin-top:10px;color:#ff6a00;font-size:13px;">View full gallery →</a>
       </div>
 
       <div class="card">
         <h3 style="color:#ff6a00;margin:0 0 10px;">✏️ Select Top 8 Friends</h3>
         <form action="/set-top-friends" method="post">
-          <div style="max-height:200px;overflow-y:auto;">
-            ${friendOptions || "<p style='color:#ccc;font-size:13px;'>Add friends first.</p>"}
+          <div style="max-height:200px;overflow-y:auto;border:1px solid #333;padding:10px;border-radius:6px;">
+            ${topFriendsSelector || "<p style='color:#ccc;font-size:13px;'>Add some friends first.</p>"}
           </div>
           <button class="btn-primary" style="margin-top:10px;width:100%;">Save Top Friends</button>
         </form>
@@ -1360,26 +1396,27 @@ app.get("/profile", requireLogin, async (req, res) => {
   </div>
 
   <!-- Gallery overlay -->
-  <div id="gallery-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:1000;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px 0;">
+  <div id="profile-media-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:1000;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px 0;">
     <div style="max-width:860px;width:100%;padding:0 16px;box-sizing:border-box;">
       <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
-        <div onclick="closeGalleryOverlay()" style="font-size:28px;cursor:pointer;color:#fff;background:rgba(255,255,255,0.1);border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;">✕</div>
+        <div onclick="closeProfileGallery()" style="font-size:28px;cursor:pointer;color:#fff;background:rgba(255,255,255,0.1);border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;">✕</div>
       </div>
-      <div id="overlay-media"></div>
+      <div id="profile-overlay-media"></div>
       <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;justify-content:center;">
-        <button onclick="reactPhoto('❤️')" class="react-pill" id="rb-❤️">❤️ <span id="rc-❤️">0</span></button>
-        <button onclick="reactPhoto('🔥')" class="react-pill" id="rb-🔥">🔥 <span id="rc-🔥">0</span></button>
-        <button onclick="reactPhoto('😂')" class="react-pill" id="rb-😂">😂 <span id="rc-😂">0</span></button>
-        <button onclick="reactPhoto('🤝')" class="react-pill" id="rb-🤝">🤝 <span id="rc-🤝">0</span></button>
-        <button onclick="reactPhoto('🚀')" class="react-pill" id="rb-🚀">🚀 <span id="rc-🚀">0</span></button>
+        <button onclick="reactProfilePhoto('❤️')" class="react-btn" id="prb-❤️">❤️ <span id="prc-❤️">0</span></button>
+        <button onclick="reactProfilePhoto('🔥')" class="react-btn" id="prb-🔥">🔥 <span id="prc-🔥">0</span></button>
+        <button onclick="reactProfilePhoto('😂')" class="react-btn" id="prb-😂">😂 <span id="prc-😂">0</span></button>
+        <button onclick="reactProfilePhoto('🤝')" class="react-btn" id="prb-🤝">🤝 <span id="prc-🤝">0</span></button>
+        <button onclick="reactProfilePhoto('🚀')" class="react-btn" id="prb-🚀">🚀 <span id="prc-🚀">0</span></button>
       </div>
       <div style="margin-top:16px;">
         <h4 style="color:#ff6a00;margin:0 0 10px;">💬 Comments</h4>
-        <div id="overlay-comment-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;max-height:220px;overflow-y:auto;"></div>
+        <div id="profile-comment-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;max-height:220px;overflow-y:auto;"></div>
         <div style="display:flex;gap:8px;align-items:center;">
-          <input id="overlay-comment-input" type="text" placeholder="Add a comment..." maxlength="300"
-            style="flex:1;min-width:0;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;"/>
-          <button class="btn-primary" style="height:44px;box-sizing:border-box;flex-shrink:0;" onclick="submitOverlayComment()">Post</button>
+          <input id="profile-comment-input" type="text" placeholder="Add a comment..." maxlength="300"
+            style="flex:1;min-width:0;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();submitProfileComment();}"/>
+          <button class="btn-primary" style="height:44px;padding:0 14px;box-sizing:border-box;flex-shrink:0;" onclick="submitProfileComment()">Post</button>
         </div>
       </div>
     </div>
@@ -1404,91 +1441,93 @@ app.get("/profile", requireLogin, async (req, res) => {
     draw();
 
     // ====== GALLERY ======
-    let currentAlbumId = null, currentPhotoIndex = null;
+    let profileGalleryAlbumId = null;
+    let profileGalleryPhotoIndex = null;
 
-    async function loadProfileGallery() {
-      const albums = await fetch("/api/albums/user/${user._id}", {credentials:"include"}).then(r=>r.json()).catch(()=>[]);
-      const grid = document.getElementById("profile-gallery-grid");
+    async function loadOwnGallery() {
+      const albums = await fetch("/api/albums", {credentials:"include"}).then(r=>r.json()).catch(()=>[]);
+      const grid = document.getElementById("profile-own-gallery");
       const allPhotos = [];
-      albums.forEach(a => a.photos.forEach((p,i) => allPhotos.push({url:p.url,albumId:a._id,photoIndex:i})));
+      albums.forEach(function(a){ a.photos.forEach(function(p,i){ allPhotos.push({url:p.url,albumId:a._id,photoIndex:i}); }); });
       if (!allPhotos.length) { grid.innerHTML = "<p style='color:#888;font-size:13px;'>No photos yet.</p>"; return; }
-      grid.innerHTML = allPhotos.slice(0,9).map(p =>
-        "<div class='gallery-thumb' onclick=\\"openGalleryOverlay('" + p.albumId + "'," + p.photoIndex + ",'" + p.url + "')\\">" +
-        "<img src='" + p.url + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/></div>"
-      ).join("");
+      grid.innerHTML = allPhotos.slice(0,9).map(function(p){
+        return "<div class='gallery-thumb' onclick=\\"openProfileGallery('" + p.albumId + "'," + p.photoIndex + ",'" + p.url + "')\\">" +
+          "<img src='" + p.url + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/></div>";
+      }).join("");
     }
 
-    async function openGalleryOverlay(albumId, photoIndex, url) {
-      currentAlbumId = albumId; currentPhotoIndex = photoIndex;
-      const overlay = document.getElementById("gallery-overlay");
-      const media = document.getElementById("overlay-media");
+    async function openProfileGallery(albumId, photoIndex, url) {
+      profileGalleryAlbumId = albumId;
+      profileGalleryPhotoIndex = photoIndex;
+      const overlay = document.getElementById("profile-media-overlay");
+      const media = document.getElementById("profile-overlay-media");
       const isVideo = url.match(/\.(mp4|webm|ogg)(\?|$)/i);
       media.innerHTML = isVideo
         ? "<video src='" + url + "' controls autoplay style='max-width:100%;max-height:65vh;border-radius:10px;display:block;margin:0 auto;'></video>"
         : "<img src='" + url + "' style='max-width:100%;max-height:65vh;border-radius:10px;display:block;margin:0 auto;' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/>";
       overlay.style.display = "flex";
-      await loadOverlayReactions();
-      await loadOverlayComments();
+      await loadProfileReactions();
+      await loadProfileComments();
     }
 
-    function closeGalleryOverlay() {
-      document.getElementById("gallery-overlay").style.display = "none";
-      document.getElementById("overlay-media").innerHTML = "";
-      document.getElementById("overlay-comment-list").innerHTML = "";
-      currentAlbumId = null; currentPhotoIndex = null;
+    function closeProfileGallery() {
+      document.getElementById("profile-media-overlay").style.display = "none";
+      document.getElementById("profile-overlay-media").innerHTML = "";
+      document.getElementById("profile-comment-list").innerHTML = "";
+      profileGalleryAlbumId = null;
+      profileGalleryPhotoIndex = null;
     }
 
-    async function loadOverlayReactions() {
-      const data = await fetch("/api/albums/" + currentAlbumId + "/photos/" + currentPhotoIndex + "/reactions", {credentials:"include"})
+    async function loadProfileReactions() {
+      const data = await fetch("/api/albums/" + profileGalleryAlbumId + "/photos/" + profileGalleryPhotoIndex + "/reactions", {credentials:"include"})
         .then(r=>r.json()).catch(()=>({counts:{},myReaction:null}));
-      ["❤️","🔥","😂","🤝","🚀"].forEach(e => {
-        const el = document.getElementById("rc-" + e);
-        const btn = document.getElementById("rb-" + e);
+      ["❤️","🔥","😂","🤝","🚀"].forEach(function(e){
+        const el = document.getElementById("prc-" + e);
+        const btn = document.getElementById("prb-" + e);
         if (el) el.textContent = data.counts[e] || 0;
         if (btn) btn.classList.toggle("mine", data.myReaction === e);
       });
     }
 
-    async function reactPhoto(emoji) {
-      if (!currentAlbumId) return;
-      await fetch("/api/albums/" + currentAlbumId + "/photos/" + currentPhotoIndex + "/react", {
+    async function reactProfilePhoto(emoji) {
+      if (!profileGalleryAlbumId) return;
+      await fetch("/api/albums/" + profileGalleryAlbumId + "/photos/" + profileGalleryPhotoIndex + "/react", {
         method:"POST", credentials:"include",
         headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({emoji})
+        body: JSON.stringify({emoji:emoji})
       });
-      await loadOverlayReactions();
+      await loadProfileReactions();
     }
 
-    async function loadOverlayComments() {
-      const comments = await fetch("/api/albums/" + currentAlbumId + "/photos/" + currentPhotoIndex + "/comments", {credentials:"include"})
+    async function loadProfileComments() {
+      const comments = await fetch("/api/albums/" + profileGalleryAlbumId + "/photos/" + profileGalleryPhotoIndex + "/comments", {credentials:"include"})
         .then(r=>r.json()).catch(()=>[]);
-      const list = document.getElementById("overlay-comment-list");
-      list.innerHTML = !comments.length
-        ? "<div style='color:#666;font-size:13px;padding:8px;'>No comments yet.</div>"
-        : comments.map(c =>
-            "<div class='comment-item'><img class='comment-avatar' src='" + (c.userPic||"/assets/img/default-avatar.png") + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/>" +
-            "<div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div></div>"
-          ).join("");
+      const list = document.getElementById("profile-comment-list");
+      if (!comments.length) { list.innerHTML = "<div style='color:#666;font-size:13px;padding:8px;'>No comments yet.</div>"; return; }
+      list.innerHTML = comments.map(function(c){
+        return "<div class='comment-item'><img class='comment-avatar' src='" + (c.userPic||"/assets/img/default-avatar.png") + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/>" +
+          "<div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div></div>";
+      }).join("");
       list.scrollTop = list.scrollHeight;
     }
 
-    async function submitOverlayComment() {
-      const input = document.getElementById("overlay-comment-input");
+    async function submitProfileComment() {
+      const input = document.getElementById("profile-comment-input");
       const text = input.value.trim();
-      if (!text || !currentAlbumId) return;
-      await fetch("/api/albums/" + currentAlbumId + "/photos/" + currentPhotoIndex + "/comments", {
+      if (!text || !profileGalleryAlbumId) return;
+      await fetch("/api/albums/" + profileGalleryAlbumId + "/photos/" + profileGalleryPhotoIndex + "/comments", {
         method:"POST", credentials:"include",
         headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({text})
+        body: JSON.stringify({text:text})
       });
       input.value = "";
-      await loadOverlayComments();
+      await loadProfileComments();
     }
 
     // ====== POST REACTIONS ======
     async function loadPostReactions(postId) {
       const data = await fetch("/api/posts/" + postId + "/reactions", {credentials:"include"}).then(r=>r.json()).catch(()=>({counts:{},myReaction:null}));
-      ["❤️","🔥","😂","🤝","🚀"].forEach(function(e) {
+      ["❤️","🔥","😂","🤝","🚀"].forEach(function(e){
         const el = document.getElementById("rp-" + postId + "-" + e.codePointAt(0));
         if (el) el.textContent = data.counts[e] || 0;
         const btn = document.querySelector(".react-pill[data-post-id='" + postId + "'][data-emoji='" + e + "']");
@@ -1503,7 +1542,9 @@ app.get("/profile", requireLogin, async (req, res) => {
       if (!list) return;
       list.innerHTML = !comments.length
         ? "<div style='color:#666;font-size:13px;padding:6px;'>No comments yet.</div>"
-        : comments.map(c => "<div class='comment-item'><img class='comment-avatar' src='" + (c.userPic||"/assets/img/default-avatar.png") + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/><div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div></div>").join("");
+        : comments.map(function(c){
+            return "<div class='comment-item'><img class='comment-avatar' src='" + (c.userPic||"/assets/img/default-avatar.png") + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/><div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div></div>";
+          }).join("");
       list.scrollTop = list.scrollHeight;
     }
 
@@ -1513,7 +1554,7 @@ app.get("/profile", requireLogin, async (req, res) => {
       await fetch("/api/posts/" + postId + "/comments", {
         method:"POST", credentials:"include",
         headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({text})
+        body: JSON.stringify({text:text})
       });
       inputEl.value = "";
       loadPostComments(postId);
@@ -1529,14 +1570,14 @@ app.get("/profile", requireLogin, async (req, res) => {
       return Math.floor(hrs/24) + "d ago";
     }
 
-    // ====== CLICK HANDLER ======
+    // ====== UNIFIED CLICK HANDLER ======
     document.addEventListener("click", async function(e) {
       const pill = e.target.closest(".react-pill");
       if (pill && pill.dataset.postId) {
         await fetch("/api/posts/" + pill.dataset.postId + "/react", {
           method:"POST", credentials:"include",
           headers:{"Content-Type":"application/json"},
-          body: JSON.stringify({emoji: pill.dataset.emoji})
+          body: JSON.stringify({emoji:pill.dataset.emoji})
         });
         loadPostReactions(pill.dataset.postId);
         return;
@@ -1557,17 +1598,15 @@ app.get("/profile", requireLogin, async (req, res) => {
       }
       const cancelBtn = e.target.closest(".cancel-edit-btn");
       if (cancelBtn) {
-        const editor = cancelBtn.closest(".post-editor");
-        if (editor) editor.classList.remove("open");
+        cancelBtn.closest(".post-editor").classList.remove("open");
         return;
       }
       const deleteBtn = e.target.closest(".delete-post-btn");
       if (deleteBtn) {
         const card = deleteBtn.closest(".post-card");
-        const postId = card.getAttribute("data-post-id");
-        if (!postId || !confirm("Delete this post?")) return;
-        fetch("/delete-post/" + postId, {method:"POST", headers:{"Content-Type":"application/json"}, body:"{}"})
-          .then(r=>r.json()).then(data => { if (data.success) card.remove(); else alert("Error deleting post"); });
+        if (!confirm("Delete this post?")) return;
+        fetch("/delete-post/" + card.dataset.postId, {method:"POST", headers:{"Content-Type":"application/json"}, body:"{}"})
+          .then(r=>r.json()).then(d=>{ if (d.success) card.remove(); });
         return;
       }
       const deleteImageBtn = e.target.closest(".delete-image-btn");
@@ -1578,22 +1617,18 @@ app.get("/profile", requireLogin, async (req, res) => {
         if (preview) preview.innerHTML = "<p style='font-size:12px;color:#777;'>Image will be removed.</p>";
         return;
       }
-      if (e.key === "Escape") closeGalleryOverlay();
     });
-
-    document.addEventListener("keydown", e => { if (e.key === "Escape") closeGalleryOverlay(); });
 
     document.addEventListener("change", function(e) {
       const fileInput = e.target.closest("input[type=file][name=image]");
-      if (fileInput) {
-        const form = fileInput.closest(".post-editor-form");
-        form.querySelector("input[name=deleteImage]").value = "false";
-        const preview = form.querySelector(".current-image-preview");
-        if (fileInput.files && fileInput.files[0]) {
-          const reader = new FileReader();
-          reader.onload = ev => { if (preview) preview.innerHTML = "<img src='" + ev.target.result + "' style='max-width:100%;border-radius:6px;margin-bottom:6px;'>"; };
-          reader.readAsDataURL(fileInput.files[0]);
-        }
+      if (!fileInput) return;
+      const form = fileInput.closest(".post-editor-form");
+      form.querySelector("input[name=deleteImage]").value = "false";
+      const preview = form.querySelector(".current-image-preview");
+      if (fileInput.files && fileInput.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(ev){ if (preview) preview.innerHTML = "<img src='" + ev.target.result + "' style='max-width:100%;border-radius:6px;margin-bottom:6px;'>"; };
+        reader.readAsDataURL(fileInput.files[0]);
       }
     });
 
@@ -1604,7 +1639,7 @@ app.get("/profile", requireLogin, async (req, res) => {
       const postId = form.getAttribute("data-post-id");
       const card = form.closest(".post-card");
       fetch("/edit-post/" + postId, {method:"POST", body: new FormData(form)})
-        .then(r=>r.json()).then(data => {
+        .then(r=>r.json()).then(function(data){
           if (!data.success) { alert("Error saving changes"); return; }
           const contentEl = card.querySelector(".post-content");
           const imageWrapper = card.querySelector(".post-image-wrapper");
@@ -1614,24 +1649,28 @@ app.get("/profile", requireLogin, async (req, res) => {
         }).catch(()=>alert("Error saving changes"));
     });
 
+    document.addEventListener("keydown", function(e){ if (e.key === "Escape") closeProfileGallery(); });
+
     // ====== INIT ======
-    document.querySelectorAll(".post-card").forEach(function(card) {
+    document.querySelectorAll(".post-card").forEach(function(card){
       if (card.dataset.postId) loadPostReactions(card.dataset.postId);
     });
-    loadProfileGallery();
+    loadOwnGallery();
   </script>
 </body>
 </html>`);
 });
 
+
 // ====== OTHER USER'S PROFILE ======
 app.get("/profile/:id", requireLogin, async (req, res) => {
-  const viewer = await User.findById(req.session.userId);
+  const viewer = await User.findById(req.session.userId).populate("friends").populate("topFriends");
   const target = await User.findById(req.params.id).populate("friends").populate("topFriends");
   if (!target) return res.redirect("/feed");
+  if (target._id.toString() === viewer._id.toString()) return res.redirect("/profile");
 
-  const isFriend = viewer.friends.some(f => f.toString() === target._id.toString());
   const posts = await Post.find({ userId: target._id }).sort({ createdAt: -1 });
+  const isFriend = viewer.friends.some(f => f._id.toString() === target._id.toString());
 
   const topFriendsHtml = target.topFriends.map(f => `
     <div class="friend-tile">
@@ -1648,8 +1687,8 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
   const postsHtml = posts.map(p => `
     <div class="post-card" data-post-id="${p._id}">
       <div class="post">
-        <div class="author" style="color:#ff6a00;font-weight:bold;">${p.userName}</div>
-        <div class="meta" style="font-size:12px;color:#666;">${p.createdAt.toLocaleString()}</div>
+        <div class="author">${p.userName}</div>
+        <div class="meta">${p.createdAt.toLocaleString()}</div>
         <p class="post-content" style="margin-top:6px;">${p.content || ""}</p>
         <div class="post-image-wrapper">
           ${p.imagePath ? `<img class="post-image" src="${p.imagePath}" style="max-width:100%;margin-top:8px;border-radius:6px;">` : ""}
@@ -1668,8 +1707,9 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
         <div class="comment-list" id="cl-${p._id}" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;max-height:200px;overflow-y:auto;"></div>
         <div style="display:flex;gap:8px;align-items:center;">
           <input class="comment-input" data-post-id="${p._id}" type="text" placeholder="Write a comment..." maxlength="300"
-            style="flex:1;min-width:0;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;"/>
-          <button class="btn-primary" style="font-size:12px;padding:6px 10px;height:44px;box-sizing:border-box;flex-shrink:0;"
+            style="flex:1;min-width:0;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();submitPostComment('${p._id}',this);}"/>
+          <button class="btn-primary" style="height:44px;padding:0 14px;box-sizing:border-box;flex-shrink:0;white-space:nowrap;"
             onclick="submitPostComment('${p._id}', this.previousElementSibling)">Post</button>
         </div>
       </div>
@@ -1687,36 +1727,70 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
   <style>
     html,body{background:#000!important;margin:0;padding:0;color:#fff;font-family:Arial,sans-serif;overflow-x:hidden;}
     #starfield{position:fixed;top:0;left:0;width:100%;height:100%;z-index:-1;background:#000;}
-    .navbar{width:100%;padding:14px 28px;display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,0.65);backdrop-filter:blur(10px);position:sticky;top:0;z-index:100;box-sizing:border-box;}
+
+    /* NAVBAR */
+    .navbar{width:100%;padding:14px 24px;display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,0.65);backdrop-filter:blur(10px);position:sticky;top:0;z-index:100;box-sizing:border-box;}
     .navbar .logo a{color:#ff6a00;text-decoration:none;font-size:20px;font-weight:bold;}
-    .nav-links{display:flex;flex-wrap:wrap;gap:12px;align-items:center;}
+    .nav-links{display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
     .nav-links a{color:#ccc;text-decoration:none;font-size:13px;}
     .nav-links a:hover{color:#ff6a00;}
-    .profile-page{max-width:1100px;margin:0 auto;padding:30px 28px;display:grid;grid-template-columns:220px 1fr 320px;gap:20px;box-sizing:border-box;}
+
+    /* LAYOUT */
+    .profile-page{max-width:1200px;margin:0 auto;padding:28px 24px;display:grid;grid-template-columns:240px 1fr 260px;gap:20px;box-sizing:border-box;}
+    .col-left{grid-column:1;}
+    .col-mid{grid-column:2;}
+    .col-right{grid-column:3;}
+
+    /* CARDS */
     .card{border-radius:12px;background:rgba(0,0,0,0.45);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.15);padding:20px;margin-bottom:20px;}
-    .profile-avatar{width:90px;height:90px;border-radius:50%;background:#111 url('${pic}') center/cover no-repeat;border:3px solid #ff6a00;margin:0 auto 10px;}
-    .btn-primary{display:inline-block;padding:8px 16px;background:#ff6a00;color:#000;border-radius:6px;font-weight:bold;border:none;cursor:pointer;transition:0.2s;font-size:14px;text-decoration:none;}
+
+    /* PROFILE */
+    .profile-avatar{width:90px;height:90px;border-radius:50%;background:#111 url('${pic}') center/cover no-repeat;border:3px solid #ff6a00;margin:0 auto 12px;}
+
+    /* FRIENDS */
+    .friend-grid{display:flex;flex-wrap:wrap;gap:10px;}
+    .friend-tile{width:68px;text-align:center;}
+
+    /* POSTS */
+    .post-card{margin-bottom:16px;}
+
+    /* BUTTONS */
+    .btn-primary{display:inline-block;padding:8px 14px;background:#ff6a00;color:#000;border-radius:6px;font-weight:bold;border:none;cursor:pointer;transition:0.2s;font-size:14px;text-decoration:none;}
     .btn-primary:hover{background:#ff8c32;}
-    .btn-secondary{padding:6px 10px;background:rgba(255,255,255,0.08);border-radius:6px;border:none;color:#ff6a00;cursor:pointer;font-weight:bold;transition:0.2s;}
+    .btn-secondary{padding:6px 10px;background:rgba(255,255,255,0.08);border-radius:6px;border:none;color:#ff6a00;cursor:pointer;font-weight:bold;transition:0.2s;font-size:13px;}
     .btn-secondary:hover{background:rgba(255,255,255,0.18);}
+
+    /* REACTIONS */
     .react-pill{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:4px 12px;font-size:16px;cursor:pointer;color:#fff;transition:all .15s;display:inline-flex;align-items:center;gap:5px;}
     .react-pill:hover{border-color:#ff6a00;background:rgba(255,106,0,0.15);}
     .react-pill.mine{border-color:#ff6a00;background:rgba(255,106,0,0.2);}
     .rpill-count{font-size:12px;color:#ccc;}
+    .react-btn{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:6px 14px;font-size:18px;cursor:pointer;color:#fff;transition:all .15s;display:inline-flex;align-items:center;gap:5px;}
+    .react-btn:hover{border-color:#ff6a00;background:rgba(255,106,0,0.15);}
+    .react-btn.mine{border-color:#ff6a00;background:rgba(255,106,0,0.2);}
+
+    /* COMMENTS */
     .comment-item{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:8px 12px;display:flex;gap:10px;align-items:flex-start;}
     .comment-avatar{width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid rgba(255,106,0,0.3);}
     .comment-name{font-size:12px;color:#ff6a00;font-weight:bold;}
     .comment-text{font-size:13px;color:#f0f0f0;word-break:break-word;margin-top:2px;}
     .comment-time{font-size:11px;color:#555;margin-top:2px;}
-    .friend-grid{display:flex;flex-wrap:wrap;gap:8px;}
-    .friend-tile{width:65px;text-align:center;}
-    .gallery-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
-    .gallery-thumb{aspect-ratio:1;border-radius:8px;overflow:hidden;cursor:pointer;border:1px solid rgba(255,106,0,0.2);}
+
+    /* FORMS */
+    textarea{width:100%;background:rgba(255,255,255,0.06);border:1px solid #444;border-radius:8px;color:#fff;padding:10px;font-size:14px;resize:vertical;box-sizing:border-box;}
+    textarea:focus,input[type=text]:focus{border-color:#ff6a00;outline:none;}
+
+    /* GALLERY */
+    .gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px;}
+    .gallery-thumb{aspect-ratio:1;border-radius:8px;overflow:hidden;cursor:pointer;border:1px solid rgba(255,106,0,0.2);transition:border-color .15s;}
+    .gallery-thumb:hover{border-color:#ff6a00;}
     .gallery-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
-    .react-btn{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:6px 14px;font-size:18px;cursor:pointer;color:#fff;transition:all .15s;display:inline-flex;align-items:center;gap:5px;}
-    .react-btn:hover{border-color:#ff6a00;background:rgba(255,106,0,0.15);}
-    .react-btn.mine{border-color:#ff6a00;background:rgba(255,106,0,0.2);}
-    @media(max-width:900px){.profile-page{grid-template-columns:1fr;padding:16px;}}
+
+    /* MOBILE */
+    @media(max-width:860px){
+      .profile-page{grid-template-columns:1fr;padding:16px;}
+      .col-left,.col-mid,.col-right{grid-column:1;}
+    }
   </style>
 </head>
 <body>
@@ -1734,17 +1808,17 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
 
   <div class="profile-page">
 
-    <!-- LEFT: Profile Info -->
-    <div class="left-col">
+    <!-- LEFT COLUMN -->
+    <div class="col-left">
       <div class="card" style="text-align:center;">
         <div class="profile-avatar"></div>
-        <div style="font-size:20px;font-weight:bold;color:#ff6a00;">${target.name}</div>
-        <div style="font-size:13px;color:#aaa;margin-top:4px;">${target.network || "Unknown network"}</div>
-        <div style="font-size:13px;color:#ccc;margin-top:6px;font-style:italic;">"Exploring the universe via Spacebook."</div>
+        <h2 style="margin:0;color:#ff6a00;font-size:20px;">${target.name}</h2>
+        <p style="margin:4px 0;color:#aaa;font-size:13px;">${target.network || "Unknown network"}</p>
+        <p style="margin:6px 0;color:#ccc;font-size:13px;font-style:italic;">"Exploring the universe via Spacebook."</p>
         <div style="margin-top:14px;">
           ${isFriend
             ? `<form action="/remove-friend/${target._id}" method="post">
-                <button class="btn-primary" style="background:#222;color:#ff6a00;border:1px solid #ff6a00;width:100%;">Remove Friend</button>
+                <button class="btn-primary" style="background:#111;color:#ff6a00;border:1px solid #ff6a00;width:100%;">✕ Remove Friend</button>
                </form>`
             : `<form action="/add-friend/${target._id}" method="post">
                 <button class="btn-primary" style="width:100%;">+ Add Friend</button>
@@ -1754,16 +1828,16 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
       </div>
     </div>
 
-    <!-- MIDDLE: Posts -->
-    <div class="mid-col">
+    <!-- MIDDLE COLUMN: Posts -->
+    <div class="col-mid">
       <div class="card">
-        <h3 style="color:#ff6a00;margin:0 0 12px;">📝 ${target.name}'s Posts</h3>
+        <h3 style="color:#ff6a00;margin:0 0 14px;">📝 ${target.name}'s Posts</h3>
         ${postsHtml || "<p style='color:#ccc;font-size:13px;'>No posts yet.</p>"}
       </div>
     </div>
 
-    <!-- RIGHT: Friends + Gallery -->
-    <div class="right-col">
+    <!-- RIGHT COLUMN: Friends + Gallery -->
+    <div class="col-right">
       <div class="card">
         <h3 style="color:#ff6a00;margin:0 0 10px;">⭐ Top Friends</h3>
         <div class="friend-grid">
@@ -1807,8 +1881,9 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
         <div id="profile-comment-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;max-height:220px;overflow-y:auto;"></div>
         <div style="display:flex;gap:8px;align-items:center;">
           <input id="profile-comment-input" type="text" placeholder="Add a comment..." maxlength="300"
-            style="flex:1;min-width:0;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;"/>
-          <button class="btn-primary" style="height:44px;box-sizing:border-box;flex-shrink:0;" onclick="submitProfileComment()">Post</button>
+            style="flex:1;min-width:0;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();submitProfileComment();}"/>
+          <button class="btn-primary" style="height:44px;padding:0 14px;box-sizing:border-box;flex-shrink:0;" onclick="submitProfileComment()">Post</button>
         </div>
       </div>
     </div>
@@ -1833,22 +1908,24 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
     draw();
 
     // ====== TARGET GALLERY ======
-    let profileGalleryAlbumId = null, profileGalleryPhotoIndex = null;
+    let profileGalleryAlbumId = null;
+    let profileGalleryPhotoIndex = null;
 
     async function loadTargetGallery() {
       const albums = await fetch("/api/albums/user/${target._id}", {credentials:"include"}).then(r=>r.json()).catch(()=>[]);
       const grid = document.getElementById("target-gallery-grid");
       const allPhotos = [];
-      albums.forEach(a => a.photos.forEach((p,i) => allPhotos.push({url:p.url,albumId:a._id,photoIndex:i})));
+      albums.forEach(function(a){ a.photos.forEach(function(p,i){ allPhotos.push({url:p.url,albumId:a._id,photoIndex:i}); }); });
       if (!allPhotos.length) { grid.innerHTML = "<p style='color:#888;font-size:13px;'>No photos yet.</p>"; return; }
-      grid.innerHTML = allPhotos.slice(0,9).map(p =>
-        "<div class='gallery-thumb' onclick=\\"openProfileGallery('" + p.albumId + "'," + p.photoIndex + ",'" + p.url + "')\\">" +
-        "<img src='" + p.url + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/></div>"
-      ).join("");
+      grid.innerHTML = allPhotos.slice(0,9).map(function(p){
+        return "<div class='gallery-thumb' onclick=\\"openProfileGallery('" + p.albumId + "'," + p.photoIndex + ",'" + p.url + "')\\">" +
+          "<img src='" + p.url + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/></div>";
+      }).join("");
     }
 
     async function openProfileGallery(albumId, photoIndex, url) {
-      profileGalleryAlbumId = albumId; profileGalleryPhotoIndex = photoIndex;
+      profileGalleryAlbumId = albumId;
+      profileGalleryPhotoIndex = photoIndex;
       const overlay = document.getElementById("profile-media-overlay");
       const media = document.getElementById("profile-overlay-media");
       const isVideo = url.match(/\.(mp4|webm|ogg)(\?|$)/i);
@@ -1864,13 +1941,14 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
       document.getElementById("profile-media-overlay").style.display = "none";
       document.getElementById("profile-overlay-media").innerHTML = "";
       document.getElementById("profile-comment-list").innerHTML = "";
-      profileGalleryAlbumId = null; profileGalleryPhotoIndex = null;
+      profileGalleryAlbumId = null;
+      profileGalleryPhotoIndex = null;
     }
 
     async function loadProfileReactions() {
       const data = await fetch("/api/albums/" + profileGalleryAlbumId + "/photos/" + profileGalleryPhotoIndex + "/reactions", {credentials:"include"})
         .then(r=>r.json()).catch(()=>({counts:{},myReaction:null}));
-      ["❤️","🔥","😂","🤝","🚀"].forEach(e => {
+      ["❤️","🔥","😂","🤝","🚀"].forEach(function(e){
         const el = document.getElementById("prc-" + e);
         const btn = document.getElementById("prb-" + e);
         if (el) el.textContent = data.counts[e] || 0;
@@ -1883,7 +1961,7 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
       await fetch("/api/albums/" + profileGalleryAlbumId + "/photos/" + profileGalleryPhotoIndex + "/react", {
         method:"POST", credentials:"include",
         headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({emoji})
+        body: JSON.stringify({emoji:emoji})
       });
       await loadProfileReactions();
     }
@@ -1892,12 +1970,11 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
       const comments = await fetch("/api/albums/" + profileGalleryAlbumId + "/photos/" + profileGalleryPhotoIndex + "/comments", {credentials:"include"})
         .then(r=>r.json()).catch(()=>[]);
       const list = document.getElementById("profile-comment-list");
-      list.innerHTML = !comments.length
-        ? "<div style='color:#666;font-size:13px;padding:8px;'>No comments yet.</div>"
-        : comments.map(c =>
-            "<div class='comment-item'><img class='comment-avatar' src='" + (c.userPic||"/assets/img/default-avatar.png") + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/>" +
-            "<div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div></div>"
-          ).join("");
+      if (!comments.length) { list.innerHTML = "<div style='color:#666;font-size:13px;padding:8px;'>No comments yet.</div>"; return; }
+      list.innerHTML = comments.map(function(c){
+        return "<div class='comment-item'><img class='comment-avatar' src='" + (c.userPic||"/assets/img/default-avatar.png") + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/>" +
+          "<div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div></div>";
+      }).join("");
       list.scrollTop = list.scrollHeight;
     }
 
@@ -1908,7 +1985,7 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
       await fetch("/api/albums/" + profileGalleryAlbumId + "/photos/" + profileGalleryPhotoIndex + "/comments", {
         method:"POST", credentials:"include",
         headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({text})
+        body: JSON.stringify({text:text})
       });
       input.value = "";
       await loadProfileComments();
@@ -1917,7 +1994,7 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
     // ====== POST REACTIONS ======
     async function loadPostReactions(postId) {
       const data = await fetch("/api/posts/" + postId + "/reactions", {credentials:"include"}).then(r=>r.json()).catch(()=>({counts:{},myReaction:null}));
-      ["❤️","🔥","😂","🤝","🚀"].forEach(function(e) {
+      ["❤️","🔥","😂","🤝","🚀"].forEach(function(e){
         const el = document.getElementById("rp-" + postId + "-" + e.codePointAt(0));
         if (el) el.textContent = data.counts[e] || 0;
         const btn = document.querySelector(".react-pill[data-post-id='" + postId + "'][data-emoji='" + e + "']");
@@ -1932,7 +2009,9 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
       if (!list) return;
       list.innerHTML = !comments.length
         ? "<div style='color:#666;font-size:13px;padding:6px;'>No comments yet.</div>"
-        : comments.map(c => "<div class='comment-item'><img class='comment-avatar' src='" + (c.userPic||"/assets/img/default-avatar.png") + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/><div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div></div>").join("");
+        : comments.map(function(c){
+            return "<div class='comment-item'><img class='comment-avatar' src='" + (c.userPic||"/assets/img/default-avatar.png") + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/><div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div></div>";
+          }).join("");
       list.scrollTop = list.scrollHeight;
     }
 
@@ -1942,7 +2021,7 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
       await fetch("/api/posts/" + postId + "/comments", {
         method:"POST", credentials:"include",
         headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({text})
+        body: JSON.stringify({text:text})
       });
       inputEl.value = "";
       loadPostComments(postId);
@@ -1965,7 +2044,7 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
         await fetch("/api/posts/" + pill.dataset.postId + "/react", {
           method:"POST", credentials:"include",
           headers:{"Content-Type":"application/json"},
-          body: JSON.stringify({emoji: pill.dataset.emoji})
+          body: JSON.stringify({emoji:pill.dataset.emoji})
         });
         loadPostReactions(pill.dataset.postId);
         return;
@@ -1980,10 +2059,10 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
       }
     });
 
-    document.addEventListener("keydown", e => { if (e.key === "Escape") closeProfileGallery(); });
+    document.addEventListener("keydown", function(e){ if (e.key === "Escape") closeProfileGallery(); });
 
     // ====== INIT ======
-    document.querySelectorAll(".post-card").forEach(function(card) {
+    document.querySelectorAll(".post-card").forEach(function(card){
       if (card.dataset.postId) loadPostReactions(card.dataset.postId);
     });
     loadTargetGallery();
