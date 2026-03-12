@@ -5,10 +5,7 @@ const path = require("path");
 const mongoose = require("mongoose");
 const multer = require("multer");
 const attachChessServer = require("./chess-ws");
-const attachStories = require("./modules/stories"); 
-
-
-
+const attachStories = require("./modules/stories");
 
 // ====== CLOUDINARY ======
 const cloudinary = require("cloudinary").v2;
@@ -157,7 +154,6 @@ const storage = new CloudinaryStorage({
 const upload = multer({ storage });
 const uploadMedia = multer();
 
-
 // ====== ATTACH STORIES (early, before routes) ======
 attachStories(app, null, mongoose, requireLogin, cloudinary, upload);
 
@@ -244,7 +240,6 @@ app.post("/uploadMedia", uploadMedia.single("file"), async (req, res) => {
 
     let fileName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, "");
 
-    // Check if file already exists — if so, append timestamp to filename
     const checkRes = await fetch(
       `https://api.github.com/repos/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}/contents/media/${fileName}`,
       {
@@ -283,13 +278,7 @@ app.post("/uploadMedia", uploadMedia.single("file"), async (req, res) => {
     const data = await githubRes.json();
 
     if (data.content) {
-
-            const mediaUrl = `https://raw.githubusercontent.com/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}/main/media/${fileName}`;
-
-
-      // OPTION B (fallback): raw.githubusercontent.com
-      // const mediaUrl = `https://raw.githubusercontent.com/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}/main/media/${fileName}`;
-
+      const mediaUrl = `https://raw.githubusercontent.com/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}/main/media/${fileName}`;
       return res.json({ success: true, url: mediaUrl });
     }
 
@@ -342,7 +331,7 @@ app.get("/api/media-pages", async (req, res) => {
         const base = f.name.replace(".html", "");
         return {
           file: f.name,
-          title: base, // later you can store real titles
+          title: base,
           url: `https://spacebook-app.onrender.com/view?page=${base}`
         };
       });
@@ -397,17 +386,15 @@ app.get("/home", requireLogin, async (req, res) => {
     </div>
     <div class="comment-section" id="cs-${p._id}" style="display:none;margin-top:10px;">
       <div class="comment-list" id="cl-${p._id}" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;max-height:200px;overflow-y:auto;"></div>
-      <div style="display:flex;gap:8px;">
+      <div style="display:flex;gap:8px;align-items:center;">
         <input class="comment-input" data-post-id="${p._id}" type="text" placeholder="Write a comment..." maxlength="300"
-          style="flex:1;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;min-height:44px;"
-
-          onkeydown="if(event.key==='Enter') submitPostComment('${p._id}', this)"/>
-        <button class="btn-primary" style="font-size:12px;padding:6px 10px;"
+          style="flex:1;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;min-height:unset;"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();submitPostComment('${p._id}',this);}"/>
+        <button class="btn-primary" style="font-size:12px;padding:6px 10px;height:44px;box-sizing:border-box;"
           onclick="submitPostComment('${p._id}', document.querySelector('.comment-input[data-post-id=\\'${p._id}\\']'))">Post</button>
       </div>
     </div>
   </div>`).join("");
-
 
   const suggestedHtml = suggestedFriends.map(f => `
     <div class="friend-tile">
@@ -473,80 +460,7 @@ app.get("/home", requireLogin, async (req, res) => {
           requestAnimationFrame(draw);
         }
         draw();
-
-
-  async function loadPostReactions(postId) {
-    const data = await fetch("/api/posts/" + postId + "/reactions", { credentials: "include" })
-      .then(r => r.json()).catch(() => ({ counts: {}, myReaction: null }));
-    ["❤️","🔥","😂","🤝","🚀"].forEach(function(e) {
-      const el = document.getElementById("rp-" + postId + "-" + e.codePointAt(0));
-      if (el) el.textContent = data.counts[e] || 0;
-      const btn = document.querySelector(".react-pill[data-post-id='" + postId + "'][data-emoji='" + e + "']");
-      if (btn) btn.classList.toggle("mine", data.myReaction === e);
-    });
-  }
-
-  document.addEventListener("click", async function(e) {
-    const pill = e.target.closest(".react-pill");
-    if (pill) {
-      await fetch("/api/posts/" + pill.dataset.postId + "/react", {
-        method: "POST", credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ emoji: pill.dataset.emoji })
-      });
-      loadPostReactions(pill.dataset.postId);
-    }
-    const toggleBtn = e.target.closest(".comment-toggle-btn");
-    if (toggleBtn) {
-      const postId = toggleBtn.dataset.postId;
-      const section = document.getElementById("cs-" + postId);
-      if (section.style.display === "none") { section.style.display = "block"; loadPostComments(postId); }
-      else section.style.display = "none";
-    }
-  });
-
-  async function loadPostComments(postId) {
-    const comments = await fetch("/api/posts/" + postId + "/comments", { credentials: "include" })
-      .then(r => r.json()).catch(() => []);
-    const list = document.getElementById("cl-" + postId);
-    if (!list) return;
-    list.innerHTML = !comments.length
-      ? "<div style='color:#666;font-size:13px;padding:6px;'>No comments yet.</div>"
-      : comments.map(function(c) {
-          return "<div class='comment-item'><img class='comment-avatar' src='" + (c.userPic || "/assets/img/default-avatar.png") + "' onerror=\"this.src='/assets/img/default-avatar.png'\"/><div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div></div>";
-        }).join("");
-    list.scrollTop = list.scrollHeight;
-  }
-
-  async function submitPostComment(postId, inputEl) {
-    const text = inputEl.value.trim();
-    if (!text) return;
-    await fetch("/api/posts/" + postId + "/comments", {
-      method: "POST", credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: text })
-    });
-    inputEl.value = "";
-    loadPostComments(postId);
-  }
-
-  function timeAgo(date) {
-    const diff = Date.now() - new Date(date).getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 1) return "just now";
-    if (mins < 60) return mins + "m ago";
-    const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return hrs + "h ago";
-    return Math.floor(hrs / 24) + "d ago";
-  }
-
-  document.querySelectorAll(".post-card").forEach(function(card) {
-    const id = card.dataset.postId;
-    if (id) loadPostReactions(id);
-  });
-</script>
-
-     
+      </script>
 
       <div class="navbar">
         <div class="logo"><a href="/feed" style="color:#ff6a00;">Spacebook</a></div>
@@ -612,6 +526,78 @@ app.get("/home", requireLogin, async (req, res) => {
           </div>
         </main>
       </div>
+
+      <script>
+        async function loadPostReactions(postId) {
+          const data = await fetch("/api/posts/" + postId + "/reactions", { credentials: "include" })
+            .then(r => r.json()).catch(() => ({ counts: {}, myReaction: null }));
+          ["❤️","🔥","😂","🤝","🚀"].forEach(function(e) {
+            const el = document.getElementById("rp-" + postId + "-" + e.codePointAt(0));
+            if (el) el.textContent = data.counts[e] || 0;
+            const btn = document.querySelector(".react-pill[data-post-id='" + postId + "'][data-emoji='" + e + "']");
+            if (btn) btn.classList.toggle("mine", data.myReaction === e);
+          });
+        }
+
+        document.addEventListener("click", async function(e) {
+          const pill = e.target.closest(".react-pill");
+          if (pill) {
+            await fetch("/api/posts/" + pill.dataset.postId + "/react", {
+              method: "POST", credentials: "include",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ emoji: pill.dataset.emoji })
+            });
+            loadPostReactions(pill.dataset.postId);
+          }
+          const toggleBtn = e.target.closest(".comment-toggle-btn");
+          if (toggleBtn) {
+            const postId = toggleBtn.dataset.postId;
+            const section = document.getElementById("cs-" + postId);
+            if (section.style.display === "none") { section.style.display = "block"; loadPostComments(postId); }
+            else section.style.display = "none";
+          }
+        });
+
+        async function loadPostComments(postId) {
+          const comments = await fetch("/api/posts/" + postId + "/comments", { credentials: "include" })
+            .then(r => r.json()).catch(() => []);
+          const list = document.getElementById("cl-" + postId);
+          if (!list) return;
+          list.innerHTML = !comments.length
+            ? "<div style='color:#666;font-size:13px;padding:6px;'>No comments yet.</div>"
+            : comments.map(function(c) {
+                return "<div class='comment-item'><img class='comment-avatar' src='" + (c.userPic || "/assets/img/default-avatar.png") + "' onerror=\"this.src='/assets/img/default-avatar.png'\"/><div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div></div>";
+              }).join("");
+          list.scrollTop = list.scrollHeight;
+        }
+
+        async function submitPostComment(postId, inputEl) {
+          const text = inputEl.value.trim();
+          if (!text) return;
+          await fetch("/api/posts/" + postId + "/comments", {
+            method: "POST", credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text: text })
+          });
+          inputEl.value = "";
+          loadPostComments(postId);
+        }
+
+        function timeAgo(date) {
+          const diff = Date.now() - new Date(date).getTime();
+          const mins = Math.floor(diff / 60000);
+          if (mins < 1) return "just now";
+          if (mins < 60) return mins + "m ago";
+          const hrs = Math.floor(mins / 60);
+          if (hrs < 24) return hrs + "h ago";
+          return Math.floor(hrs / 24) + "d ago";
+        }
+
+        document.querySelectorAll(".post-card").forEach(function(card) {
+          const id = card.dataset.postId;
+          if (id) loadPostReactions(id);
+        });
+      </script>
     </body>
     </html>
   `);
@@ -660,13 +646,12 @@ app.get("/feed", requireLogin, async (req, res) => {
       <div class="comment-section" id="cs-${p._id}" style="display:none;margin-top:10px;">
         <div class="comment-list" id="cl-${p._id}"
           style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;max-height:200px;overflow-y:auto;"></div>
-        <div style="display:flex;gap:8px;">
+        <div style="display:flex;gap:8px;align-items:center;">
           <input class="comment-input" data-post-id="${p._id}" type="text"
             placeholder="Write a comment..." maxlength="300"
-            style="flex:1;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;min-height:44px;"
-
-            onkeydown="if(event.key==='Enter') submitPostComment('${p._id}', this)"/>
-          <button class="btn-primary" style="font-size:12px;padding:6px 10px;"
+            style="flex:1;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;min-height:unset;"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();submitPostComment('${p._id}',this);}"/>
+          <button class="btn-primary" style="font-size:12px;padding:6px 10px;height:44px;box-sizing:border-box;"
             onclick="submitPostComment('${p._id}', document.querySelector('.comment-input[data-post-id=\\'${p._id}\\']'))">Post</button>
         </div>
       </div>
@@ -741,22 +726,19 @@ app.get("/feed", requireLogin, async (req, res) => {
         input[type=text]:focus { border-color: #ff6a00; outline: none; }
         .notif-panel { position: absolute; right: 0; top: 36px; width: 300px; background: rgba(10,10,10,0.97); border: 1px solid rgba(255,106,0,0.3); border-radius: 12px; backdrop-filter: blur(12px); z-index: 500; max-height: 400px; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.6); }
         @media (max-width: 600px) { .page { flex-direction: column; padding: 16px; } .sidebar { width: 100%; } .nav-links a { font-size: 12px; } }
-
-.post-card { margin-bottom: 16px; }
-.react-pill { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; padding: 4px 12px; font-size: 16px; cursor: pointer; color: #fff; transition: all .15s; display: inline-flex; align-items: center; gap: 5px; }
-.react-pill:hover { border-color: #ff6a00; background: rgba(255,106,0,0.15); }
-.react-pill.mine { border-color: #ff6a00; background: rgba(255,106,0,0.2); }
-.rpill-count { font-size: 12px; color: #ccc; }
-.comment-item { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 8px 12px; display: flex; gap: 10px; align-items: flex-start; }
-.comment-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1px solid rgba(255,106,0,0.3); }
-.comment-name { font-size: 12px; color: #ff6a00; font-weight: bold; }
-.comment-text { font-size: 13px; color: #f0f0f0; word-break: break-word; margin-top: 2px; }
-.comment-time { font-size: 11px; color: #555; margin-top: 2px; }
-.comment-section { flex-direction: column; }
-.comment-section > div:last-child { flex-wrap: wrap; }
-.comment-section input { min-width: 0; width: 100%; }
-
-
+        .post-card { margin-bottom: 16px; }
+        .react-pill { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; padding: 4px 12px; font-size: 16px; cursor: pointer; color: #fff; transition: all .15s; display: inline-flex; align-items: center; gap: 5px; }
+        .react-pill:hover { border-color: #ff6a00; background: rgba(255,106,0,0.15); }
+        .react-pill.mine { border-color: #ff6a00; background: rgba(255,106,0,0.2); }
+        .rpill-count { font-size: 12px; color: #ccc; }
+        .comment-item { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 8px 12px; display: flex; gap: 10px; align-items: flex-start; }
+        .comment-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1px solid rgba(255,106,0,0.3); }
+        .comment-name { font-size: 12px; color: #ff6a00; font-weight: bold; }
+        .comment-text { font-size: 13px; color: #f0f0f0; word-break: break-word; margin-top: 2px; }
+        .comment-time { font-size: 11px; color: #555; margin-top: 2px; }
+        .comment-section { flex-direction: column; }
+        .comment-section > div:last-child { flex-wrap: wrap; }
+        .comment-section input { min-width: 0; width: 100%; }
       </style>
     </head>
     <body>
@@ -1016,7 +998,7 @@ app.get("/feed", requireLogin, async (req, res) => {
         });
         loadNotifCount();
         setInterval(loadNotifCount, 30000);
-      <\/script>
+      </script>
     </body>
     </html>
   `);
@@ -1124,6 +1106,41 @@ app.get("/api/posts/:postId/reactions", requireLogin, async (req, res) => {
   }
 });
 
+// ====== POST COMMENTS API ======
+app.get("/api/posts/:postId/comments", requireLogin, async (req, res) => {
+  try {
+    const comments = await PostComment.find({ postId: req.params.postId }).sort({ createdAt: 1 });
+    res.json(comments);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/posts/:postId/comments", requireLogin, async (req, res) => {
+  try {
+    const user = await User.findById(req.session.userId);
+    if (!user) return res.status(401).json({ error: "Not logged in" });
+    const comment = await PostComment.create({
+      postId: req.params.postId,
+      userId: user._id,
+      userName: user.name,
+      userPic: user.profilePic || "",
+      text: req.body.text
+    });
+    const post = await Post.findById(req.params.postId);
+    if (post && post.userId.toString() !== user._id.toString()) {
+      await Notification.create({
+        toUserId: post.userId, fromUserId: user._id, fromUserName: user.name,
+        type: "comment", postId: post._id,
+        text: "commented on your post: \"" + (req.body.text || "").slice(0, 60) + "\""
+      });
+    }
+    res.json(comment);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ====== NOTIFICATIONS API ======
 app.get("/api/notifications", requireLogin, async (req, res) => {
   try {
@@ -1152,7 +1169,6 @@ app.post("/api/notifications/mark-read", requireLogin, async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
 
 // ====== UPLOAD PROFILE PIC ======
 app.post("/upload-profile-pic", requireLogin, upload.single("profilePic"), async (req, res) => {
@@ -1246,12 +1262,11 @@ app.get("/profile", requireLogin, async (req, res) => {
       </div>
       <div class="comment-section" id="cs-${p._id}" style="display:none;margin-top:10px;">
         <div class="comment-list" id="cl-${p._id}" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;max-height:200px;overflow-y:auto;"></div>
-        <div style="display:flex;gap:8px;">
+        <div style="display:flex;gap:8px;align-items:center;">
           <input class="comment-input" data-post-id="${p._id}" type="text" placeholder="Write a comment..." maxlength="300"
-           style="flex:1;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;min-height:44px;"
-
-            onkeydown="if(event.key==='Enter') submitPostComment('${p._id}', this)"/>
-          <button class="btn-primary" style="font-size:12px;padding:6px 10px;"
+            style="flex:1;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;min-height:unset;"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();submitPostComment('${p._id}',this);}"/>
+          <button class="btn-primary" style="font-size:12px;padding:6px 10px;height:44px;box-sizing:border-box;"
             onclick="submitPostComment('${p._id}', document.querySelector('.comment-input[data-post-id=\\'${p._id}\\']'))">Post</button>
         </div>
       </div>
@@ -1442,11 +1457,10 @@ app.get("/profile", requireLogin, async (req, res) => {
           <div style="margin-top:16px;">
             <h4 style="color:#ff6a00;margin:0 0 10px;">💬 Comments</h4>
             <div id="profile-comment-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;max-height:220px;overflow-y:auto;"></div>
-            <div style="display:flex;gap:8px;">
+            <div style="display:flex;gap:8px;align-items:center;">
               <input id="profile-comment-input" type="text" placeholder="Add a comment..." maxlength="300"
-                style="flex:1;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;min-height:44px;"
-
-                onkeydown="if(event.key==='Enter') submitProfileComment()"/>
+                style="flex:1;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;min-height:unset;"
+                onkeydown="if(event.key==='Enter'){event.preventDefault();submitProfileComment();}"/>
               <button class="btn-primary" onclick="submitProfileComment()">Post</button>
             </div>
           </div>
@@ -1677,7 +1691,7 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
       <div style="font-size:12px;"><a href="/profile/${f._id}" style="color:#ff6a00;">${f.name}</a></div>
     </div>`).join("");
 
-  const postsHtml = posts.map(p => `
+    const postsHtml = posts.map(p => `
     <div class="post-card" data-post-id="${p._id}">
       <div class="post">
         <div class="author" style="color:#ff6a00;">${p.userName}</div>
@@ -1698,12 +1712,11 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
       </div>
       <div class="comment-section" id="cs-${p._id}" style="display:none;margin-top:10px;">
         <div class="comment-list" id="cl-${p._id}" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;max-height:200px;overflow-y:auto;"></div>
-        <div style="display:flex;gap:8px;">
+        <div style="display:flex;gap:8px;align-items:center;">
           <input class="comment-input" data-post-id="${p._id}" type="text" placeholder="Write a comment..." maxlength="300"
-            style="flex:1;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;min-height:44px;"
-
-            onkeydown="if(event.key==='Enter') submitPostComment('${p._id}', this)"/>
-          <button class="btn-primary" style="font-size:12px;padding:6px 10px;"
+            style="flex:1;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;min-height:unset;"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();submitPostComment('${p._id}',this);}"/>
+          <button class="btn-primary" style="font-size:12px;padding:6px 10px;height:44px;box-sizing:border-box;"
             onclick="submitPostComment('${p._id}', document.querySelector('.comment-input[data-post-id=\\'${p._id}\\']'))">Post</button>
         </div>
       </div>
@@ -1858,11 +1871,10 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
           <div style="margin-top:16px;">
             <h4 style="color:#ff6a00;margin:0 0 10px;">💬 Comments</h4>
             <div id="profile-comment-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;max-height:220px;overflow-y:auto;"></div>
-            <div style="display:flex;gap:8px;">
+            <div style="display:flex;gap:8px;align-items:center;">
               <input id="profile-comment-input" type="text" placeholder="Add a comment..." maxlength="300"
-                style="flex:1;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;min-height:44px;"
-
-                onkeydown="if(event.key==='Enter') submitProfileComment()"/>
+                style="flex:1;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;min-height:unset;"
+                onkeydown="if(event.key==='Enter'){event.preventDefault();submitProfileComment();}"/>
               <button class="btn-primary" onclick="submitProfileComment()">Post</button>
             </div>
           </div>
@@ -1974,7 +1986,8 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
         });
 
         async function loadPostReactions(postId) {
-          const data = await fetch("/api/posts/" + postId + "/reactions", { credentials: "include" }).then(r => r.json()).catch(() => ({ counts: {}, myReaction: null }));
+          const data = await fetch("/api/posts/" + postId + "/reactions", { credentials: "include" })
+            .then(r => r.json()).catch(() => ({ counts: {}, myReaction: null }));
           ["❤️","🔥","😂","🤝","🚀"].forEach(function(e) {
             const el = document.getElementById("rp-" + postId + "-" + e.codePointAt(0));
             if (el) el.textContent = data.counts[e] || 0;
@@ -1984,7 +1997,8 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
         }
 
         async function loadPostComments(postId) {
-          const comments = await fetch("/api/posts/" + postId + "/comments", { credentials: "include" }).then(r => r.json()).catch(() => []);
+          const comments = await fetch("/api/posts/" + postId + "/comments", { credentials: "include" })
+            .then(r => r.json()).catch(() => []);
           const list = document.getElementById("cl-" + postId);
           if (!list) return;
           list.innerHTML = !comments.length
@@ -1998,7 +2012,11 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
         async function submitPostComment(postId, inputEl) {
           const text = inputEl.value.trim();
           if (!text) return;
-          await fetch("/api/posts/" + postId + "/comments", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: text }) });
+          await fetch("/api/posts/" + postId + "/comments", {
+            method: "POST", credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text: text })
+          });
           inputEl.value = "";
           loadPostComments(postId);
         }
@@ -2221,3 +2239,4 @@ try {
   const attachListenTogether = require("./modules/listen-together");
   attachListenTogether(app, mongoose, requireLogin);
 } catch(e) { console.warn("listen-together module not found, skipping"); }
+
