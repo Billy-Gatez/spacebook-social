@@ -1204,9 +1204,10 @@ app.get("/profile", requireLogin, async (req, res) => {
       </div>
       <div class="comment-section" id="cs-${p._id}" style="display:none;margin-top:10px;">
         <div class="comment-list" id="cl-${p._id}" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;max-height:200px;overflow-y:auto;"></div>
-        <div style="display:flex;gap:8px;align-items:center;">
-          <input class="comment-input" data-post-id="${p._id}" type="text" placeholder="Write a comment..." maxlength="300"
-            style="flex:1;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;min-height:unset;"
+        <div style="display:flex;gap:8px;align-items:center;width:100%;">
+  <input class="comment-input" data-post-id="${p._id}" type="text" placeholder="Write a comment..." maxlength="300"
+    style="flex:1;min-width:0;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;min-height:unset;"
+
             onkeydown="if(event.key==='Enter'){event.preventDefault();submitPostComment('${p._id}',this);}"/>
           <button class="btn-primary" style="font-size:12px;padding:6px 10px;height:44px;box-sizing:border-box;flex-shrink:0;white-space:nowrap;"
             onclick="submitPostComment('${p._id}', document.querySelector('.comment-input[data-post-id=\\'${p._id}\\']'))">Post</button>
@@ -1671,9 +1672,10 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
       </div>
       <div class="comment-section" id="cs-${p._id}" style="display:none;margin-top:10px;">
         <div class="comment-list" id="cl-${p._id}" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;max-height:200px;overflow-y:auto;"></div>
-        <div style="display:flex;gap:8px;align-items:center;">
-          <input class="comment-input" data-post-id="${p._id}" type="text" placeholder="Write a comment..." maxlength="300"
-            style="flex:1;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;min-height:unset;"
+        <div style="display:flex;gap:8px;align-items:center;width:100%;">
+  <input class="comment-input" data-post-id="${p._id}" type="text" placeholder="Write a comment..." maxlength="300"
+    style="flex:1;min-width:0;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;min-height:unset;"
+
             onkeydown="if(event.key==='Enter'){event.preventDefault();submitPostComment('${p._id}',this);}"/>
           <button class="btn-primary" style="font-size:12px;padding:6px 10px;height:44px;box-sizing:border-box;flex-shrink:0;white-space:nowrap;"
             onclick="submitPostComment('${p._id}', document.querySelector('.comment-input[data-post-id=\\'${p._id}\\']'))">Post</button>
@@ -1849,9 +1851,10 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
           <div style="margin-top:16px;">
             <h4 style="color:#ff6a00;margin:0 0 10px;">💬 Comments</h4>
             <div id="profile-comment-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;max-height:220px;overflow-y:auto;"></div>
-            <div style="display:flex;gap:8px;align-items:center;">
-              <input id="profile-comment-input" type="text" placeholder="Add a comment..." maxlength="300"
-                style="flex:1;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;min-height:unset;"
+            <div style="display:flex;gap:8px;align-items:center;width:100%;">
+  <input class="comment-input" data-post-id="${p._id}" type="text" placeholder="Write a comment..." maxlength="300"
+    style="flex:1;min-width:0;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;min-height:unset;"
+
                 onkeydown="if(event.key==='Enter'){event.preventDefault();submitProfileComment();}"/>
               <button class="btn-primary" onclick="submitProfileComment()">Post</button>
             </div>
