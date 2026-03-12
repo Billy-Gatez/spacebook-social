@@ -1166,6 +1166,7 @@ app.get("/profile", requireLogin, async (req, res) => {
     .populate("friends")
     .populate("topFriends");
   const posts = await Post.find({ userId: user._id }).sort({ createdAt: -1 });
+  const currentUserId = req.session.userId.toString();
 
   const topFriendsHtml = user.topFriends.map(f => `
     <a href="/profile/${f._id}" style="text-decoration:none;">
@@ -1293,6 +1294,8 @@ app.get("/profile", requireLogin, async (req, res) => {
         .comment-name { font-size: 12px; color: #ff6a00; font-weight: bold; }
         .comment-text { font-size: 13px; color: #f0f0f0; word-break: break-word; margin-top: 2px; }
         .comment-time { font-size: 11px; color: #555; margin-top: 2px; }
+        .comment-del-btn { background: none; border: none; color: #555; cursor: pointer; font-size: 13px; flex-shrink: 0; padding: 0 2px; line-height: 1; }
+        .comment-del-btn:hover { color: #e55; }
         textarea { width: 100%; background: rgba(255,255,255,0.06); border: 1px solid #444; border-radius: 8px; color: #fff; padding: 10px; font-size: 14px; resize: vertical; box-sizing: border-box; }
         textarea:focus { border-color: #ff6a00; outline: none; }
         input[type=text] { box-sizing: border-box !important; }
@@ -1346,7 +1349,6 @@ app.get("/profile", requireLogin, async (req, res) => {
       </div>
 
       <div class="profile-page">
-
         <div class="col-left">
           <div class="card">
             <div style="display:flex;flex-direction:column;align-items:center;text-align:center;">
@@ -1389,7 +1391,6 @@ app.get("/profile", requireLogin, async (req, res) => {
               <button class="btn-primary" style="margin-top:10px;">Save Top Friends</button>
             </form>
           </div>
-
           <div class="card">
             <h3 style="color:#ff6a00;margin-bottom:10px;">📷 Gallery</h3>
             <div id="profile-own-gallery" class="gallery-grid">
@@ -1398,7 +1399,6 @@ app.get("/profile", requireLogin, async (req, res) => {
             <a href="/gallery" style="display:inline-block;margin-top:12px;color:#ff6a00;font-size:13px;">View full gallery →</a>
           </div>
         </div>
-
       </div>
 
       <!-- Gallery overlay -->
@@ -1429,6 +1429,7 @@ app.get("/profile", requireLogin, async (req, res) => {
       </div>
 
       <script>
+        const CURRENT_USER_ID = "${currentUserId}";
         let profileGalleryAlbumId = null;
         let profileGalleryPhotoIndex = null;
 
@@ -1492,12 +1493,19 @@ app.get("/profile", requireLogin, async (req, res) => {
           const list = document.getElementById("profile-comment-list");
           if (!comments.length) { list.innerHTML = "<div style='color:#666;font-size:13px;padding:8px;'>No comments yet.</div>"; return; }
           list.innerHTML = comments.map(function(c) {
-            return "<div class='comment-item'>" +
+            const canDel = c.userId && c.userId.toString() === CURRENT_USER_ID;
+            return "<div class='comment-item' id='gcmt-" + c._id + "'>" +
               "<img class='comment-avatar' src='" + (c.userPic || "/assets/img/default-avatar.png") + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/>" +
               "<div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div>" +
+              (canDel ? "<button class='comment-del-btn' onclick=\\"deleteGalleryComment('" + c._id + "')\\">✕</button>" : "") +
             "</div>";
           }).join("");
           list.scrollTop = list.scrollHeight;
+        }
+
+        async function deleteGalleryComment(commentId) {
+          await fetch("/api/comments/" + commentId, { method: "DELETE", credentials: "include" });
+          loadProfileComments();
         }
 
         async function submitProfileComment() {
@@ -1595,12 +1603,21 @@ app.get("/profile", requireLogin, async (req, res) => {
           const comments = await fetch("/api/posts/" + postId + "/comments", { credentials: "include" }).then(r => r.json()).catch(() => []);
           const list = document.getElementById("cl-" + postId);
           if (!list) return;
-          list.innerHTML = !comments.length
-            ? "<div style='color:#666;font-size:13px;padding:6px;'>No comments yet.</div>"
-            : comments.map(function(c) {
-                return "<div class='comment-item'><img class='comment-avatar' src='" + (c.userPic || "/assets/img/default-avatar.png") + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/><div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div></div>";
-              }).join("");
+          if (!comments.length) { list.innerHTML = "<div style='color:#666;font-size:13px;padding:6px;'>No comments yet.</div>"; return; }
+          list.innerHTML = comments.map(function(c) {
+            const canDel = c.userId && c.userId.toString() === CURRENT_USER_ID;
+            return "<div class='comment-item' id='pcmt-" + c._id + "'>" +
+              "<img class='comment-avatar' src='" + (c.userPic || "/assets/img/default-avatar.png") + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/>" +
+              "<div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div>" +
+              (canDel ? "<button class='comment-del-btn' onclick=\\"deletePostComment('" + c._id + "','" + postId + "')\\">✕</button>" : "") +
+            "</div>";
+          }).join("");
           list.scrollTop = list.scrollHeight;
+        }
+
+        async function deletePostComment(commentId, postId) {
+          await fetch("/api/post-comments/" + commentId, { method: "DELETE", credentials: "include" });
+          loadPostComments(postId);
         }
 
         async function submitPostComment(postId, inputEl) {
@@ -1639,6 +1656,7 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
 
   const posts = await Post.find({ userId: target._id }).sort({ createdAt: -1 });
   const isFriend = viewer.friends.some(f => f._id.toString() === target._id.toString());
+  const currentUserId = req.session.userId.toString();
 
   const topFriendsHtml = target.topFriends.map(f => `
     <a href="/profile/${f._id}" style="text-decoration:none;">
@@ -1731,6 +1749,8 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
         .comment-name { font-size: 12px; color: #ff6a00; font-weight: bold; }
         .comment-text { font-size: 13px; color: #f0f0f0; word-break: break-word; margin-top: 2px; }
         .comment-time { font-size: 11px; color: #555; margin-top: 2px; }
+        .comment-del-btn { background: none; border: none; color: #555; cursor: pointer; font-size: 13px; flex-shrink: 0; padding: 0 2px; line-height: 1; }
+        .comment-del-btn:hover { color: #e55; }
         textarea { width: 100%; background: rgba(255,255,255,0.06); border: 1px solid #444; border-radius: 8px; color: #fff; padding: 10px; font-size: 14px; resize: vertical; box-sizing: border-box; }
         textarea:focus { border-color: #ff6a00; outline: none; }
         input[type=text] { box-sizing: border-box !important; }
@@ -1784,7 +1804,6 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
       </div>
 
       <div class="profile-page">
-
         <div class="col-left">
           <div class="card">
             <div style="display:flex;flex-direction:column;align-items:center;text-align:center;">
@@ -1824,7 +1843,6 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
               ${friendsGridHtml || "<p style='color:#ccc;font-size:13px;'>No friends yet.</p>"}
             </div>
           </div>
-
           <div class="card">
             <h3 style="color:#ff6a00;margin-bottom:10px;">📷 Gallery</h3>
             <div id="target-gallery-grid" class="gallery-grid">
@@ -1833,7 +1851,6 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
             <a href="/gallery/${target._id}" style="display:inline-block;margin-top:12px;color:#ff6a00;font-size:13px;">View full gallery →</a>
           </div>
         </div>
-
       </div>
 
       <!-- Gallery overlay -->
@@ -1864,6 +1881,7 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
       </div>
 
       <script>
+        const CURRENT_USER_ID = "${currentUserId}";
         let profileGalleryAlbumId = null;
         let profileGalleryPhotoIndex = null;
 
@@ -1927,12 +1945,19 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
           const list = document.getElementById("profile-comment-list");
           if (!comments.length) { list.innerHTML = "<div style='color:#666;font-size:13px;padding:8px;'>No comments yet.</div>"; return; }
           list.innerHTML = comments.map(function(c) {
-            return "<div class='comment-item'>" +
+            const canDel = c.userId && c.userId.toString() === CURRENT_USER_ID;
+            return "<div class='comment-item' id='gcmt-" + c._id + "'>" +
               "<img class='comment-avatar' src='" + (c.userPic || "/assets/img/default-avatar.png") + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/>" +
               "<div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div>" +
+              (canDel ? "<button class='comment-del-btn' onclick=\\"deleteGalleryComment('" + c._id + "')\\">✕</button>" : "") +
             "</div>";
           }).join("");
           list.scrollTop = list.scrollHeight;
+        }
+
+        async function deleteGalleryComment(commentId) {
+          await fetch("/api/comments/" + commentId, { method: "DELETE", credentials: "include" });
+          loadProfileComments();
         }
 
         async function submitProfileComment() {
@@ -1981,12 +2006,21 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
           const comments = await fetch("/api/posts/" + postId + "/comments", { credentials: "include" }).then(r => r.json()).catch(() => []);
           const list = document.getElementById("cl-" + postId);
           if (!list) return;
-          list.innerHTML = !comments.length
-            ? "<div style='color:#666;font-size:13px;padding:6px;'>No comments yet.</div>"
-            : comments.map(function(c) {
-                return "<div class='comment-item'><img class='comment-avatar' src='" + (c.userPic || "/assets/img/default-avatar.png") + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/><div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div></div>";
-              }).join("");
+          if (!comments.length) { list.innerHTML = "<div style='color:#666;font-size:13px;padding:6px;'>No comments yet.</div>"; return; }
+          list.innerHTML = comments.map(function(c) {
+            const canDel = c.userId && c.userId.toString() === CURRENT_USER_ID;
+            return "<div class='comment-item' id='pcmt-" + c._id + "'>" +
+              "<img class='comment-avatar' src='" + (c.userPic || "/assets/img/default-avatar.png") + "' onerror=\\"this.src='/assets/img/default-avatar.png'\\"/>" +
+              "<div style='flex:1;min-width:0;'><div class='comment-name'>" + c.userName + "</div><div class='comment-text'>" + c.text + "</div><div class='comment-time'>" + timeAgo(c.createdAt) + "</div></div>" +
+              (canDel ? "<button class='comment-del-btn' onclick=\\"deletePostComment('" + c._id + "','" + postId + "')\\">✕</button>" : "") +
+            "</div>";
+          }).join("");
           list.scrollTop = list.scrollHeight;
+        }
+
+        async function deletePostComment(commentId, postId) {
+          await fetch("/api/post-comments/" + commentId, { method: "DELETE", credentials: "include" });
+          loadPostComments(postId);
         }
 
         async function submitPostComment(postId, inputEl) {
