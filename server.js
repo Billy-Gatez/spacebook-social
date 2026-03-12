@@ -1168,16 +1168,20 @@ app.get("/profile", requireLogin, async (req, res) => {
   const posts = await Post.find({ userId: user._id }).sort({ createdAt: -1 });
 
   const topFriendsHtml = user.topFriends.map(f => `
-    <div class="friend-tile">
-      <div class="friend-avatar" style="width:60px;height:60px;border-radius:8px;background:#111 url('${f.profilePic || "/assets/img/default-avatar.png"}') center/cover no-repeat;margin-bottom:4px;border:1px solid rgba(255,106,0,0.3);"></div>
-      <div style="font-size:12px;"><a href="/profile/${f._id}" style="color:#ff6a00;">${f.name}</a></div>
-    </div>`).join("");
+    <a href="/profile/${f._id}" style="text-decoration:none;">
+      <div class="friend-tile">
+        <div class="friend-avatar" style="width:60px;height:60px;border-radius:8px;background:#111 url('${f.profilePic || "/assets/img/default-avatar.png"}') center/cover no-repeat;margin-bottom:4px;border:1px solid rgba(255,106,0,0.3);"></div>
+        <div style="font-size:12px;color:#ff6a00;">${f.name}</div>
+      </div>
+    </a>`).join("");
 
   const friendsGridHtml = user.friends.map(f => `
-    <div class="friend-tile">
-      <div class="friend-avatar" style="width:60px;height:60px;border-radius:8px;background:#111 url('${f.profilePic || "/assets/img/default-avatar.png"}') center/cover no-repeat;margin-bottom:4px;border:1px solid rgba(255,106,0,0.3);"></div>
-      <div style="font-size:12px;"><a href="/profile/${f._id}" style="color:#ff6a00;">${f.name}</a></div>
-    </div>`).join("");
+    <a href="/profile/${f._id}" style="text-decoration:none;">
+      <div class="friend-tile">
+        <div class="friend-avatar" style="width:60px;height:60px;border-radius:8px;background:#111 url('${f.profilePic || "/assets/img/default-avatar.png"}') center/cover no-repeat;margin-bottom:4px;border:1px solid rgba(255,106,0,0.3);"></div>
+        <div style="font-size:12px;color:#ff6a00;">${f.name}</div>
+      </div>
+    </a>`).join("");
 
   const postsHtml = posts.map(p => `
     <div class="post-card" data-post-id="${p._id}">
@@ -1204,11 +1208,11 @@ app.get("/profile", requireLogin, async (req, res) => {
       </div>
       <div class="comment-section" id="cs-${p._id}" style="display:none;margin-top:10px;">
         <div class="comment-list" id="cl-${p._id}" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;max-height:200px;overflow-y:auto;"></div>
-        <div style="display:flex;gap:8px;align-items:center;">
+        <div style="display:flex;gap:8px;align-items:center;width:100%;">
           <input class="comment-input" data-post-id="${p._id}" type="text" placeholder="Write a comment..." maxlength="300"
-            style="flex:1;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;min-height:unset;"
+            style="flex:1;min-width:0;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;min-height:unset;"
             onkeydown="if(event.key==='Enter'){event.preventDefault();submitPostComment('${p._id}',this);}"/>
-          <button class="btn-primary" style="font-size:12px;padding:6px 10px;height:44px;box-sizing:border-box;"
+          <button class="btn-primary" style="font-size:12px;padding:6px 10px;height:44px;box-sizing:border-box;flex-shrink:0;white-space:nowrap;"
             onclick="submitPostComment('${p._id}', document.querySelector('.comment-input[data-post-id=\\'${p._id}\\']'))">Post</button>
         </div>
       </div>
@@ -1261,9 +1265,15 @@ app.get("/profile", requireLogin, async (req, res) => {
         .nav-links { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
         .nav-links a { color: #ccc; text-decoration: none; font-size: 13px; }
         .nav-links a:hover { color: #ff6a00; }
-        .page { max-width: 860px; margin: 30px auto; padding: 0 16px; box-sizing: border-box; }
+        .profile-page { max-width: 1200px; margin: 30px auto; padding: 0 20px; box-sizing: border-box; display: grid; grid-template-columns: 220px 1fr 260px; gap: 20px; }
+        .col-left { grid-column: 1; }
+        .col-mid { grid-column: 2; }
+        .col-right { grid-column: 3; }
+        @media (max-width: 860px) {
+          .profile-page { grid-template-columns: 1fr; padding: 0 12px; }
+          .col-left, .col-mid, .col-right { grid-column: 1; }
+        }
         .card { border-radius: 12px; background: rgba(0,0,0,0.45); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.15); padding: 20px; margin-bottom: 20px; }
-        .profile-header { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
         .profile-avatar { width: 100px; height: 100px; border-radius: 50%; background: #111 url('${pic}') center/cover no-repeat; border: 3px solid #ff6a00; flex-shrink: 0; }
         .friend-tile { width: 70px; text-align: center; }
         .top-friends-bar { display: flex; flex-wrap: wrap; gap: 10px; }
@@ -1284,7 +1294,7 @@ app.get("/profile", requireLogin, async (req, res) => {
         .comment-text { font-size: 13px; color: #f0f0f0; word-break: break-word; margin-top: 2px; }
         .comment-time { font-size: 11px; color: #555; margin-top: 2px; }
         textarea { width: 100%; background: rgba(255,255,255,0.06); border: 1px solid #444; border-radius: 8px; color: #fff; padding: 10px; font-size: 14px; resize: vertical; box-sizing: border-box; }
-        textarea:focus { border-color: #ff6a00; outline: none; }
+        textarea:focus, input[type=text]:focus { border-color: #ff6a00; outline: none; }
         .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px,1fr)); gap: 8px; }
         .gallery-thumb { aspect-ratio: 1; border-radius: 10px; overflow: hidden; cursor: pointer; border: 1px solid rgba(255,106,0,0.2); transition: border-color .15s; }
         .gallery-thumb:hover { border-color: #ff6a00; }
@@ -1292,7 +1302,6 @@ app.get("/profile", requireLogin, async (req, res) => {
         .react-btn { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; padding: 6px 14px; font-size: 18px; cursor: pointer; color: #fff; transition: all .15s; display: inline-flex; align-items: center; gap: 5px; }
         .react-btn:hover { border-color: #ff6a00; background: rgba(255,106,0,0.15); }
         .react-btn.mine { border-color: #ff6a00; background: rgba(255,106,0,0.2); }
-        @media (max-width: 600px) { .profile-header { flex-direction: column; align-items: flex-start; } .nav-links a { font-size: 12px; } }
       </style>
     </head>
     <body>
@@ -1332,54 +1341,60 @@ app.get("/profile", requireLogin, async (req, res) => {
         </div>
       </div>
 
-      <div class="page">
-        <div class="card">
-          <div class="profile-header">
-            <div class="profile-avatar"></div>
-            <div>
-              <h2 style="margin:0;color:#ff6a00;">${user.name}</h2>
+      <div class="profile-page">
+
+        <div class="col-left">
+          <div class="card">
+            <div style="display:flex;flex-direction:column;align-items:center;text-align:center;">
+              <div class="profile-avatar"></div>
+              <h2 style="margin:8px 0 4px;color:#ff6a00;">${user.name}</h2>
               <p style="margin:4px 0;color:#aaa;">${user.network || "Unknown network"}</p>
               <p style="margin:4px 0;color:#ccc;font-size:13px;">"Exploring the universe via Spacebook."</p>
             </div>
+            <form action="/upload-profile-pic" method="post" enctype="multipart/form-data" style="margin-top:16px;">
+              <label style="color:#ccc;font-size:14px;">Update profile picture</label><br>
+              <input type="file" name="profilePic" accept="image/*" style="margin-top:6px;">
+              <button class="btn-primary" style="margin-top:10px;width:100%;">Upload</button>
+            </form>
           </div>
-          <form action="/upload-profile-pic" method="post" enctype="multipart/form-data" style="margin-top:16px;">
-            <label style="color:#ccc;font-size:14px;">Update profile picture</label><br>
-            <input type="file" name="profilePic" accept="image/*" style="margin-top:6px;">
-            <button class="btn-primary" style="margin-top:10px;">Upload</button>
-          </form>
         </div>
 
-        <div class="card">
-          <h3 style="color:#ff6a00;margin-bottom:10px;">⭐ Top Friends</h3>
-          <div class="top-friends-bar">
-            ${topFriendsHtml || "<p style='color:#ccc;font-size:13px;'>No top friends yet. Pick some below.</p>"}
+        <div class="col-mid">
+          <div class="card">
+            <h3 style="color:#ff6a00;margin-bottom:10px;">📝 Your Posts</h3>
+            ${postsHtml || "<p style='color:#ccc;font-size:13px;'>You haven't posted yet.</p>"}
           </div>
-          <hr style="margin:16px 0;border:none;border-top:1px solid #333;">
-          <h3 style="color:#ff6a00;margin-bottom:10px;">👥 Friends</h3>
-          <div style="display:flex;flex-wrap:wrap;gap:10px;">
-            ${friendsGridHtml || "<p style='color:#ccc;font-size:13px;'>No friends yet.</p>"}
-          </div>
-          <form action="/set-top-friends" method="post" style="margin-top:20px;">
-            <h4 style="color:#ff6a00;margin-bottom:8px;">Select Top 8 Friends</h4>
-            <div style="max-height:200px;overflow-y:auto;border:1px solid #333;padding:10px;border-radius:6px;">
-              ${topFriendsSelector || "<p style='color:#ccc;font-size:13px;'>Add some friends first.</p>"}
+        </div>
+
+        <div class="col-right">
+          <div class="card">
+            <h3 style="color:#ff6a00;margin-bottom:10px;">⭐ Top Friends</h3>
+            <div class="top-friends-bar">
+              ${topFriendsHtml || "<p style='color:#ccc;font-size:13px;'>No top friends yet.</p>"}
             </div>
-            <button class="btn-primary" style="margin-top:10px;">Save Top Friends</button>
-          </form>
-        </div>
-
-        <div class="card">
-          <h3 style="color:#ff6a00;margin-bottom:10px;">📷 Gallery</h3>
-          <div id="profile-own-gallery" class="gallery-grid">
-            <p style="color:#888;font-size:13px;">Loading...</p>
+            <hr style="margin:16px 0;border:none;border-top:1px solid #333;">
+            <h3 style="color:#ff6a00;margin-bottom:10px;">👥 Friends</h3>
+            <div style="display:flex;flex-wrap:wrap;gap:10px;">
+              ${friendsGridHtml || "<p style='color:#ccc;font-size:13px;'>No friends yet.</p>"}
+            </div>
+            <form action="/set-top-friends" method="post" style="margin-top:20px;">
+              <h4 style="color:#ff6a00;margin-bottom:8px;">Select Top 8 Friends</h4>
+              <div style="max-height:200px;overflow-y:auto;border:1px solid #333;padding:10px;border-radius:6px;">
+                ${topFriendsSelector || "<p style='color:#ccc;font-size:13px;'>Add some friends first.</p>"}
+              </div>
+              <button class="btn-primary" style="margin-top:10px;">Save Top Friends</button>
+            </form>
           </div>
-          <a href="/gallery" style="display:inline-block;margin-top:12px;color:#ff6a00;font-size:13px;">View full gallery →</a>
+
+          <div class="card">
+            <h3 style="color:#ff6a00;margin-bottom:10px;">📷 Gallery</h3>
+            <div id="profile-own-gallery" class="gallery-grid">
+              <p style="color:#888;font-size:13px;">Loading...</p>
+            </div>
+            <a href="/gallery" style="display:inline-block;margin-top:12px;color:#ff6a00;font-size:13px;">View full gallery →</a>
+          </div>
         </div>
 
-        <div class="card">
-          <h3 style="color:#ff6a00;margin-bottom:10px;">📝 Your Posts</h3>
-          ${postsHtml || "<p style='color:#ccc;font-size:13px;'>You haven't posted yet.</p>"}
-        </div>
       </div>
 
       <!-- Gallery overlay -->
@@ -1399,11 +1414,11 @@ app.get("/profile", requireLogin, async (req, res) => {
           <div style="margin-top:16px;">
             <h4 style="color:#ff6a00;margin:0 0 10px;">💬 Comments</h4>
             <div id="profile-comment-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;max-height:220px;overflow-y:auto;"></div>
-            <div style="display:flex;gap:8px;align-items:center;">
+            <div style="display:flex;gap:8px;align-items:center;width:100%;">
               <input id="profile-comment-input" type="text" placeholder="Add a comment..." maxlength="300"
-                style="flex:1;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;min-height:unset;"
+                style="flex:1;min-width:0;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;min-height:unset;"
                 onkeydown="if(event.key==='Enter'){event.preventDefault();submitProfileComment();}"/>
-              <button class="btn-primary" onclick="submitProfileComment()">Post</button>
+              <button class="btn-primary" style="height:44px;padding:0 14px;flex-shrink:0;white-space:nowrap;" onclick="submitProfileComment()">Post</button>
             </div>
           </div>
         </div>
@@ -1622,18 +1637,22 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
   const isFriend = viewer.friends.some(f => f._id.toString() === target._id.toString());
 
   const topFriendsHtml = target.topFriends.map(f => `
-    <div class="friend-tile">
-      <div style="width:60px;height:60px;border-radius:8px;background:#111 url('${f.profilePic || "/assets/img/default-avatar.png"}') center/cover no-repeat;margin-bottom:4px;border:1px solid rgba(255,106,0,0.3);"></div>
-      <div style="font-size:12px;"><a href="/profile/${f._id}" style="color:#ff6a00;">${f.name}</a></div>
-    </div>`).join("");
+    <a href="/profile/${f._id}" style="text-decoration:none;">
+      <div class="friend-tile">
+        <div style="width:60px;height:60px;border-radius:8px;background:#111 url('${f.profilePic || "/assets/img/default-avatar.png"}') center/cover no-repeat;margin-bottom:4px;border:1px solid rgba(255,106,0,0.3);"></div>
+        <div style="font-size:12px;color:#ff6a00;">${f.name}</div>
+      </div>
+    </a>`).join("");
 
   const friendsGridHtml = target.friends.map(f => `
-    <div class="friend-tile">
-      <div style="width:60px;height:60px;border-radius:8px;background:#111 url('${f.profilePic || "/assets/img/default-avatar.png"}') center/cover no-repeat;margin-bottom:4px;border:1px solid rgba(255,106,0,0.3);"></div>
-      <div style="font-size:12px;"><a href="/profile/${f._id}" style="color:#ff6a00;">${f.name}</a></div>
-    </div>`).join("");
+    <a href="/profile/${f._id}" style="text-decoration:none;">
+      <div class="friend-tile">
+        <div style="width:60px;height:60px;border-radius:8px;background:#111 url('${f.profilePic || "/assets/img/default-avatar.png"}') center/cover no-repeat;margin-bottom:4px;border:1px solid rgba(255,106,0,0.3);"></div>
+        <div style="font-size:12px;color:#ff6a00;">${f.name}</div>
+      </div>
+    </a>`).join("");
 
-    const postsHtml = posts.map(p => `
+  const postsHtml = posts.map(p => `
     <div class="post-card" data-post-id="${p._id}">
       <div class="post">
         <div class="author" style="color:#ff6a00;">${p.userName}</div>
@@ -1654,11 +1673,11 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
       </div>
       <div class="comment-section" id="cs-${p._id}" style="display:none;margin-top:10px;">
         <div class="comment-list" id="cl-${p._id}" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;max-height:200px;overflow-y:auto;"></div>
-        <div style="display:flex;gap:8px;align-items:center;">
+        <div style="display:flex;gap:8px;align-items:center;width:100%;">
           <input class="comment-input" data-post-id="${p._id}" type="text" placeholder="Write a comment..." maxlength="300"
-            style="flex:1;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;min-height:unset;"
+            style="flex:1;min-width:0;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;min-height:unset;"
             onkeydown="if(event.key==='Enter'){event.preventDefault();submitPostComment('${p._id}',this);}"/>
-          <button class="btn-primary" style="font-size:12px;padding:6px 10px;height:44px;box-sizing:border-box;"
+          <button class="btn-primary" style="font-size:12px;padding:6px 10px;height:44px;box-sizing:border-box;flex-shrink:0;white-space:nowrap;"
             onclick="submitPostComment('${p._id}', document.querySelector('.comment-input[data-post-id=\\'${p._id}\\']'))">Post</button>
         </div>
       </div>
@@ -1682,9 +1701,15 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
         .nav-links { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
         .nav-links a { color: #ccc; text-decoration: none; font-size: 13px; }
         .nav-links a:hover { color: #ff6a00; }
-        .page { max-width: 860px; margin: 30px auto; padding: 0 16px; box-sizing: border-box; }
+        .profile-page { max-width: 1200px; margin: 30px auto; padding: 0 20px; box-sizing: border-box; display: grid; grid-template-columns: 220px 1fr 260px; gap: 20px; }
+        .col-left { grid-column: 1; }
+        .col-mid { grid-column: 2; }
+        .col-right { grid-column: 3; }
+        @media (max-width: 860px) {
+          .profile-page { grid-template-columns: 1fr; padding: 0 12px; }
+          .col-left, .col-mid, .col-right { grid-column: 1; }
+        }
         .card { border-radius: 12px; background: rgba(0,0,0,0.45); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.15); padding: 20px; margin-bottom: 20px; }
-        .profile-header { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
         .profile-avatar { width: 100px; height: 100px; border-radius: 50%; background: #111 url('${pic}') center/cover no-repeat; border: 3px solid #ff6a00; flex-shrink: 0; }
         .friend-tile { width: 70px; text-align: center; }
         .top-friends-bar { display: flex; flex-wrap: wrap; gap: 10px; }
@@ -1702,6 +1727,8 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
         .comment-name { font-size: 12px; color: #ff6a00; font-weight: bold; }
         .comment-text { font-size: 13px; color: #f0f0f0; word-break: break-word; margin-top: 2px; }
         .comment-time { font-size: 11px; color: #555; margin-top: 2px; }
+        textarea { width: 100%; background: rgba(255,255,255,0.06); border: 1px solid #444; border-radius: 8px; color: #fff; padding: 10px; font-size: 14px; resize: vertical; box-sizing: border-box; }
+        textarea:focus, input[type=text]:focus { border-color: #ff6a00; outline: none; }
         .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px,1fr)); gap: 8px; }
         .gallery-thumb { aspect-ratio: 1; border-radius: 10px; overflow: hidden; cursor: pointer; border: 1px solid rgba(255,106,0,0.2); transition: border-color .15s; }
         .gallery-thumb:hover { border-color: #ff6a00; }
@@ -1709,7 +1736,6 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
         .react-btn { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; padding: 6px 14px; font-size: 18px; cursor: pointer; color: #fff; transition: all .15s; display: inline-flex; align-items: center; gap: 5px; }
         .react-btn:hover { border-color: #ff6a00; background: rgba(255,106,0,0.15); }
         .react-btn.mine { border-color: #ff6a00; background: rgba(255,106,0,0.2); }
-        @media (max-width: 600px) { .profile-header { flex-direction: column; align-items: flex-start; } .nav-links a { font-size: 12px; } }
       </style>
     </head>
     <body>
@@ -1749,51 +1775,57 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
         </div>
       </div>
 
-      <div class="page">
-        <div class="card">
-          <div class="profile-header">
-            <div class="profile-avatar"></div>
-            <div>
-              <h2 style="margin:0;color:#ff6a00;">${target.name}</h2>
+      <div class="profile-page">
+
+        <div class="col-left">
+          <div class="card">
+            <div style="display:flex;flex-direction:column;align-items:center;text-align:center;">
+              <div class="profile-avatar"></div>
+              <h2 style="margin:8px 0 4px;color:#ff6a00;">${target.name}</h2>
               <p style="margin:4px 0;color:#aaa;">${target.network || "Unknown network"}</p>
               <p style="margin:4px 0;color:#ccc;font-size:13px;">"Exploring the universe via Spacebook."</p>
             </div>
-          </div>
-          <div style="margin-top:16px;">
-            ${isFriend
-              ? `<form action="/remove-friend/${target._id}" method="post" style="display:inline;">
-                   <button class="btn-primary" style="background:#222;color:#ff6a00;border:1px solid #ff6a00;">Remove Friend</button>
-                 </form>`
-              : `<form action="/add-friend/${target._id}" method="post" style="display:inline;">
-                   <button class="btn-primary">+ Add Friend</button>
-                 </form>`}
-            <a href="/gallery/${target._id}" class="btn-secondary" style="margin-left:10px;font-size:13px;">📷 View Gallery</a>
-          </div>
-        </div>
-
-        <div class="card">
-          <h3 style="color:#ff6a00;margin-bottom:10px;">⭐ Top Friends</h3>
-          <div class="top-friends-bar">
-            ${topFriendsHtml || "<p style='color:#ccc;font-size:13px;'>No top friends yet.</p>"}
-          </div>
-          <hr style="margin:16px 0;border:none;border-top:1px solid #333;">
-          <h3 style="color:#ff6a00;margin-bottom:10px;">👥 Friends</h3>
-          <div style="display:flex;flex-wrap:wrap;gap:10px;">
-            ${friendsGridHtml || "<p style='color:#ccc;font-size:13px;'>No friends yet.</p>"}
+            <div style="margin-top:14px;">
+              ${isFriend
+                ? `<form action="/remove-friend/${target._id}" method="post">
+                    <button class="btn-primary" style="width:100%;background:#111;color:#ff6a00;border:1px solid #ff6a00;">✕ Remove Friend</button>
+                   </form>`
+                : `<form action="/add-friend/${target._id}" method="post">
+                    <button class="btn-primary" style="width:100%;">+ Add Friend</button>
+                   </form>`}
+            </div>
           </div>
         </div>
 
-        <div class="card">
-          <h3 style="color:#ff6a00;margin-bottom:10px;">📷 Gallery</h3>
-          <div id="target-gallery-grid" class="gallery-grid">
-            <p style="color:#888;font-size:13px;">Loading...</p>
+        <div class="col-mid">
+          <div class="card">
+            <h3 style="color:#ff6a00;margin-bottom:10px;">📝 ${target.name}'s Posts</h3>
+            ${postsHtml || "<p style='color:#ccc;font-size:13px;'>No posts yet.</p>"}
           </div>
         </div>
 
-        <div class="card">
-          <h3 style="color:#ff6a00;margin-bottom:10px;">📝 Posts</h3>
-          ${postsHtml || "<p style='color:#ccc;font-size:13px;'>No posts yet.</p>"}
+        <div class="col-right">
+          <div class="card">
+            <h3 style="color:#ff6a00;margin-bottom:10px;">⭐ Top Friends</h3>
+            <div class="top-friends-bar">
+              ${topFriendsHtml || "<p style='color:#ccc;font-size:13px;'>None set.</p>"}
+            </div>
+            <hr style="margin:16px 0;border:none;border-top:1px solid #333;">
+            <h3 style="color:#ff6a00;margin-bottom:10px;">👥 Friends (${target.friends.length})</h3>
+            <div style="display:flex;flex-wrap:wrap;gap:10px;">
+              ${friendsGridHtml || "<p style='color:#ccc;font-size:13px;'>No friends yet.</p>"}
+            </div>
+          </div>
+
+          <div class="card">
+            <h3 style="color:#ff6a00;margin-bottom:10px;">📷 Gallery</h3>
+            <div id="target-gallery-grid" class="gallery-grid">
+              <p style="color:#888;font-size:13px;">Loading...</p>
+            </div>
+            <a href="/gallery/${target._id}" style="display:inline-block;margin-top:12px;color:#ff6a00;font-size:13px;">View full gallery →</a>
+          </div>
         </div>
+
       </div>
 
       <!-- Gallery overlay -->
@@ -1813,11 +1845,11 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
           <div style="margin-top:16px;">
             <h4 style="color:#ff6a00;margin:0 0 10px;">💬 Comments</h4>
             <div id="profile-comment-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;max-height:220px;overflow-y:auto;"></div>
-            <div style="display:flex;gap:8px;align-items:center;">
+            <div style="display:flex;gap:8px;align-items:center;width:100%;">
               <input id="profile-comment-input" type="text" placeholder="Add a comment..." maxlength="300"
-                style="flex:1;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;min-height:unset;"
+                style="flex:1;min-width:0;background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;box-sizing:border-box;min-height:unset;"
                 onkeydown="if(event.key==='Enter'){event.preventDefault();submitProfileComment();}"/>
-              <button class="btn-primary" onclick="submitProfileComment()">Post</button>
+              <button class="btn-primary" style="height:44px;padding:0 14px;flex-shrink:0;white-space:nowrap;" onclick="submitProfileComment()">Post</button>
             </div>
           </div>
         </div>
@@ -1928,8 +1960,7 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
         });
 
         async function loadPostReactions(postId) {
-          const data = await fetch("/api/posts/" + postId + "/reactions", { credentials: "include" })
-            .then(r => r.json()).catch(() => ({ counts: {}, myReaction: null }));
+          const data = await fetch("/api/posts/" + postId + "/reactions", { credentials: "include" }).then(r => r.json()).catch(() => ({ counts: {}, myReaction: null }));
           ["❤️","🔥","😂","🤝","🚀"].forEach(function(e) {
             const el = document.getElementById("rp-" + postId + "-" + e.codePointAt(0));
             if (el) el.textContent = data.counts[e] || 0;
@@ -1939,8 +1970,7 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
         }
 
         async function loadPostComments(postId) {
-          const comments = await fetch("/api/posts/" + postId + "/comments", { credentials: "include" })
-            .then(r => r.json()).catch(() => []);
+          const comments = await fetch("/api/posts/" + postId + "/comments", { credentials: "include" }).then(r => r.json()).catch(() => []);
           const list = document.getElementById("cl-" + postId);
           if (!list) return;
           list.innerHTML = !comments.length
@@ -1954,11 +1984,7 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
         async function submitPostComment(postId, inputEl) {
           const text = inputEl.value.trim();
           if (!text) return;
-          await fetch("/api/posts/" + postId + "/comments", {
-            method: "POST", credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text: text })
-          });
+          await fetch("/api/posts/" + postId + "/comments", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: text }) });
           inputEl.value = "";
           loadPostComments(postId);
         }
