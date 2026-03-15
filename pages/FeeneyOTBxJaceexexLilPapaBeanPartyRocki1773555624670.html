@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>FeeneyOTB x Jace.exe x Lil Papa Bean - Party Rockin – Spacebook Player</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+  body {
+    background:#000;
+    color:#fff;
+    font-family:Arial, sans-serif;
+    margin:0;
+    padding:24px 12px;
+    max-width:760px;
+    margin:auto;
+    text-align:center;
+  }
+
+  .logo {
+    width:160px;
+    margin-bottom:16px;
+    filter:drop-shadow(0 0 12px rgba(255,106,0,0.5));
+  }
+
+  h1 {
+    color:#ff6a00;
+    font-size:24px;
+    margin:0 0 8px;
+    letter-spacing:0.5px;
+  }
+
+  p {
+    color:rgba(255,255,255,0.6);
+    font-size:14px;
+    margin-bottom:18px;
+  }
+
+  #controls {
+    display:flex;
+    justify-content:center;
+    gap:12px;
+    margin-bottom:16px;
+    flex-wrap:wrap;
+  }
+
+  button {
+    background:#111;
+    border:1px solid #ff6a00;
+    color:#ff6a00;
+    padding:8px 18px;
+    border-radius:999px;
+    font-size:13px;
+    cursor:pointer;
+    transition:0.2s;
+    letter-spacing:0.5px;
+  }
+
+  button:hover {
+    background:#ff6a00;
+    color:#000;
+    box-shadow:0 0 14px rgba(255,106,0,0.6);
+  }
+
+  #vizWrap {
+    width:100%;
+    height:260px;
+    border-radius:16px;
+    overflow:hidden;
+    border:1px solid rgba(255,255,255,0.15);
+    background:#000;
+    box-shadow:0 0 22px rgba(255,106,0,0.18);
+  }
+
+  #viz {
+    width:100%;
+    height:100%;
+    display:block;
+  }
+
+  .now-playing {
+    margin-top:10px;
+    font-size:12px;
+    color:rgba(255,255,255,0.7);
+  }
+
+  .now-playing span {
+    color:#ff6a00;
+  }
+
+  .footer-link {
+    margin-top:22px;
+    font-size:13px;
+    color:#ff6a00;
+    text-decoration:none;
+    opacity:0.8;
+  }
+
+  .footer-link:hover {
+    opacity:1;
+  }
+</style>
+</head>
+
+<body>
+
+<img class="logo" src="https://spacebook.world/SPACEBOOK-WORLD-LOGO.png" alt="Spacebook">
+
+<h1>FeeneyOTB x Jace.exe x Lil Papa Bean - Party Rockin</h1>
+<p>Listen or watch this on Spacebook</p>
+
+<div id="controls">
+  <button id="playBtn">Play</button>
+  <button id="stopBtn">Stop</button>
+  <button id="loopBtn">Loop Off</button>
+</div>
+
+<div id="vizWrap">
+  <canvas id="viz"></canvas>
+</div>
+
+<div class="now-playing">
+  Now Playing: <span>FeeneyOTB x Jace.exe x Lil Papa Bean - Party Rockin</span>
+</div>
+
+<a class="footer-link" href="https://spacebook.world/spacebookplayer.html" target="_blank">
+  Open Full Visualizer
+</a>
+
+<script>
+(function(){
+  var mediaUrl = "https://raw.githubusercontent.com/Billy-Gatez/spacebook-social/main/media/partyrockin.mp3";
+
+  var AudioCtx = window.AudioContext || window.webkitAudioContext;
+  var ctx = new AudioCtx();
+
+  var master = ctx.createGain();
+  master.gain.value = 0.9;
+
+  var analyser = ctx.createAnalyser();
+  analyser.fftSize = 2048;
+  analyser.smoothingTimeConstant = 0.82;
+
+  master.connect(analyser);
+  analyser.connect(ctx.destination);
+
+  var buffer = null;
+  var source = null;
+  var looping = false;
+
+  function loadAudio() {
+    fetch(mediaUrl)
+      .then(function(res){ return res.arrayBuffer(); })
+      .then(function(arr){ return ctx.decodeAudioData(arr); })
+      .then(function(buf){ buffer = buf; })
+      .catch(function(err){ console.error('Error loading audio', err); });
+  }
+
+  function play() {
+    if (!buffer) return;
+    stop();
+    source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.loop = looping;
+    source.connect(master);
+    source.start();
+    ctx.resume();
+  }
+
+  function stop() {
+    if (source) {
+      try { source.stop(); } catch(e){}
+      try { source.disconnect(); } catch(e){}
+      source = null;
+    }
+  }
+
+  document.getElementById('playBtn').onclick = play;
+  document.getElementById('stopBtn').onclick = stop;
+  document.getElementById('loopBtn').onclick = function(ev){
+    looping = !looping;
+    ev.target.textContent = looping ? 'Loop On' : 'Loop Off';
+    if (source) source.loop = looping;
+  };
+
+  loadAudio();
+
+  var canvas = document.getElementById('viz');
+  var vctx = canvas.getContext('2d');
+
+  function resize() {
+    var dpr = window.devicePixelRatio || 1;
+    var w = canvas.clientWidth * dpr;
+    var h = canvas.clientHeight * dpr;
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
+    }
+  }
+
+  window.addEventListener('resize', resize);
+
+  function draw() {
+    resize();
+
+    var w = canvas.width;
+    var h = canvas.height;
+
+    var freq = new Uint8Array(analyser.frequencyBinCount);
+    var time = new Uint8Array(analyser.fftSize);
+
+    analyser.getByteFrequencyData(freq);
+    analyser.getByteTimeDomainData(time);
+
+    vctx.clearRect(0,0,w,h);
+
+    var bg = vctx.createLinearGradient(0,0,w,h);
+    bg.addColorStop(0, 'rgba(255,106,0,0.08)');
+    bg.addColorStop(1, 'rgba(0,0,0,0.9)');
+    vctx.fillStyle = bg;
+    vctx.fillRect(0,0,w,h);
+
+    var bins = Math.min(140, freq.length);
+    var barW = w / bins;
+
+    for (var i=0;i<bins;i++){
+      var v = freq[i] / 255;
+      var bh = Math.pow(v, 1.3) * (h * 0.55);
+      var x = i * barW;
+      var y = h - bh;
+
+      vctx.fillStyle = '#ff6a00';
+      vctx.globalAlpha = 0.25 + v * 0.75;
+      vctx.fillRect(x, y, barW - 1, bh);
+    }
+
+    vctx.globalAlpha = 1;
+
+    vctx.lineWidth = Math.max(2, w * 0.002);
+    vctx.shadowBlur = Math.max(6, w * 0.01);
+    vctx.shadowColor = 'rgba(255,106,0,0.6)';
+    vctx.beginPath();
+
+    for (var j=0;j<time.length;j++){
+      var xx = (j / (time.length - 1)) * w;
+      var yy = (time[j] / 255) * (h * 0.55);
+      if (j === 0) vctx.moveTo(xx, yy);
+      else vctx.lineTo(xx, yy);
+    }
+
+    vctx.strokeStyle = '#ff6a00';
+    vctx.stroke();
+    vctx.shadowBlur = 0;
+
+    requestAnimationFrame(draw);
+  }
+
+  requestAnimationFrame(draw);
+})();
+</script>
+
+</body>
+</html>
