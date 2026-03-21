@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>SPACEPAD</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Open+Sans:wght@400;700&family=Lato:wght@400;700&family=Montserrat:wght@400;700&family=Oswald:wght@400;700&family=Raleway:wght@400;700&family=PT+Sans:wght@400;700&family=Merriweather:wght@400;700&family=Nunito:wght@400;700&family=Playfair+Display:wght@400;700&family=Ubuntu:wght@400;700&family=Rubik:wght@400;700&family=Work+Sans:wght@400;700&family=Poppins:wght@400;700&family=Fira+Sans:wght@400;700&family=Noto+Sans:wght@400;700&family=Quicksand:wght@400;700&family=Josefin+Sans:wght@400;700&family=Inconsolata:wght@400;700&family=Crimson+Text:wght@400;700&family=Dancing+Script:wght@400;700&family=Pacifico&family=Lobster&family=Indie+Flower&family=Caveat:wght@400;700&family=Bebas+Neue&family=Anton&family=Permanent+Marker&family=Comic+Neue:wght@400;700&family=Satisfy&family=Shadows+Into+Light&family=Amatic+SC:wght@400;700&family=Righteous&family=Alfa+Slab+One&family=Archivo+Black&family=Cinzel:wght@400;700&family=Courgette&family=Great+Vibes&family=Passion+One:wght@400;700&family=Fredoka+One&family=Kalam:wght@400;700&family=Vollkorn:wght@400;700&family=Bitter:wght@400;700&family=Cabin:wght@400;700&family=Titillium+Web:wght@400;700&family=EB+Garamond:wght@400;700&family=Barlow:wght@400;700&family=Exo+2:wght@400;700&family=Asap:wght@400;700&display=swap" rel="stylesheet">
+
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, sans-serif; color: #f5f5f7; overflow-x: hidden; }
+
+    #starfield { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: -1; }
+
+    #appRoot { min-height: 100vh; padding: 16px; display: flex; flex-direction: column; align-items: center; }
+
+    h1 { margin: 0 0 12px; font-size: 28px; letter-spacing: 0.1em; text-shadow: 0 0 10px rgba(255,138,60,0.8); }
+
+    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; justify-content: center; }
+    .toolbar select, .toolbar button { padding: 6px 10px; border-radius: 10px; border: none; background: #1a1a25; color: #f5f5f7; cursor: pointer; font-size: 13px; }
+    .toolbar input[type="file"] { display: none; }
+    .toolbar input[type="color"] { width: 40px; height: 32px; border: none; border-radius: 10px; cursor: pointer; padding: 2px; background: #1a1a25; }
+    .toolbar label { padding: 6px 10px; border-radius: 10px; background: #1a1a25; cursor: pointer; color: #f5f5f7; font-size: 13px; }
+    .btn-save-project { background: #1a3a1a !important; color: #80ff80 !important; }
+    .btn-open-project { background: #1a1a3a !important; color: #80c0ff !important; }
+    .btn-pdf { background: #2a1a0a !important; color: #ffb060 !important; }
+
+    .pages-container { width: 100%; max-width: 900px; display: flex; flex-direction: column; gap: 24px; align-items: center; padding-bottom: 40px; }
+    .page { position: relative; display: flex; justify-content: center; width: 100%; }
+
+    .notepad {
+      position: relative; width: 420px; height: 560px; border-radius: 24px;
+      overflow: hidden; box-shadow: 0 18px 40px rgba(0,0,0,0.55);
+      background: var(--paper, #f9e27a); --line-gap: 24px;
+    }
+
+    .pad-lines {
+      position: absolute; inset: 0; pointer-events: none; opacity: 0.7;
+      background-image: repeating-linear-gradient(
+        to bottom,
+        var(--line, rgba(120,160,220,0.7)) 0,
+        var(--line, rgba(120,160,220,0.7)) 1px,
+        transparent 1px,
+        transparent var(--line-gap)
+      );
+      background-position-y: var(--line-gap);
+    }
+
+    .pad-margin {
+      position: absolute; top: 0; left: 64px; width: 2px; height: 100%;
+      pointer-events: none; background: var(--margin, rgba(220,80,80,0.9));
+    }
+
+    .pad-content {
+      position: relative; z-index: 1; width: 100%; height: 100%;
+      padding: var(--line-gap) 24px 24px 80px;
+      overflow: hidden; font-size: 16px; color: var(--text, #3b2b10);
+      outline: none; white-space: pre-wrap; line-height: var(--line-gap);
+    }
+
+    .pad-content img { max-width: 100%; height: auto; display: block; margin: 8px 0; }
+    .page.active .notepad { box-shadow: 0 0 0 2px #ff8a3c, 0 18px 40px rgba(0,0,0,0.55); }
+    .no-lines .pad-lines { display: none; }
+
+    .deletePageBtn {
+      position: absolute; top: 6px; right: 6px; width: 20px; height: 20px;
+      border-radius: 999px; border: none; background: rgba(0,0,0,0.4);
+      color: #f5f5f7; font-size: 12px; line-height: 20px; text-align: center;
+      cursor: pointer; opacity: 0; transition: opacity 0.15s ease; z-index: 2;
+    }
+    .page:hover .deletePageBtn { opacity: 1; }
+
+    /* Themes */
+    .theme-classic { --paper:#f9e27a; --line:rgba(120,160,220,0.7); --margin:rgba(220,80,80,0.9); --text:#3b2b10; }
+    .theme-blue { --paper:#d8e8ff; --line:rgba(70,120,210,0.7); --margin:rgba(200,60,80,0.9); --text:#1a2a45; }
+    .theme-pink { --paper:#ffd8f0; --line:rgba(220,120,200,0.7); --margin:rgba(220,80,120,0.9); --text:#451a2f; }
+    .theme-green { --paper:#e4ffd8; --line:rgba(120,200,140,0.7); --margin:rgba(120,160,80,0.9); --text:#1f3a1a; }
+    .theme-dark { --paper:#1a1a1a; --line:rgba(120,120,120,0.4); --margin:rgba(200,80,80,0.8); --text:#f5f5f7; }
+    .theme-neon { --paper:#000; --line:rgba(0,255,234,0.5); --margin:rgba(255,0,128,0.9); --text:#00ffea; }
+    .theme-orange { --paper:#ffdfb3; --line:rgba(220,160,80,0.7); --margin:rgba(200,80,40,0.9); --text:#4a2a00; }
+    .theme-spacebook { --paper:#0b0b15; --line:rgba(120,160,220,0.4); --margin:rgba(255,120,0,0.9); --text:#f5f5f7; }
+    .theme-ocean { --paper:#e8f4fd; --line:rgba(30,120,200,0.5); --margin:rgba(200,50,50,0.8); --text:#0a2a4a; }
+    .theme-midnight { --paper:#0d0d1a; --line:rgba(100,100,180,0.4); --margin:rgba(180,60,60,0.8); --text:#c8c8e8; }
+    .theme-rosewood { --paper:#f5e6e0; --line:rgba(180,100,100,0.5); --margin:rgba(160,40,60,0.8); --text:#3a1010; }
+    .theme-arctic { --paper:#eef6ff; --line:rgba(140,190,240,0.6); --margin:rgba(80,140,220,0.8); --text:#0a1a2e; }
+    .theme-forest { --paper:#1a2a1a; --line:rgba(80,160,80,0.4); --margin:rgba(200,160,40,0.8); --text:#c8e8c8; }
+    .theme-lavender { --paper:#f0eaff; --line:rgba(160,120,220,0.5); --margin:rgba(120,60,200,0.8); --text:#2a1040; }
+    .theme-sunset { --paper:#fff0e0; --line:rgba(240,140,60,0.5); --margin:rgba(220,60,60,0.8); --text:#3a1a00; }
+    .theme-slate { --paper:#2a2e38; --line:rgba(140,160,190,0.3); --margin:rgba(100,180,220,0.8); --text:#d8e0ec; }
+    .theme-cherry { --paper:#fff0f3; --line:rgba(220,80,100,0.4); --margin:rgba(180,20,60,0.8); --text:#3a000f; }
+    .theme-gold { --paper:#fffbe6; --line:rgba(200,160,20,0.5); --margin:rgba(180,100,0,0.8); --text:#2a1a00; }
+    .theme-mint { --paper:#e6fff8; --line:rgba(60,200,160,0.5); --margin:rgba(0,140,100,0.8); --text:#002a1a; }
+    .theme-plum { --paper:#f5e8ff; --line:rgba(140,60,200,0.4); --margin:rgba(100,20,160,0.8); --text:#200040; }
+    .theme-coral { --paper:#fff2ee; --line:rgba(255,140,100,0.5); --margin:rgba(220,80,40,0.8); --text:#3a1000; }
+    .theme-steel { --paper:#e8ecf0; --line:rgba(120,140,170,0.5); --margin:rgba(80,100,140,0.8); --text:#1a2030; }
+    .theme-wine { --paper:#1a0a10; --line:rgba(160,40,80,0.4); --margin:rgba(220,100,60,0.8); --text:#f0c8d0; }
+    .theme-sky { --paper:#dff0ff; --line:rgba(80,160,240,0.5); --margin:rgba(200,60,60,0.8); --text:#002040; }
+    .theme-sand { --paper:#f5ecd0; --line:rgba(180,140,60,0.5); --margin:rgba(160,80,20,0.8); --text:#2a1800; }
+    .theme-vapor { --paper:#0f0520; --line:rgba(220,0,255,0.4); --margin:rgba(0,220,255,0.8); --text:#e8c0ff; }
+    .theme-parchment { --paper:#f2e8c8; --line:rgba(160,120,60,0.5); --margin:rgba(140,60,40,0.8); --text:#2a1800; }
+    .theme-emerald { --paper:#e0fff2; --line:rgba(0,180,120,0.5); --margin:rgba(0,120,80,0.8); --text:#001a0e; }
+    .theme-indigo { --paper:#eeeeff; --line:rgba(80,80,220,0.5); --margin:rgba(60,0,180,0.8); --text:#0a0030; }
+    .theme-rust { --paper:#fff0e8; --line:rgba(200,100,40,0.5); --margin:rgba(160,40,0,0.8); --text:#2a0800; }
+    .theme-fog { --paper:#f0f2f5; --line:rgba(160,170,190,0.5); --margin:rgba(120,130,160,0.8); --text:#1a1e28; }
+    .theme-obsidian { --paper:#080810; --line:rgba(80,80,120,0.4); --margin:rgba(200,200,60,0.8); --text:#e0e0f0; }
+    .theme-peach { --paper:#fff2e8; --line:rgba(240,160,100,0.5); --margin:rgba(200,100,40,0.8); --text:#3a1800; }
+    .theme-glacier { --paper:#e8f8ff; --line:rgba(120,200,240,0.5); --margin:rgba(40,140,200,0.8); --text:#001828; }
+    .theme-bronze { --paper:#f5ead0; --line:rgba(180,120,40,0.5); --margin:rgba(120,60,0,0.8); --text:#2a1400; }
+    .theme-violet { --paper:#1a0a28; --line:rgba(160,80,220,0.4); --margin:rgba(220,80,160,0.8); --text:#e8d0ff; }
+    .theme-lemon { --paper:#fffde0; --line:rgba(200,180,0,0.5); --margin:rgba(160,120,0,0.8); --text:#2a2000; }
+    .theme-graphite { --paper:#2c2c2c; --line:rgba(160,160,160,0.3); --margin:rgba(220,100,60,0.8); --text:#e8e8e8; }
+    .theme-aurora { --paper:#061a20; --line:rgba(0,200,160,0.4); --margin:rgba(200,60,200,0.8); --text:#b0ffe8; }
+    .theme-blush { --paper:#fff0f5; --line:rgba(240,160,180,0.5); --margin:rgba(200,60,100,0.8); --text:#3a0010; }
+    .theme-teal { --paper:#e0f8f8; --line:rgba(0,160,160,0.5); --margin:rgba(0,100,120,0.8); --text:#001a1a; }
+    .theme-charcoal { --paper:#1e1e1e; --line:rgba(120,120,120,0.35); --margin:rgba(80,180,240,0.8); --text:#d8d8d8; }
+    .theme-petal { --paper:#fff5f8; --line:rgba(255,160,180,0.5); --margin:rgba(220,80,120,0.8); --text:#3a0018; }
+    .theme-dusk { --paper:#1a1228; --line:rgba(160,120,200,0.4); --margin:rgba(240,140,60,0.8); --text:#e0d0f8; }
+    .theme-cream { --paper:#fdf8ee; --line:rgba(200,180,120,0.5); --margin:rgba(160,100,40,0.8); --text:#2a1e00; }
+    .theme-cobalt { --paper:#e0eaff; --line:rgba(40,80,220,0.5); --margin:rgba(180,20,40,0.8); --text:#000a30; }
+    .theme-jungle { --paper:#0f1f10; --line:rgba(60,160,60,0.4); --margin:rgba(200,180,0,0.8); --text:#c0f0b0; }
+    .theme-mauve { --paper:#f5ecf5; --line:rgba(180,120,180,0.5); --margin:rgba(140,40,140,0.8); --text:#2a0028; }
+    .theme-sepia { --paper:#f0e4c8; --line:rgba(160,120,60,0.5); --margin:rgba(120,60,20,0.8); --text:#2a1400; }
+    .theme-space { --paper:#04040f; --line:rgba(60,60,140,0.4); --margin:rgba(60,180,255,0.8); --text:#b0c8f8; }
+    .theme-bubblegum { --paper:#fff0fc; --line:rgba(255,140,220,0.5); --margin:rgba(220,40,180,0.8); --text:#3a0030; }
+    .theme-hazel { --paper:#f5ede0; --line:rgba(160,120,80,0.5); --margin:rgba(120,80,20,0.8); --text:#2a1800; }
+    .theme-storm { --paper:#1a1e28; --line:rgba(100,120,160,0.4); --margin:rgba(180,200,240,0.6); --text:#c0c8e0; }
+    .theme-amber { --paper:#fff8e0; --line:rgba(220,160,20,0.5); --margin:rgba(180,80,0,0.8); --text:#2a1400; }
+    .theme-frost { --paper:#f5f9ff; --line:rgba(160,200,240,0.5); --margin:rgba(80,140,220,0.8); --text:#0a1828; }
+    .theme-magma { --paper:#1a0800; --line:rgba(220,80,20,0.4); --margin:rgba(240,180,0,0.8); --text:#ffe0c0; }
+    .theme-lilac { --paper:#f8f0ff; --line:rgba(200,160,240,0.5); --margin:rgba(160,80,220,0.8); --text:#280040; }
+    .theme-cinnamon { --paper:#fff0e0; --line:rgba(200,120,40,0.5); --margin:rgba(160,60,20,0.8); --text:#2a0e00; }
+    .theme-navy { --paper:#e8eeff; --line:rgba(40,60,180,0.5); --margin:rgba(200,40,40,0.8); --text:#000820; }
+    .theme-eclipse { --paper:#0a0a12; --line:rgba(80,60,120,0.4); --margin:rgba(200,140,0,0.8); --text:#d0c8f0; }
+    .theme-sage { --paper:#eef5e8; --line:rgba(120,160,100,0.5); --margin:rgba(80,120,60,0.8); --text:#1a2a10; }
+    .theme-copper { --paper:#f5e8d8; --line:rgba(180,100,40,0.5); --margin:rgba(140,60,0,0.8); --text:#2a0e00; }
+    .theme-twilight { --paper:#12082a; --line:rgba(120,80,200,0.4); --margin:rgba(240,120,0,0.8); --text:#e0d0ff; }
+    .theme-seafoam { --paper:#e8fff8; --line:rgba(80,200,180,0.5); --margin:rgba(0,140,120,0.8); --text:#001e1a; }
+    .theme-crimson { --paper:#fff0f0; --line:rgba(200,40,40,0.4); --margin:rgba(160,0,20,0.8); --text:#2a0000; }
+    .theme-moonstone { --paper:#f0f0f8; --line:rgba(160,160,200,0.5); --margin:rgba(100,100,180,0.8); --text:#10102a; }
+    .theme-mahogany { --paper:#1a0a08; --line:rgba(140,60,40,0.4); --margin:rgba(200,120,40,0.8); --text:#f0c8a8; }
+    .theme-aqua { --paper:#e0faff; --line:rgba(0,180,220,0.5); --margin:rgba(0,120,160,0.8); --text:#001828; }
+    .theme-tangerine { --paper:#fff5e0; --line:rgba(240,160,40,0.5); --margin:rgba(220,80,0,0.8); --text:#2a1000; }
+    .theme-walnut { --paper:#2a1a10; --line:rgba(140,90,50,0.4); --margin:rgba(220,160,60,0.8); --text:#f0d8b8; }
+    .theme-powder { --paper:#f0f5ff; --line:rgba(160,180,240,0.5); --margin:rgba(100,120,200,0.8); --text:#0a1030; }
+    .theme-olive { --paper:#f0f0d8; --line:rgba(140,140,60,0.5); --margin:rgba(100,100,20,0.8); --text:#1a1a00; }
+    .theme-ruby { --paper:#1a0010; --line:rgba(180,20,60,0.4); --margin:rgba(240,100,40,0.8); --text:#ffd0d8; }
+    .theme-butter { --paper:#fffde8; --line:rgba(220,200,60,0.5); --margin:rgba(180,140,0,0.8); --text:#1e1800; }
+    .theme-carbon { --paper:#121212; --line:rgba(80,80,80,0.4); --margin:rgba(0,200,120,0.8); --text:#e0e0e0; }
+    .theme-raspberry { --paper:#fff0f5; --line:rgba(220,60,120,0.4); --margin:rgba(180,0,80,0.8); --text:#2a0018; }
+    .theme-horizon { --paper:#e8f5ff; --line:rgba(100,160,220,0.5); --margin:rgba(220,100,60,0.8); --text:#001530; }
+    .theme-pumice { --paper:#f0eeec; --line:rgba(160,150,140,0.5); --margin:rgba(120,100,80,0.8); --text:#1a1610; }
+    .theme-cosmos { --paper:#060614; --line:rgba(100,40,160,0.4); --margin:rgba(0,220,200,0.8); --text:#d0b0ff; }
+    .theme-blossom { --paper:#fff8f5; --line:rgba(240,180,160,0.5); --margin:rgba(200,100,80,0.8); --text:#2a0e08; }
+    .theme-denim { --paper:#e8eeff; --line:rgba(80,100,180,0.5); --margin:rgba(40,60,160,0.8); --text:#080e28; }
+    .theme-infrared { --paper:#0f0505; --line:rgba(200,20,20,0.4); --margin:rgba(240,120,0,0.8); --text:#ffe8e0; }
+    .theme-honeydew { --paper:#f2fff0; --line:rgba(140,220,120,0.5); --margin:rgba(80,160,60,0.8); --text:#0a1e06; }
+    .theme-ink { --paper:#f8f8f8; --line:rgba(40,40,80,0.4); --margin:rgba(20,20,60,0.8); --text:#080818; }
+    .theme-terracotta { --paper:#fff0e8; --line:rgba(200,120,80,0.5); --margin:rgba(160,60,20,0.8); --text:#2a0a00; }
+    .theme-arctic-night { --paper:#0a1428; --line:rgba(80,140,220,0.4); --margin:rgba(0,220,200,0.8); --text:#b0d0f8; }
+    .theme-candlelight { --paper:#fff8e8; --line:rgba(220,180,80,0.5); --margin:rgba(180,100,0,0.8); --text:#2a1800; }
+    .theme-ultraviolet { --paper:#10001e; --line:rgba(120,0,240,0.4); --margin:rgba(0,200,255,0.8); --text:#d8b0ff; }
+    .theme-lotus { --paper:#fff0f8; --line:rgba(220,140,180,0.5); --margin:rgba(180,60,120,0.8); --text:#2a0020; }
+    .theme-cedar { --paper:#f0e8d8; --line:rgba(160,100,60,0.5); --margin:rgba(100,40,0,0.8); --text:#1e0a00; }
+    .theme-glacier-blue { --paper:#e0f0ff; --line:rgba(100,180,240,0.5); --margin:rgba(0,100,200,0.8); --text:#001228; }
+    .theme-shadow { --paper:#141418; --line:rgba(100,100,120,0.3); --margin:rgba(160,160,200,0.6); --text:#c0c0d0; }
+    .theme-pistachio { --paper:#f0f8e8; --line:rgba(140,200,100,0.5); --margin:rgba(80,140,40,0.8); --text:#102200; }
+    .theme-galaxy { --paper:#08082a; --line:rgba(80,60,200,0.4); --margin:rgba(200,0,200,0.8); --text:#c0b8f8; }
+    .theme-saffron { --paper:#fffae0; --line:rgba(240,180,0,0.5); --margin:rgba(200,100,0,0.8); --text:#2a1600; }
+    .theme-smoke { --paper:#e8e8e8; --line:rgba(140,140,140,0.5); --margin:rgba(100,100,100,0.8); --text:#101010; }
+    .theme-lotus-pond { --paper:#0a1a14; --line:rgba(40,160,120,0.4); --margin:rgba(240,160,80,0.8); --text:#b0f0d8; }
+    .theme-carnation { --paper:#fff5f5; --line:rgba(255,160,160,0.5); --margin:rgba(220,60,80,0.8); --text:#2a0005; }
+    .theme-citrus { --paper:#fffbe8; --line:rgba(220,200,20,0.5); --margin:rgba(200,120,0,0.8); --text:#1e1600; }
+    .theme-blackwood { --paper:#0c0c0c; --line:rgba(60,40,20,0.5); --margin:rgba(160,100,40,0.8); --text:#d8c8a8; }
+    .theme-fern { --paper:#e8f5e0; --line:rgba(100,160,80,0.5); --margin:rgba(60,120,40,0.8); --text:#0e1e08; }
+    .theme-chrome { --paper:#f0f0f0; --line:rgba(180,180,180,0.5); --margin:rgba(100,100,100,0.8); --text:#0a0a0a; }
+    .theme-nebula { --paper:#0e0818; --line:rgba(160,60,200,0.4); --margin:rgba(40,200,240,0.8); --text:#e0c8ff; }
+    .theme-papaya { --paper:#fff5e0; --line:rgba(240,160,60,0.5); --margin:rgba(200,80,20,0.8); --text:#2a1000; }
+    .theme-iron { --paper:#d8d8d8; --line:rgba(120,120,120,0.5); --margin:rgba(60,60,60,0.8); --text:#0a0a0a; }
+
+    .emoji-panel {
+      position: fixed; bottom: 16px; right: 16px; width: 320px; max-height: 360px;
+      background: #151522; border-radius: 16px; box-shadow: 0 12px 30px rgba(0,0,0,0.7);
+      display: none; flex-direction: column; padding: 8px; z-index: 100;
+    }
+    .emoji-header input { flex: 1; padding: 4px 8px; border-radius: 8px; border: none; font-size: 13px; width: 100%; margin-bottom: 6px; }
+    .emoji-cats { display: flex; gap: 4px; margin-bottom: 6px; flex-wrap: wrap; }
+    .emoji-cats button { border: none; border-radius: 999px; padding: 3px 8px; font-size: 12px; background: #222236; color: #f5f5f7; cursor: pointer; }
+    .emoji-grid { display: grid; grid-template-columns: repeat(8,1fr); gap: 4px; overflow-y: auto; padding: 4px; font-size: 18px; }
+    .emoji-item { cursor: pointer; text-align: center; padding: 2px; border-radius: 6px; }
+    .emoji-item:hover { background: #2a2a3c; }
+
+    @media (max-width: 600px) { .notepad { width: 100%; max-width: 420px; } }
+  </style>
+</head>
+<body>
+
+<canvas id="starfield"></canvas>
+
+<div id="appRoot">
+  <h1>SPACEPAD</h1>
+
+  <div class="toolbar">
+    <select id="themeSelect">
+      <option value="theme-classic">Classic Yellow</option>
+      <option value="theme-blue">Blue Paper</option>
+      <option value="theme-pink">Pink Paper</option>
+      <option value="theme-green">Green Paper</option>
+      <option value="theme-dark">Dark Mode</option>
+      <option value="theme-neon">Neon</option>
+      <option value="theme-orange">Spacebook Orange</option>
+      <option value="theme-spacebook">Spacebook Black</option>
+      <option value="theme-ocean">Ocean</option>
+      <option value="theme-midnight">Midnight</option>
+      <option value="theme-rosewood">Rosewood</option>
+      <option value="theme-arctic">Arctic</option>
+      <option value="theme-forest">Forest</option>
+      <option value="theme-lavender">Lavender</option>
+      <option value="theme-sunset">Sunset</option>
+      <option value="theme-slate">Slate</option>
+      <option value="theme-cherry">Cherry</option>
+      <option value="theme-gold">Gold</option>
+      <option value="theme-mint">Mint</option>
+      <option value="theme-plum">Plum</option>
+      <option value="theme-coral">Coral</option>
+      <option value="theme-steel">Steel</option>
+      <option value="theme-wine">Wine</option>
+      <option value="theme-sky">Sky</option>
+      <option value="theme-sand">Sand</option>
+      <option value="theme-vapor">Vapor</option>
+      <option value="theme-parchment">Parchment</option>
+      <option value="theme-emerald">Emerald</option>
+      <option value="theme-indigo">Indigo</option>
+      <option value="theme-rust">Rust</option>
+      <option value="theme-fog">Fog</option>
+      <option value="theme-obsidian">Obsidian</option>
+      <option value="theme-peach">Peach</option>
+      <option value="theme-glacier">Glacier</option>
+      <option value="theme-bronze">Bronze</option>
+      <option value="theme-violet">Violet</option>
+      <option value="theme-lemon">Lemon</option>
+      <option value="theme-graphite">Graphite</option>
+      <option value="theme-aurora">Aurora</option>
+      <option value="theme-blush">Blush</option>
+      <option value="theme-teal">Teal</option>
+      <option value="theme-charcoal">Charcoal</option>
+      <option value="theme-petal">Petal</option>
+      <option value="theme-dusk">Dusk</option>
+      <option value="theme-cream">Cream</option>
+      <option value="theme-cobalt">Cobalt</option>
+      <option value="theme-jungle">Jungle</option>
+      <option value="theme-mauve">Mauve</option>
+      <option value="theme-sepia">Sepia</option>
+      <option value="theme-space">Space</option>
+      <option value="theme-bubblegum">Bubblegum</option>
+      <option value="theme-hazel">Hazel</option>
+      <option value="theme-storm">Storm</option>
+      <option value="theme-amber">Amber</option>
+      <option value="theme-frost">Frost</option>
+      <option value="theme-magma">Magma</option>
+      <option value="theme-lilac">Lilac</option>
+      <option value="theme-cinnamon">Cinnamon</option>
+      <option value="theme-navy">Navy</option>
+      <option value="theme-eclipse">Eclipse</option>
+      <option value="theme-sage">Sage</option>
+      <option value="theme-copper">Copper</option>
+      <option value="theme-twilight">Twilight</option>
+      <option value="theme-seafoam">Seafoam</option>
+      <option value="theme-crimson">Crimson</option>
+      <option value="theme-moonstone">Moonstone</option>
+      <option value="theme-mahogany">Mahogany</option>
+      <option value="theme-aqua">Aqua</option>
+      <option value="theme-tangerine">Tangerine</option>
+      <option value="theme-walnut">Walnut</option>
+      <option value="theme-powder">Powder</option>
+      <option value="theme-olive">Olive</option>
+      <option value="theme-ruby">Ruby</option>
+      <option value="theme-butter">Butter</option>
+      <option value="theme-carbon">Carbon</option>
+      <option value="theme-raspberry">Raspberry</option>
+      <option value="theme-horizon">Horizon</option>
+      <option value="theme-pumice">Pumice</option>
+      <option value="theme-cosmos">Cosmos</option>
+      <option value="theme-blossom">Blossom</option>
+      <option value="theme-denim">Denim</option>
+      <option value="theme-infrared">Infrared</option>
+      <option value="theme-honeydew">Honeydew</option>
+      <option value="theme-ink">Ink</option>
+      <option value="theme-terracotta">Terracotta</option>
+      <option value="theme-arctic-night">Arctic Night</option>
+      <option value="theme-candlelight">Candlelight</option>
+      <option value="theme-ultraviolet">Ultraviolet</option>
+      <option value="theme-lotus">Lotus</option>
+      <option value="theme-cedar">Cedar</option>
+      <option value="theme-glacier-blue">Glacier Blue</option>
+      <option value="theme-shadow">Shadow</option>
+      <option value="theme-pistachio">Pistachio</option>
+      <option value="theme-galaxy">Galaxy</option>
+      <option value="theme-saffron">Saffron</option>
+      <option value="theme-smoke">Smoke</option>
+      <option value="theme-lotus-pond">Lotus Pond</option>
+      <option value="theme-carnation">Carnation</option>
+      <option value="theme-citrus">Citrus</option>
+      <option value="theme-blackwood">Blackwood</option>
+      <option value="theme-fern">Fern</option>
+      <option value="theme-chrome">Chrome</option>
+      <option value="theme-nebula">Nebula</option>
+      <option value="theme-papaya">Papaya</option>
+      <option value="theme-iron">Iron</option>
+    </select>
+
+    <select id="fontSelect">
+      <option value="system-ui">System UI</option>
+      <option value="serif">Serif</option>
+      <option value="monospace">Monospace</option>
+      <option value="Arial">Arial</option>
+      <option value="Georgia">Georgia</option>
+      <option value="'Courier New'">Courier New</option>
+      <option value="'Times New Roman'">Times New Roman</option>
+      <option value="'Roboto'">Roboto</option>
+      <option value="'Open Sans'">Open Sans</option>
+      <option value="'Lato'">Lato</option>
+      <option value="'Montserrat'">Montserrat</option>
+      <option value="'Oswald'">Oswald</option>
+      <option value="'Raleway'">Raleway</option>
+      <option value="'Merriweather'">Merriweather</option>
+      <option value="'Nunito'">Nunito</option>
+      <option value="'Playfair Display'">Playfair Display</option>
+      <option value="'Poppins'">Poppins</option>
+      <option value="'Quicksand'">Quicksand</option>
+      <option value="'Inconsolata'">Inconsolata</option>
+      <option value="'Dancing Script'">Dancing Script</option>
+      <option value="'Pacifico'">Pacifico</option>
+      <option value="'Lobster'">Lobster</option>
+      <option value="'Indie Flower'">Indie Flower</option>
+      <option value="'Caveat'">Caveat</option>
+      <option value="'Bebas Neue'">Bebas Neue</option>
+      <option value="'Permanent Marker'">Permanent Marker</option>
+      <option value="'Comic Neue'">Comic Neue</option>
+      <option value="'Shadows Into Light'">Shadows Into Light</option>
+      <option value="'Great Vibes'">Great Vibes</option>
+      <option value="'Fredoka One'">Fredoka One</option>
+      <option value="'Kalam'">Kalam</option>
+      <option value="'Bitter'">Bitter</option>
+      <option value="'EB Garamond'">EB Garamond</option>
+      <option value="'Exo 2'">Exo 2</option>
+    </select>
+
+    <select id="sizeSelect">
+      <option value="10">10</option>
+      <option value="12">12</option>
+      <option value="14">14</option>
+      <option value="16" selected>16</option>
+      <option value="18">18</option>
+      <option value="20">20</option>
+      <option value="24">24</option>
+      <option value="28">28</option>
+      <option value="32">32</option>
+      <option value="40">40</option>
+      <option value="48">48</option>
+    </select>
+
+    <input type="color" id="textColor" value="#3b2b10" title="Text Color">
+    <button type="button" data-cmd="bold"><b>B</b></button>
+    <button type="button" data-cmd="italic"><i>I</i></button>
+    <button type="button" data-cmd="underline"><u>U</u></button>
+    <button id="toggleLinesBtn">Lines Off</button>
+    <label for="imageInput">🖼 Image</label>
+    <input type="file" id="imageInput" accept="image/*" />
+    <button id="emojiToggle">😀</button>
+    <button id="addPageBtn">+ Page</button>
+    <button id="deletePageBtn">− Page</button>
+    <button id="savePdfBtn" class="btn-pdf">📄 PDF</button>
+    <button id="saveProjectBtn" class="btn-save-project">💾 Save</button>
+    <label for="openProjectInput" class="btn-open-project">📂 Open</label>
+    <input type="file" id="openProjectInput" accept=".spacepad" />
+  </div>
+
+  <div class="pages-container" id="pages">
+    <div class="page active">
+      <button class="deletePageBtn">✕</button>
+      <div class="notepad theme-classic">
+        <div class="pad-lines"></div>
+        <div class="pad-margin"></div>
+        <div class="pad-content" contenteditable="true" spellcheck="true"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="emoji-panel" id="emojiPanel">
+    <div class="emoji-header">
+      <input type="text" id="emojiSearch" placeholder="Search emoji…" />
+    </div>
+    <div class="emoji-cats">
+      <button data-cat="all">All</button>
+      <button data-cat="Smileys & Emotion">😊</button>
+      <button data-cat="Symbols">🔣</button>
+      <button data-cat="Objects">📦</button>
+      <button data-cat="Animals & Nature">🐾</button>
+      <button data-cat="Food & Drink">🍕</button>
+    </div>
+    <div class="emoji-grid" id="emojiGrid"></div>
+  </div>
+
+  <audio id="pageSound" src="https://actions.google.com/sounds/v1/foley/page_turn.ogg" preload="auto"></audio>
+</div>
+
+<script>
+// ══════════════════════════════════════
+//  STARFIELD — gentle slow drift
+// ══════════════════════════════════════
+const sfCanvas = document.getElementById("starfield");
+const sfCtx    = sfCanvas.getContext("2d");
+function resizeSF() { sfCanvas.width = window.innerWidth; sfCanvas.height = window.innerHeight; }
+resizeSF();
+window.addEventListener("resize", resizeSF);
+
+const STARS = Array.from({length: 250}, () => ({
+  x: Math.random(),   // stored as 0-1 fraction
+  y: Math.random(),
+  r: Math.random() * 1.2 + 0.2,
+  speed: Math.random() * 0.00008 + 0.00003,   // fraction of height per frame — very slow
+  phase: Math.random() * Math.PI * 2
+}));
+
+let sfFrame = 0;
+(function sfLoop() {
+  sfCtx.clearRect(0, 0, sfCanvas.width, sfCanvas.height);
+  sfFrame++;
+  STARS.forEach(s => {
+    s.y += s.speed;
+    if (s.y > 1) { s.y = 0; s.x = Math.random(); }
+    const alpha = 0.5 + 0.4 * Math.sin(s.phase + sfFrame * 0.008);
+    sfCtx.fillStyle = `rgba(255,255,255,${alpha})`;
+    sfCtx.beginPath();
+    sfCtx.arc(s.x * sfCanvas.width, s.y * sfCanvas.height, s.r, 0, Math.PI*2);
+    sfCtx.fill();
+  });
+  requestAnimationFrame(sfLoop);
+})();
+
+// ══════════════════════════════════════
+//  APP STATE
+// ══════════════════════════════════════
+let currentEditor = document.querySelector(".pad-content");
+let linesOn = true;
+let emojis  = [];
+let emojiCat = "all";
+
+const pagesContainer   = document.getElementById("pages");
+const themeSelect      = document.getElementById("themeSelect");
+const fontSelect       = document.getElementById("fontSelect");
+const sizeSelect       = document.getElementById("sizeSelect");
+const textColorInput   = document.getElementById("textColor");
+const imageInput       = document.getElementById("imageInput");
+const emojiToggleBtn   = document.getElementById("emojiToggle");
+const emojiPanel       = document.getElementById("emojiPanel");
+const emojiGrid        = document.getElementById("emojiGrid");
+const emojiSearch      = document.getElementById("emojiSearch");
+const addPageBtn       = document.getElementById("addPageBtn");
+const deletePageBtn    = document.getElementById("deletePageBtn");
+const savePdfBtn       = document.getElementById("savePdfBtn");
+const saveProjectBtn   = document.getElementById("saveProjectBtn");
+const openProjectInput = document.getElementById("openProjectInput");
+const toggleLinesBtn   = document.getElementById("toggleLinesBtn");
+const pageSound        = document.getElementById("pageSound");
+
+// ══════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════
+function setActive(editor) {
+  currentEditor = editor;
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+  editor.closest(".page").classList.add("active");
+}
+
+function applyLines(pad) { pad.classList.toggle("no-lines", !linesOn); }
+
+function getTheme(pad) {
+  return [...pad.classList].find(c => c.startsWith("theme-")) || "theme-classic";
+}
+
+// ── Page state snapshot / restore ──
+function getPageState(pageEl) {
+  const pad = pageEl.querySelector(".notepad");
+  const ed  = pageEl.querySelector(".pad-content");
+  return {
+    html:       ed.innerHTML,
+    theme:      getTheme(pad),
+    fontSize:   ed.style.fontSize   || "16px",
+    lineHeight: ed.style.lineHeight || "24px",
+    fontFamily: ed.style.fontFamily || "system-ui",
+    color:      ed.style.color      || "",
+    linesOn:    !pad.classList.contains("no-lines")
+  };
+}
+
+function applyPageState(pageEl, s) {
+  const pad = pageEl.querySelector(".notepad");
+  const ed  = pageEl.querySelector(".pad-content");
+  ed.innerHTML     = s.html || "";
+  [...pad.classList].filter(c => c.startsWith("theme-")).forEach(c => pad.classList.remove(c));
+  pad.classList.add(s.theme || "theme-classic");
+  ed.style.fontSize   = s.fontSize   || "16px";
+  ed.style.lineHeight = s.lineHeight || "24px";
+  ed.style.fontFamily = s.fontFamily || "system-ui";
+  ed.style.color      = s.color      || "";
+  const gap = parseFloat(s.lineHeight) || 24;
+  pad.style.setProperty("--line-gap", gap + "px");
+  pad.classList.toggle("no-lines", s.linesOn === false);
+}
+
+// ══════════════════════════════════════
+//  OVERFLOW → new page
+//  Only triggers when text ACTUALLY goes
+//  past the visible bottom of the notepad
+// ══════════════════════════════════════
+function checkOverflow(editor) {
+  const pad = editor.closest(".notepad");
+  // scrollHeight is the full content height; clientHeight is the visible area.
+  // We only create a new page when content has truly overflowed — with a 2px buffer.
+  if (editor.scrollHeight > editor.clientHeight + 2) {
+    // Trim the last word/char that caused overflow back into new page
+    const newEd = buildPage();
+    setActive(newEd);
+    newEd.focus();
+  }
+}
+
+// ══════════════════════════════════════
+//  TOOLBAR EVENTS
+// ══════════════════════════════════════
+pagesContainer.addEventListener("mousedown", e => {
+  const ed = e.target.closest(".pad-content");
+  if (ed) setActive(ed);
+});
+
+pagesContainer.addEventListener("contextmenu", e => {
+  const img = e.target.closest("img");
+  if (img && confirm("Delete image?")) { e.preventDefault(); img.remove(); }
+});
+
+themeSelect.addEventListener("change", () => {
+  const pad = currentEditor.closest(".notepad");
+  [...pad.classList].filter(c => c.startsWith("theme-")).forEach(c => pad.classList.remove(c));
+  pad.classList.add(themeSelect.value);
+});
+
+fontSelect.addEventListener("change", () => {
+  currentEditor.style.fontFamily = fontSelect.value;
+  currentEditor.focus();
+});
+
+sizeSelect.addEventListener("change", () => {
+  const size = parseInt(sizeSelect.value);
+  const gap  = Math.ceil(size * 1.6);
+  const pad  = currentEditor.closest(".notepad");
+  currentEditor.style.fontSize   = size + "px";
+  currentEditor.style.lineHeight = gap  + "px";
+  pad.style.setProperty("--line-gap", gap + "px");
+  currentEditor.focus();
+});
+
+textColorInput.addEventListener("input", () => {
+  currentEditor.style.color = textColorInput.value;
+  currentEditor.focus();
+});
+
+document.querySelectorAll("button[data-cmd]").forEach(btn =>
+  btn.addEventListener("click", () => { document.execCommand(btn.dataset.cmd, false, null); currentEditor.focus(); })
+);
+
+toggleLinesBtn.addEventListener("click", () => {
+  linesOn = !linesOn;
+  toggleLinesBtn.textContent = linesOn ? "Lines Off" : "Lines On";
+  document.querySelectorAll(".notepad").forEach(applyLines);
+});
+
+imageInput.addEventListener("change", () => {
+  const file = imageInput.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = document.createElement("img");
+    img.src = ev.target.result;
+    img.style.cssText = "max-width:100%;height:auto;display:block;margin:8px 0;";
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount && currentEditor.contains(sel.getRangeAt(0).startContainer)) {
+      const r = sel.getRangeAt(0); r.deleteContents(); r.insertNode(img); r.collapse(false);
+    } else { currentEditor.appendChild(img); }
+    currentEditor.focus();
+  };
+  reader.readAsDataURL(file);
+  imageInput.value = "";
+});
+
+// ══════════════════════════════════════
+//  EMOJI
+// ══════════════════════════════════════
+function insertEmoji(char) {
+  currentEditor.focus();
+  if (!document.execCommand("insertText", false, char)) {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount) {
+      const r = sel.getRangeAt(0); r.deleteContents();
+      r.insertNode(document.createTextNode(char)); r.collapse(false);
+    } else { currentEditor.appendChild(document.createTextNode(char)); }
+  }
+}
+
+function renderEmojis() {
+  const term = emojiSearch.value.toLowerCase();
+  emojiGrid.innerHTML = "";
+  emojis
+    .filter(e => emojiCat === "all" || e.cat === emojiCat)
+    .filter(e => !term || e.name.toLowerCase().includes(term))
+    .forEach(e => {
+      const d = document.createElement("div");
+      d.className = "emoji-item"; d.textContent = e.char; d.title = e.name;
+      d.addEventListener("mousedown", ev => { ev.preventDefault(); insertEmoji(e.char); });
+      emojiGrid.appendChild(d);
+    });
+}
+
+document.querySelectorAll(".emoji-cats button").forEach(btn =>
+  btn.addEventListener("click", () => { emojiCat = btn.dataset.cat; renderEmojis(); })
+);
+emojiSearch.addEventListener("input", renderEmojis);
+emojiToggleBtn.addEventListener("click", () => {
+  emojiPanel.style.display = emojiPanel.style.display === "flex" ? "none" : "flex";
+  if (emojiPanel.style.display === "flex") renderEmojis();
+});
+
+async function loadAllEmojis() {
+  try {
+    const r = await fetch("https://raw.githubusercontent.com/github/gemoji/master/db/emoji.json");
+    const d = await r.json();
+    emojis = d.filter(e => e.emoji).map(e => ({ char: e.emoji, name: e.description||"", cat: e.category||"Symbols" }));
+    renderEmojis();
+  } catch(err) { console.warn("Emoji load failed", err); }
+}
+
+// ══════════════════════════════════════
+//  PAGE MANAGEMENT
+// ══════════════════════════════════════
+function buildPage(state) {
+  const page = document.createElement("div");
+  page.className = "page";
+  page.innerHTML = `
+    <button class="deletePageBtn">✕</button>
+    <div class="notepad theme-classic">
+      <div class="pad-lines"></div>
+      <div class="pad-margin"></div>
+      <div class="pad-content" contenteditable="true" spellcheck="true"></div>
+    </div>`;
+  pagesContainer.appendChild(page);
+  const ed = page.querySelector(".pad-content");
+  if (state) applyPageState(page, state);
+  else applyLines(page.querySelector(".notepad"));
+  // ── attach overflow listener ──
+  ed.addEventListener("input", () => checkOverflow(ed));
+  setActive(ed);
+  pageSound && pageSound.play().catch(()=>{});
+  return ed;
+}
+
+addPageBtn.addEventListener("click", () => buildPage().focus());
+
+function removePage(page) {
+  const all = document.querySelectorAll(".page");
+  if (all.length === 1) {
+    if (confirm("Clear page?")) page.querySelector(".pad-content").innerHTML = "";
+    return;
+  }
+  if (confirm("Delete page?")) {
+    page.remove();
+    const first = document.querySelector(".page .pad-content");
+    if (first) setActive(first);
+  }
+}
+
+deletePageBtn.addEventListener("click", () => {
+  const active = document.querySelector(".page.active");
+  if (active) removePage(active);
+});
+
+pagesContainer.addEventListener("click", e => {
+  if (e.target.classList.contains("deletePageBtn")) removePage(e.target.closest(".page"));
+});
+
+// ══════════════════════════════════════
+//  PDF EXPORT
+// ══════════════════════════════════════
+savePdfBtn.addEventListener("click", async () => {
+  if (!window.jspdf) { alert("PDF library not ready, please wait a moment."); return; }
+  const { jsPDF } = window.jspdf;
+  const pdf  = new jsPDF("p","pt","a4");
+  const pads = [...document.querySelectorAll(".notepad")];
+
+  for (let i = 0; i < pads.length; i++) {
+    const pad      = pads[i];
+    const ed       = pad.querySelector(".pad-content");
+    const pl       = pad.querySelector(".pad-lines");
+    const pm       = pad.querySelector(".pad-margin");
+    const hasLines = !pad.classList.contains("no-lines");
+    const lineGapPx = parseFloat(getComputedStyle(ed).lineHeight) || 24;
+
+    // Read actual CSS variable values via computed style
+    const padCS       = getComputedStyle(pad);
+    const paperColor  = padCS.getPropertyValue("--paper").trim()  || "#f9e27a";
+    const lineColor   = padCS.getPropertyValue("--line").trim()   || "rgba(120,160,220,0.7)";
+    const marginColor = padCS.getPropertyValue("--margin").trim() || "rgba(220,80,80,0.9)";
+
+    // Force inline background so html2canvas picks it up
+    const origBg = pad.style.background;
+    pad.style.background = paperColor;
+
+    // Hide the CSS-driven lines/margin — we'll draw them manually on canvas
+    // so they render at EXACTLY the right position with EXACTLY the right color
+    pl.style.display = "none";
+    pm.style.display = "none";
+
+    const cvs = await html2canvas(pad, {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      backgroundColor: paperColor
+    });
+
+    // Restore
+    pl.style.display = hasLines ? "" : "none";
+    pm.style.display = hasLines ? "" : "none";
+    pad.style.background = origBg;
+
+    // Now draw lines + margin manually — only if lines are ON
+    if (hasLines) {
+      const ctx  = cvs.getContext("2d");
+      const sc   = 2;
+      const gap  = lineGapPx * sc;
+      const paddingTop = lineGapPx * sc; // matches CSS padding-top of .pad-content
+
+      // Draw horizontal rules
+      ctx.save();
+      ctx.strokeStyle = lineColor;
+      ctx.lineWidth   = 1.5;
+      ctx.globalAlpha = 0.7;
+      for (let y = paddingTop; y < cvs.height; y += gap) {
+        ctx.beginPath();
+        ctx.moveTo(0,         Math.round(y) + 0.5);
+        ctx.lineTo(cvs.width, Math.round(y) + 0.5);
+        ctx.stroke();
+      }
+
+      // Draw margin line
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = marginColor;
+      ctx.lineWidth   = 3;
+      const mx = 64 * sc; // matches left:64px in CSS
+      ctx.beginPath();
+      ctx.moveTo(mx, 0);
+      ctx.lineTo(mx, cvs.height);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    const imgData = cvs.toDataURL("image/png");
+    const pW    = pdf.internal.pageSize.getWidth();
+    const pH    = pdf.internal.pageSize.getHeight();
+    const ratio = Math.min(pW / cvs.width, pH / cvs.height);
+    if (i > 0) pdf.addPage();
+    pdf.addImage(
+      imgData, "PNG",
+      (pW - cvs.width  * ratio) / 2,
+      (pH - cvs.height * ratio) / 2,
+      cvs.width  * ratio,
+      cvs.height * ratio
+    );
+  }
+
+  pdf.save("spacepad.pdf");
+});
+
+
+
+
+// ══════════════════════════════════════
+//  SAVE / OPEN PROJECT
+// ══════════════════════════════════════
+saveProjectBtn.addEventListener("click", () => {
+  const pages = [...document.querySelectorAll(".page")].map(getPageState);
+  const blob  = new Blob([JSON.stringify({ version:1, app:"SPACEPAD", savedAt:new Date().toISOString(), linesOn, pages }, null, 2)], { type:"application/json" });
+  const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download:"my-spacepad.spacepad" });
+  a.click(); URL.revokeObjectURL(a.href);
+});
+
+openProjectInput.addEventListener("change", () => {
+  const file = openProjectInput.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const proj = JSON.parse(ev.target.result);
+      if (proj.app !== "SPACEPAD") { alert("Not a valid SPACEPAD file!"); return; }
+      pagesContainer.innerHTML = "";
+      linesOn = proj.linesOn !== false;
+      toggleLinesBtn.textContent = linesOn ? "Lines Off" : "Lines On";
+      proj.pages.forEach((state, idx) => {
+        const page = document.createElement("div");
+        page.className = "page";
+        page.innerHTML = `
+          <button class="deletePageBtn">✕</button>
+          <div class="notepad theme-classic">
+            <div class="pad-lines"></div>
+            <div class="pad-margin"></div>
+            <div class="pad-content" contenteditable="true" spellcheck="true"></div>
+          </div>`;
+        pagesContainer.appendChild(page);
+        applyPageState(page, state);
+        const ed = page.querySelector(".pad-content");
+        ed.addEventListener("input", () => checkOverflow(ed));
+        if (idx === 0) setActive(ed);
+      });
+    } catch(err) { alert("Failed to open: " + err.message); }
+  };
+  reader.readAsText(file);
+  openProjectInput.value = "";
+});
+
+// ══════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════
+// Attach overflow listener to the initial page
+currentEditor.addEventListener("input", () => checkOverflow(currentEditor));
+currentEditor.focus();
+loadAllEmojis();
+</script>
+</body>
+</html>
