@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spacebook Support</title>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #050510;
+      color: #f5f5f7;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+      overflow-x: hidden;
+    }
+
+    .stars {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      background: transparent url("https://spacebook.world/SPACEBOOK-STARS.png") repeat;
+      opacity: 0.25;
+      animation: drift 120s linear infinite;
+    }
+
+    @keyframes drift {
+      from { transform: translateY(0); }
+      to { transform: translateY(-2000px); }
+    }
+
+    header {
+      text-align: center;
+      padding: 4rem 2rem 2rem;
+    }
+
+    h1 {
+      font-size: 2.8rem;
+      letter-spacing: -0.5px;
+      margin-bottom: 0.5rem;
+    }
+
+    p {
+      color: #a0a0b8;
+      max-width: 600px;
+      margin: 0.5rem auto 0;
+      font-size: 1.1rem;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 3rem auto;
+      padding: 0 2rem;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 2.5rem;
+      border-radius: 16px;
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 0 40px rgba(0, 0, 0, 0.4);
+    }
+
+    .card h2 {
+      margin-top: 0;
+      font-size: 1.6rem;
+    }
+
+    .card p {
+      font-size: 1.05rem;
+      line-height: 1.6;
+    }
+
+    footer {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: #6f6f85;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="stars"></div>
+
+  <header>
+    <h1>Spacebook Support</h1>
+    <p>Your direct line to help and creator guidance</p>
+  </header>
+
+  <div class="container">
+    <div class="card">
+      <h2>Support Chat Active</h2>
+      <p>
+        The Spacebook Support Chat is installed on this page.  
+        You will see the chat bubble appear in the bottom right corner once the widget loads.
+      </p>
+      <p>
+        If you are viewing this inside the Spacebook IDE preview, the widget will not appear.  
+        It only loads on the live published page.
+      </p>
+    </div>
+  </div>
+
+  <footer>
+    Spacebook 2026  
+  </footer>
+
+  <!-- Universal Reamaze Widget -->
+  <script type="text/javascript">
+    var _support = _support || { ui: {}, user: {} };
+
+    _support.account = "spacebook";
+    _support.ui.contactMode = "default";
+    _support.ui.enableKb = true;
+
+    _support.ui.widget = {
+      icon: "chat",
+      label: {
+        text: "Need help",
+        mode: "notification",
+        delay: 5
+      },
+      position: "bottom-right"
+    };
+  </script>
+
+  <script type="text/javascript" async src="https://cdn.reamaze.com/assets/reamaze.js"></script>
+
+</body>
+</html>
