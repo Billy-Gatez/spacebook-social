@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jeremy Cahill – Full-Stack Software Engineer</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --orange: #ff7a00;
+    --orange-light: #ffa64d;
+    --black: #0a0a0a;
+    --dark: #111111;
+    --card: #161616;
+    --border: #2a2a2a;
+    --orange-border: rgba(255,122,0,0.35);
+    --white: #ffffff;
+    --grey: #b0b0b0;
+    --light-grey: #d8d8d8;
+  }
+
+  body {
+    font-family: 'Inter', Arial, sans-serif;
+    background: var(--black);
+    color: var(--white);
+    padding: 2.5rem;
+    min-height: 100vh;
+  }
+
+  .wrap {
+    max-width: 960px;
+    margin: 0 auto;
+    background: var(--dark);
+    border: 1px solid var(--orange-border);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 0 60px rgba(255,122,0,0.12);
+  }
+
+  /* ── TOP ACCENT BAR ── */
+  .accent-bar {
+    height: 4px;
+    background: linear-gradient(90deg, #ff7a00, #ffb347, #ff3c00, #ff7a00);
+    background-size: 300% 100%;
+    animation: shift 5s ease infinite;
+  }
+  @keyframes shift {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  /* ── HEADER ── */
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    padding: 2.5rem 2.5rem 2rem;
+    border-bottom: 1px solid var(--border);
+    background: #111;
+  }
+
+  .photo {
+    flex-shrink: 0;
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--orange);
+    box-shadow: 0 0 18px rgba(255,122,0,0.45);
+  }
+
+  .header-info { flex: 1; }
+
+  .header-info h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 2.4rem;
+    font-weight: 700;
+    background: linear-gradient(90deg, #ff7a00, #ffb347);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    margin-bottom: 0.3rem;
+  }
+
+  .header-role {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--orange);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 1rem;
+  }
+
+  .contacts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.4rem;
+    font-size: 0.85rem;
+    color: var(--grey);
+  }
+
+  .contacts a { color: var(--grey); text-decoration: none; }
+  .contacts a:hover { color: var(--orange-light); }
+  .contacts span::before { content: "·"; margin-right: 0.5rem; color: var(--orange); }
+
+  /* ── BODY LAYOUT ── */
+  .body { display: flex; }
+
+  .sidebar {
+    width: 230px;
+    flex-shrink: 0;
+    background: #0e0e0e;
+    border-right: 1px solid var(--border);
+    padding: 2rem 1.5rem;
+  }
+
+  .main {
+    flex: 1;
+    padding: 2rem 2.2rem;
+    overflow: hidden;
+  }
+
+  /* ── SECTION HEADINGS ── */
+  .sec-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--orange);
+    margin-bottom: 1rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--orange-border);
+  }
+
+  .section { margin-bottom: 2rem; }
+  .section:last-child { margin-bottom: 0; }
+
+  /* ── SIDEBAR: SKILLS ── */
+  .skill-group { margin-bottom: 1.4rem; }
+  .skill-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--orange-light);
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+  .skill-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+  .tag {
+    background: rgba(255,122,0,0.1);
+    border: 1px solid rgba(255,122,0,0.25);
+    color: var(--light-grey);
+    font-size: 0.72rem;
+    padding: 0.2rem 0.55rem;
+    border-radius: 4px;
+    line-height: 1.5;
+  }
+
+  /* ── SIDEBAR: EDUCATION ── */
+  .edu-school {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: var(--white);
+    margin-bottom: 0.2rem;
+  }
+  .edu-degree {
+    font-size: 0.78rem;
+    color: var(--grey);
+    line-height: 1.5;
+    margin-bottom: 0.4rem;
+  }
+  .edu-meta {
+    font-size: 0.75rem;
+    color: var(--orange);
+    font-weight: 600;
+  }
+  .coursework-title {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--orange-light);
+    margin-top: 0.8rem;
+    margin-bottom: 0.4rem;
+    display: block;
+  }
+  .coursework-list {
+    font-size: 0.72rem;
+    color: var(--grey);
+    line-height: 1.7;
+  }
+
+  /* ── MAIN: SUMMARY ── */
+  .summary {
+    font-size: 0.88rem;
+    color: var(--light-grey);
+    line-height: 1.75;
+  }
+
+  /* ── MAIN: PROJECT / EXPERIENCE CARDS ── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.2rem 1.4rem;
+    margin-bottom: 1rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .card:last-child { margin-bottom: 0; }
+  .card:hover {
+    border-color: rgba(255,122,0,0.5);
+    box-shadow: 0 0 20px rgba(255,122,0,0.1);
+  }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .card-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--white);
+    line-height: 1.35;
+  }
+
+  .card-date {
+    font-size: 0.75rem;
+    color: var(--grey);
+    white-space: nowrap;
+    margin-top: 0.1rem;
+    flex-shrink: 0;
+  }
+
+  .card-role {
+    font-size: 0.8rem;
+    color: var(--orange-light);
+    font-weight: 500;
+    margin-bottom: 0.7rem;
+  }
+
+  .card-role a { color: var(--orange); text-decoration: none; }
+  .card-role a:hover { text-decoration: underline; }
+
+  .bullets {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .bullets li {
+    font-size: 0.82rem;
+    color: var(--light-grey);
+    line-height: 1.65;
+    padding-left: 1.1rem;
+    margin-bottom: 0.4rem;
+    position: relative;
+  }
+
+  .bullets li::before {
+    content: "▸";
+    position: absolute;
+    left: 0;
+    color: var(--orange);
+    font-size: 0.75rem;
+    top: 0.15rem;
+  }
+
+  .bullets li strong { color: var(--orange-light); font-weight: 600; }
+
+  /* ── PRINT / PDF ── */
+  @media print {
+    body { background: #fff; padding: 0; color: #111; }
+    .wrap { box-shadow: none; border: none; border-radius: 0; }
+    .accent-bar { background: #ff7a00; animation: none; }
+    .header { background: #fff; border-bottom: 2px solid #ff7a00; }
+    .header-info h1 { background: #ff7a00; -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .header-role { color: #ff7a00; }
+    .contacts, .contacts a { color: #444; }
+    .sidebar { background: #f7f7f7; border-right: 1px solid #e0e0e0; }
+    .sec-title { color: #ff7a00; border-bottom-color: #ff7a00; }
+    .skill-label { color: #cc6200; }
+    .tag { background: #fff3e8; border-color: #ffb347; color: #333; }
+    .card { background: #fafafa; border: 1px solid #e0e0e0; box-shadow: none; }
+    .card-title { color: #111; }
+    .card-role { color: #cc6200; }
+    .bullets li { color: #333; }
+    .bullets li::before { color: #ff7a00; }
+    .bullets li strong { color: #cc6200; }
+    .edu-school { color: #111; }
+    .edu-degree { color: #555; }
+    .edu-meta { color: #ff7a00; }
+    .coursework-title { color: #cc6200; }
+    .coursework-list { color: #555; }
+    .summary { color: #333; }
+    .card { page-break-inside: avoid; }
+    .section { page-break-inside: avoid; }
+  }
+
+  @media (max-width: 720px) {
+    body { padding: 1rem; }
+    .body { flex-direction: column; }
+    .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
+    .header { flex-direction: column; text-align: center; }
+    .contacts { justify-content: center; }
+    .header-info h1 { font-size: 2rem; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="accent-bar"></div>
+
+  <!-- HEADER -->
+  <div class="header">
+    <img class="photo" src="https://agi-prod-file-upload-public-main-use1.s3.amazonaws.com/69005131-1cbc-438d-b6a8-ad34c4410484" alt="Jeremy Cahill">
+    <div class="header-info">
+      <h1>JEREMY CAHILL</h1>
+      <div class="header-role">Full-Stack Software Engineer</div>
+      <div class="contacts">
+        <span>Culver City, Los Angeles, CA</span>
+        <span>(310) 384-8620</span>
+        <span><a href="mailto:jercahill@gmail.com">jercahill@gmail.com</a></span>
+        <span><a href="https://spacebook.world" target="_blank">spacebook.world</a></span>
+        <span><a href="https://github.com/jeremycahill" target="_blank">GitHub</a></span>
+        <span><a href="https://linkedin.com/in/jeremy-cahill" target="_blank">LinkedIn</a></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="body">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+
+      <div class="section">
+        <div class="sec-title">Education</div>
+        <div class="edu-school">Full Sail University</div>
+        <div class="edu-degree">B.S. Game Development<br>(Computer Science Focus) · Online</div>
+        <div class="edu-meta">GPA: 3.7 &nbsp;·&nbsp; Oct 2026</div>
+        <span class="coursework-title">Relevant Coursework</span>
+        <div class="coursework-list">
+          Data Structures &amp; Algorithms<br>
+          Distributed Systems Design<br>
+          Software Engineering<br>
+          Database Management<br>
+          Computer Architecture<br>
+          Operating Systems<br>
+          OOP &amp; System Performance
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="sec-title">Languages</div>
+        <div class="skill-tags">
+          <span class="tag">JavaScript</span>
+          <span class="tag">TypeScript</span>
+          <span class="tag">Node.js</span>
+          <span class="tag">Python</span>
+          <span class="tag">Java</span>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="sec-title">Backend &amp; Systems</div>
+        <div class="skill-tags">
+          <span class="tag">REST APIs</span>
+          <span class="tag">Microservices</span>
+          <span class="tag">WebSockets</span>
+          <span class="tag">Event-driven</span>
+          <span class="tag">Async Processing</span>
+          <span class="tag">Distributed Systems</span>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="sec-title">AWS &amp; Cloud</div>
+        <div class="skill-tags">
+          <span class="tag">DynamoDB</span>
+          <span class="tag">S3</span>
+          <span class="tag">Lambda</span>
+          <span class="tag">EC2</span>
+          <span class="tag">RDS</span>
+          <span class="tag">ElastiCache</span>
+          <span class="tag">CloudWatch</span>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="sec-title">Data &amp; Messaging</div>
+        <div class="skill-tags">
+          <span class="tag">Kafka Patterns</span>
+          <span class="tag">Redis</span>
+          <span class="tag">MongoDB</span>
+          <span class="tag">PostgreSQL</span>
+          <span class="tag">ETL Pipelines</span>
+          <span class="tag">ElasticSearch</span>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="sec-title">Dev &amp; AI Tools</div>
+        <div class="skill-tags">
+          <span class="tag">CI/CD</span>
+          <span class="tag">GitHub Actions</span>
+          <span class="tag">Jest / TDD</span>
+          <span class="tag">gRPC Patterns</span>
+          <span class="tag">Protocol Buffers</span>
+          <span class="tag">Generative AI</span>
+          <span class="tag">LLM APIs</span>
+          <span class="tag">Prompt Eng.</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- MAIN -->
+    <div class="main">
+
+      <div class="section">
+        <div class="sec-title">Professional Summary</div>
+        <p class="summary">
+          Backend-focused engineering student with production experience architecting scalable distributed systems, event-driven microservices, and cloud-native infrastructure on AWS. Built and deployed full-stack platforms handling thousands of concurrent users with 99.8% uptime. Proficient in Node.js/TypeScript, Python, REST APIs, and modern CI/CD pipelines. Proven experience applying Generative AI to accelerate development workflows. Strong CS fundamentals in data structures, algorithms, and distributed systems. Pursuing B.S. in Game Development (CS focus) at Full Sail University — GPA 3.7, graduating October 2026.
+        </p>
+      </div>
+
+      <div class="section">
+        <div class="sec-title">Projects</div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Spacebook.world — Distributed Web Platform &amp; Real-Time Content Delivery</div>
+            <div class="card-date">2023 – Present</div>
+          </div>
+          <div class="card-role">Backend Platform Architect &amp; Full-Stack Engineer &nbsp;|&nbsp; <a href="https://spacebook.world" target="_blank">spacebook.world</a></div>
+          <ul class="bullets">
+            <li>Engineered Node.js/Express backend handling <strong>10,000+ monthly requests</strong> with RESTful APIs, rate limiting, and request validation for production resilience</li>
+            <li>Built event-driven microservices with WebSocket protocols delivering sub-100ms real-time content sync across distributed clients</li>
+            <li>Implemented GitHub-backed distributed CMS with version-controlled persistence, automated conflict resolution, and atomic transaction guarantees</li>
+            <li>Developed full CI/CD pipeline via GitHub Actions — automated Jest testing, build verification, and zero-downtime blue-green deployments to cloud infrastructure</li>
+            <li>Integrated Cloudinary CDN for <strong>1TB+ asset delivery</strong> with image optimization, lazy loading, and cache invalidation pipelines</li>
+            <li>Optimized Redis caching and query strategies reducing average API response time from <strong>850ms → 120ms</strong> under peak load</li>
+            <li>Maintained <strong>99.8% uptime</strong> with observability infrastructure, automated alerting, and incident response protocols</li>
+            <li><strong>Stack:</strong> Node.js, Express, TypeScript, MongoDB, Redis, WebSockets, GitHub API, Jest, Cloudinary, Render</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Distributed Real-Time Gaming Platform — Multiplayer Systems &amp; Event Processing</div>
+            <div class="card-date">2023 – Present</div>
+          </div>
+          <div class="card-role">Solo Engineer — 6 shipped production apps (Chesslink, Space Jammin, Mooncraft, Neon Demon Market, Dragon Chaos, GLOOM)</div>
+          <ul class="bullets">
+            <li>Architected Chesslink — WebSocket bidirectional protocol handling <strong>500+ concurrent game sessions</strong> with sub-50ms message delivery</li>
+            <li>Built distributed state sync with optimistic locking and server-side validation to eliminate race conditions across concurrent players</li>
+            <li>Engineered event pipeline processing <strong>10,000+ input events/min</strong> with 60fps rendering and real-time physics calculations</li>
+            <li>Designed pub/sub component-based game engine with data-driven config enabling rapid feature deployment across all six titles</li>
+            <li>Implemented Space Jammin with <strong>sub-100ms input-to-feedback latency</strong> using requestAnimationFrame and Web Audio API scheduling</li>
+            <li><strong>Stack:</strong> JavaScript/TypeScript, WebSockets, Unreal Engine, Unity, Web Audio API, distributed state management</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Generative AI — Dev Workflow Automation &amp; AI-Assisted Engineering</div>
+            <div class="card-date">2024 – Present</div>
+          </div>
+          <ul class="bullets">
+            <li>Built prompt engineering frameworks for automated CRUD scaffolding and test suite generation, reducing boilerplate dev time by <strong>40%</strong></li>
+            <li>Integrated LLM APIs (GPT-4, Claude) into CI/CD for automated code review, documentation generation, and error trace analysis</li>
+            <li>Developed browser-native AI inference workflow reducing API costs by <strong>30%</strong> and eliminating server-side compute for non-critical AI tasks</li>
+            <li>Built AI-assisted unit test generator achieving <strong>90%+ assertion accuracy</strong> and cutting manual test writing time by 50%</li>
+            <li><strong>Stack:</strong> OpenAI API, Claude API, Python, GitHub Copilot, prompt engineering, LLM integration</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="sec-title">Experience</div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Aluminati Studios Publishing</div>
+            <div class="card-date">2022 – Present</div>
+          </div>
+          <div class="card-role">Backend Platform Engineer &amp; Technical Lead</div>
+          <ul class="bullets">
+            <li>Architected backend infrastructure delivering content to <strong>10+ streaming platforms</strong> (Spotify, Apple Music, Amazon Music, YouTube Music) via REST API integrations and automated metadata pipelines</li>
+            <li>Engineered event-driven metadata processing with ISRC/UPC code generation achieving <strong>99.95% delivery success rate</strong></li>
+            <li>Built CI/CD pipelines with GitHub Actions reducing release cycles from <strong>3 days → 4 hours</strong> with automated rollback and zero-downtime deploys</li>
+            <li>Designed circuit breaker, retry logic, and graceful degradation patterns maintaining <strong>99.9% system uptime</strong></li>
+            <li>Optimized database indexing strategies reducing query time by <strong>60%</strong> across 10,000+ record catalog</li>
+            <li><strong>Stack:</strong> Node.js, TypeScript, MongoDB, PostgreSQL, Redis, REST APIs, GitHub Actions, cloud deployment</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
