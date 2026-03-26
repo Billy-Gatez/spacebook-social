@@ -2069,16 +2069,42 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
 });
 
 // ====== CHESS LEADERBOARD ROUTES ======
+
+function cleanUsername(name = "") {
+  return name.replace(/<[^>]*>/g, "").trim();
+}
+
+function isValidUsername(name) {
+  // letters, numbers, spaces, underscore, dash, 1–20 chars
+  return /^[a-zA-Z0-9_\-\s]{1,20}$/.test(name);
+}
+
 app.post("/api/chess/registerPlayer", async (req, res) => {
   try {
-    const { username, emoji, color } = req.body;
+    let { username, emoji, color } = req.body;
     if (!username) return res.status(400).json({ error: "username required" });
-    const update = { username, emoji: emoji || "♟️", color: color || "#22c55e", updatedAt: new Date() };
+
+    username = cleanUsername(username);
+    if (!isValidUsername(username)) {
+      return res.status(400).json({ error: "invalid username" });
+    }
+
+    const update = {
+      username,
+      emoji: emoji || "♟️",
+      color: color || "#22c55e",
+      updatedAt: new Date()
+    };
+
     const player = await Player.findOneAndUpdate(
       { username },
-      { $setOnInsert: { rating: 1200, wins: 0, losses: 0, draws: 0 }, $set: update },
+      {
+        $setOnInsert: { rating: 1200, wins: 0, losses: 0, draws: 0 },
+        $set: update
+      },
       { new: true, upsert: true }
     );
+
     res.json({ ok: true, player });
   } catch (err) {
     console.error("registerPlayer error", err);
@@ -2088,26 +2114,73 @@ app.post("/api/chess/registerPlayer", async (req, res) => {
 
 app.post("/api/chess/submitResult", async (req, res) => {
   try {
-    const { winner, loser, result } = req.body;
-    if (!winner || !loser || !result) return res.status(400).json({ error: "winner, loser, result required" });
-    const [pA, pB] = await Promise.all([
-      Player.findOne({ username: winner }) || new Player({ username: winner }),
-      Player.findOne({ username: loser }) || new Player({ username: loser })
-    ]);
+    let { winner, loser, result } = req.body;
+    if (!winner || !loser || !result) {
+      return res.status(400).json({ error: "winner, loser, result required" });
+    }
+
+    winner = cleanUsername(winner);
+    loser = cleanUsername(loser);
+
+    if (!isValidUsername(winner) || !isValidUsername(loser)) {
+      return res.status(400).json({ error: "invalid username(s)" });
+    }
+
+    let pA = await Player.findOne({ username: winner });
+    let pB = await Player.findOne({ username: loser });
+
+    if (!pA) {
+      pA = new Player({
+        username: winner,
+        rating: 1200,
+        wins: 0,
+        losses: 0,
+        draws: 0
+      });
+    }
+    if (!pB) {
+      pB = new Player({
+        username: loser,
+        rating: 1200,
+        wins: 0,
+        losses: 0,
+        draws: 0
+      });
+    }
+
     if (!pA.rating) pA.rating = 1200;
     if (!pB.rating) pB.rating = 1200;
+
     let scoreA, scoreB;
-    if (result === "win") { scoreA = 1; scoreB = 0; }
-    else if (result === "loss") { scoreA = 0; scoreB = 1; }
-    else { scoreA = 0.5; scoreB = 0.5; }
+    if (result === "win") {
+      scoreA = 1; scoreB = 0;
+    } else if (result === "loss") {
+      scoreA = 0; scoreB = 1;
+    } else {
+      // draw
+      scoreA = 0.5; scoreB = 0.5;
+    }
+
     const newRa = updateElo(pA.rating, pB.rating, scoreA);
     const newRb = updateElo(pB.rating, pA.rating, scoreB);
-    pA.rating = newRa; pB.rating = newRb;
-    if (result === "win") { pA.wins++; pB.losses++; }
-    else if (result === "loss") { pA.losses++; pB.wins++; }
-    else { pA.draws++; pB.draws++; }
-    pA.updatedAt = new Date(); pB.updatedAt = new Date();
+
+    pA.rating = Math.max(100, newRa);
+    pB.rating = Math.max(100, newRb);
+
+    if (result === "win") {
+      pA.wins++; pB.losses++;
+    } else if (result === "loss") {
+      pA.losses++; pB.wins++;
+    } else {
+      pA.draws++; pB.draws++;
+    }
+
+    const now = new Date();
+    pA.updatedAt = now;
+    pB.updatedAt = now;
+
     await Promise.all([pA.save(), pB.save()]);
+
     res.json({ ok: true, winner: pA, loser: pB });
   } catch (err) {
     console.error("submitResult error", err);
@@ -2117,11 +2190,45 @@ app.post("/api/chess/submitResult", async (req, res) => {
 
 app.get("/api/chess/leaderboard", async (req, res) => {
   try {
-    const players = await Player.find().sort({ rating: -1, updatedAt: -1 }).limit(100).lean();
-    res.json({ ok: true, players });
+    const players = await Player.find()
+      .sort({ rating: -1, updatedAt: -1 })
+      .limit(100)
+      .lean();
+
+    const ranked = players.map((p, i) => ({
+      ...p,
+      rank: i + 1
+    }));
+
+    res.json({ ok: true, players: ranked });
   } catch (err) {
     console.error("leaderboard error", err);
     res.status(500).json({ error: "server error" });
+  }
+});
+
+app.get("/api/chess/rank/:username", async (req, res) => {
+  try {
+    const raw = req.params.username || "";
+    const username = cleanUsername(raw);
+
+    if (!isValidUsername(username)) {
+      return res.status(400).json({ ok: false, error: "invalid username" });
+    }
+
+    const players = await Player.find()
+      .sort({ rating: -1, updatedAt: -1 })
+      .lean();
+
+    const index = players.findIndex(p => p.username === username);
+    if (index === -1) {
+      return res.json({ ok: false, rank: null });
+    }
+
+    res.json({ ok: true, rank: index + 1 });
+  } catch (err) {
+    console.error("rank error", err);
+    res.status(500).json({ ok: false, error: "server error" });
   }
 });
 
