@@ -2151,15 +2151,10 @@ app.post("/api/chess/submitResult", async (req, res) => {
     if (!pA.rating) pA.rating = 1200;
     if (!pB.rating) pB.rating = 1200;
 
-    let scoreA, scoreB;
-    if (result === "win") {
-      scoreA = 1; scoreB = 0;
-    } else if (result === "loss") {
-      scoreA = 0; scoreB = 1;
-    } else {
-      // draw
-      scoreA = 0.5; scoreB = 0.5;
-    }
+    // winner/loser params always reflect the actual winner and loser.
+    // result only distinguishes "draw" from a decisive game.
+    const scoreA = result === "draw" ? 0.5 : 1;
+    const scoreB = result === "draw" ? 0.5 : 0;
 
     const newRa = updateElo(pA.rating, pB.rating, scoreA);
     const newRb = updateElo(pB.rating, pA.rating, scoreB);
@@ -2167,12 +2162,10 @@ app.post("/api/chess/submitResult", async (req, res) => {
     pA.rating = Math.max(100, newRa);
     pB.rating = Math.max(100, newRb);
 
-    if (result === "win") {
-      pA.wins++; pB.losses++;
-    } else if (result === "loss") {
-      pA.losses++; pB.wins++;
-    } else {
+    if (result === "draw") {
       pA.draws++; pB.draws++;
+    } else {
+      pA.wins++; pB.losses++;
     }
 
     const now = new Date();
