@@ -2426,6 +2426,43 @@ app.get("/logout", (req, res) => {
   req.session.destroy(() => res.redirect("/"));
 });
 
+
+// TETRIX LEADERBOARD SCHEMA
+const tetrixScoreSchema = new mongoose.Schema({
+  username: String,
+  avatar: String,
+  title: String,
+  score: Number,
+  mode: String,
+  createdAt: { type: Date, default: Date.now }
+});
+const TetrixScore = mongoose.model('TetrixScore', tetrixScoreSchema);
+
+// TETRIX SCORE SUBMIT
+app.post('/api/tetrix/score', async (req, res) => {
+  try {
+    const { username, avatar, title, score, mode } = req.body;
+    if (!username || !score) return res.status(400).json({ ok: false });
+    await TetrixScore.create({ username, avatar, title, score, mode });
+    const all = await TetrixScore.find({ mode }).sort({ score: -1 }).lean();
+    const rank = all.findIndex(s => s.username === username && s.score === score) + 1;
+    res.json({ ok: true, rank });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// TETRIX LEADERBOARD FETCH
+app.get('/api/tetrix/leaderboard', async (req, res) => {
+  try {
+    const mode = req.query.mode || 'classic';
+    const scores = await TetrixScore.find({ mode }).sort({ score: -1 }).limit(50).lean();
+    res.json({ ok: true, scores });
+  } catch (e) {
+    res.status(500).json({ ok: false });
+  }
+});
+
 // ====== START SERVER ======
 const server = app.listen(PORT, () => {
   console.log("Spacebook running on port " + PORT);
