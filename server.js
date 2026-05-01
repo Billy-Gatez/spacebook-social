@@ -27,7 +27,8 @@ app.use(cors({
     "https://spacebook.world",
     "https://spacebook.netlify.app",
     "https://spacebook-app.onrender.com",
-    "null"
+   'https://billy-gatez.itch.io',
+    null
   ],
   credentials: true
 }));
