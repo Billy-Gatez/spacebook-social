@@ -105,6 +105,17 @@ const playerSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now }
 });
 
+// ── TETRIX SCORE SCHEMA ──────────────────────────────────────
+const tetrixScoreSchema = new mongoose.Schema({
+  username:  { type: String, required: true },
+  avatar:    { type: String, default: "🎮" },
+  title:     { type: String, default: "" },
+  score:     { type: Number, required: true },
+  mode:      { type: String, default: "Classic" },
+  createdAt: { type: Date,   default: Date.now }
+});
+const TetrixScore = mongoose.model("TetrixScore", tetrixScoreSchema);
+
 // ====== MODELS ======
 const User = mongoose.model("User", userSchema);
 const Post = mongoose.model("Post", postSchema);
@@ -2221,6 +2232,79 @@ app.get("/api/chess/rank/:username", async (req, res) => {
     res.json({ ok: true, rank: index + 1 });
   } catch (err) {
     console.error("rank error", err);
+    res.status(500).json({ ok: false, error: "server error" });
+  }
+});
+
+// ====== TETRIX LEADERBOARD ======
+
+// GET /api/tetrix/leaderboard?mode=Classic&limit=20
+app.get("/api/tetrix/leaderboard", async (req, res) => {
+  try {
+    const limit  = Math.min(parseInt(req.query.limit) || 20, 100);
+    const filter = req.query.mode ? { mode: req.query.mode } : {};
+    // One row per username — keep their best score for this mode
+    const scores = await TetrixScore.aggregate([
+      { $match: filter },
+      { $sort: { score: -1 } },
+      { $group: {
+          _id: "$username",
+          username:  { $first: "$username" },
+          avatar:    { $first: "$avatar" },
+          title:     { $first: "$title" },
+          score:     { $first: "$score" },
+          mode:      { $first: "$mode" },
+          createdAt: { $first: "$createdAt" }
+      }},
+      { $sort: { score: -1 } },
+      { $limit: limit }
+    ]);
+    res.json({ ok: true, scores });
+  } catch (err) {
+    console.error("tetrix leaderboard error", err);
+    res.status(500).json({ ok: false, error: "server error" });
+  }
+});
+
+// POST /api/tetrix/score  — body: { username, avatar, title, score, mode }
+app.post("/api/tetrix/score", async (req, res) => {
+  try {
+    let { username, avatar, title, score, mode } = req.body;
+    if (!username || score === undefined)
+      return res.status(400).json({ ok: false, error: "username and score required" });
+
+    username = String(username).trim().slice(0, 16) || "Player";
+    score    = Math.max(0, Math.floor(Number(score)));
+    mode     = String(mode || "Classic").slice(0, 32);
+    avatar   = String(avatar || "🎮").slice(0, 4);
+    title    = String(title  || "").slice(0, 32);
+
+    // Only save if it's a new personal best for this mode
+    const existing = await TetrixScore.findOne({ username, mode }).sort({ score: -1 });
+    if (existing && existing.score >= score)
+      return res.json({ ok: true, saved: false, message: "Not a new personal best" });
+
+    await TetrixScore.create({ username, avatar, title, score, mode });
+    const rank = await TetrixScore.countDocuments({ mode, score: { $gt: score } });
+    res.json({ ok: true, saved: true, rank: rank + 1 });
+  } catch (err) {
+    console.error("tetrix score error", err);
+    res.status(500).json({ ok: false, error: "server error" });
+  }
+});
+
+// GET /api/tetrix/rank/:username?mode=Classic
+app.get("/api/tetrix/rank/:username", async (req, res) => {
+  try {
+    const username = String(req.params.username || "").trim().slice(0, 16);
+    const mode     = req.query.mode || "Classic";
+    if (!username) return res.status(400).json({ ok: false, error: "username required" });
+    const best = await TetrixScore.findOne({ username, mode }).sort({ score: -1 });
+    if (!best) return res.json({ ok: true, rank: null, score: 0 });
+    const rank = await TetrixScore.countDocuments({ mode, score: { $gt: best.score } });
+    res.json({ ok: true, rank: rank + 1, score: best.score });
+  } catch (err) {
+    console.error("tetrix rank error", err);
     res.status(500).json({ ok: false, error: "server error" });
   }
 });
