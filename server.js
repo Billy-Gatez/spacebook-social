@@ -2427,17 +2427,6 @@ app.get("/logout", (req, res) => {
 });
 
 
-// TETRIX LEADERBOARD SCHEMA
-const tetrixScoreSchema = new mongoose.Schema({
-  username: String,
-  avatar: String,
-  title: String,
-  score: Number,
-  mode: String,
-  createdAt: { type: Date, default: Date.now }
-});
-const TetrixScore = mongoose.model('TetrixScore', tetrixScoreSchema);
-
 // TETRIX SCORE SUBMIT
 app.post('/api/tetrix/score', async (req, res) => {
   try {
