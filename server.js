@@ -23,15 +23,17 @@ app.set("trust proxy", 1);
 const cors = require("cors");
 app.use(cors({
   origin: [
-    "http://localhost:3000",
-    "https://spacebook.world",
-    "https://spacebook.netlify.app",
-    "https://spacebook-app.onrender.com",
-   'https://billy-gatez.itch.io',
+    'http://localhost:3000',
+    'https://spacebook.world',
+    'https://spacebook.netlify.app',
+    'https://spacebook-app.onrender.com',
+    'https://billy-gatez.itch.io',
+    'https://html-classic.itch.zone',
+    'https://itch.zone',
     null
   ],
   credentials: true
-}));
+}))
 
 // ====== CONFIG ======
 const MONGO_URI = "mongodb+srv://jercahill:Spacebook2026@spacebook.mpqjbcv.mongodb.net/spacebook?retryWrites=true&w=majority";
@@ -2425,7 +2427,6 @@ app.get("/chess", requireLogin, (req, res) => {
 app.get("/logout", (req, res) => {
   req.session.destroy(() => res.redirect("/"));
 });
-
 
 // TETRIX SCORE SUBMIT
 app.post('/api/tetrix/score', async (req, res) => {
