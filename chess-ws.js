@@ -81,6 +81,23 @@ function attachChessServer(server) {
         }));
       }
 
+
+if (data.type === 'tetrix_chat') {
+  const matchId = data.matchId;
+  // Find the opponent in this match and forward the message
+  for (const [id, client] of clients) {
+    if (id !== ws._tetrixId && 
+        client._tetrixMatchId === matchId && 
+        client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify({
+        type: 'tetrix_chat',
+        from: data.from,
+        text: data.text
+      }));
+    }
+  }
+}
+
       // Relay top-out (loss) to opponent
       if (data.type === "tetrix_topout" && ws._opponent && ws._matchId === data.matchId) {
         ws._opponent.send(JSON.stringify({ type: "tetrix_topout" }));
