@@ -1,6 +1,6 @@
 // routes/ageCheck.js
 const express = require("express");
-const { connectDB } = require("../db");
+const { connectDB } = require("./db");
 
 const router = express.Router();
 
