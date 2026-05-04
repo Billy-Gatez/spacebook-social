@@ -16,7 +16,7 @@ function simpleHash(str) {
   return h;
 }
 
-const TETRIX_SALT = 'tetrix-salt-v1-2026';
+const TETRIX_SALT = 'TETRIXv1-2026-frontend-salt';
 
 // ====== CLOUDINARY ======
 const cloudinary = require("cloudinary").v2;
