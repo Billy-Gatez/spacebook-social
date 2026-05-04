@@ -7,6 +7,7 @@ const mongoose = require("mongoose");
 const multer = require("multer");
 const attachChessServer = require("./chess-ws");
 const attachStories = require("./modules/stories");
+const cors = require("cors");
 
 function simpleHash(str) {
   let h = 0;
@@ -32,15 +33,14 @@ const app = express();
 // 1) JSON body parser for age-check POST
 app.use(express.json());
 
-// 2) Your existing static files (KEEP your line)
-app.use(express.static(path.join(__dirname, "public")));
+
 
 // 3) Mount the age-check API
-app.use(ageCheckRouter);
+
 // REQUIRED FOR RENDER TO SEND COOKIES
 app.set("trust proxy", 1);
 
-const cors = require("cors");
+
 app.use(cors({
   origin: [
     'http://localhost:3000',
@@ -172,6 +172,8 @@ app.use(session({
 }));
 
 app.use(express.static(path.join(__dirname, "public")));
+
+app.use(ageCheckRouter);
 
 // ====== AUTH GUARD ======
 function requireLogin(req, res, next) {
