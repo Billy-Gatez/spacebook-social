@@ -2269,10 +2269,10 @@ app.get("/api/tetrix/leaderboard", async (req, res) => {
   }
 });
 
-// POST /api/tetrix/score  — body: { username, avatar, title, score, mode }
+// POST /api/tetrix/score  — body: { username, avatar, title, score, mode, sig }
 app.post("/api/tetrix/score", async (req, res) => {
   try {
-    let { username, avatar, title, score, mode } = req.body;
+    let { username, avatar, title, score, mode, sig } = req.body;
     if (!username || score === undefined)
       return res.status(400).json({ ok: false, error: "username and score required" });
 
@@ -2282,7 +2282,22 @@ app.post("/api/tetrix/score", async (req, res) => {
     avatar   = String(avatar || "🎮").slice(0, 4);
     title    = String(title  || "").slice(0, 32);
 
-    // Only save if it's a new personal best for this mode
+    // 1) Reject obviously bad scores
+    if (!Number.isFinite(score) || score <= 0) {
+      return res.status(400).json({ ok: false, error: "invalid score" });
+    }
+    if (score > 99999999) score = 99999999;
+
+    // 2) Verify signature
+    if (sig === undefined) {
+      return res.status(400).json({ ok: false, error: "missing signature" });
+    }
+    const expected = simpleHash(`${username}:${score}:${mode}:${TETRIX_SALT}`);
+    if (Number(sig) !== expected) {
+      return res.status(400).json({ ok: false, error: "invalid signature" });
+    }
+
+    // 3) Only save if it's a new personal best for this mode
     const existing = await TetrixScore.findOne({ username, mode }).sort({ score: -1 });
     if (existing && existing.score >= score)
       return res.json({ ok: true, saved: false, message: "Not a new personal best" });
@@ -2292,22 +2307,6 @@ app.post("/api/tetrix/score", async (req, res) => {
     res.json({ ok: true, saved: true, rank: rank + 1 });
   } catch (err) {
     console.error("tetrix score error", err);
-    res.status(500).json({ ok: false, error: "server error" });
-  }
-});
-
-// GET /api/tetrix/rank/:username?mode=Classic
-app.get("/api/tetrix/rank/:username", async (req, res) => {
-  try {
-    const username = String(req.params.username || "").trim().slice(0, 16);
-    const mode     = req.query.mode || "Classic";
-    if (!username) return res.status(400).json({ ok: false, error: "username required" });
-    const best = await TetrixScore.findOne({ username, mode }).sort({ score: -1 });
-    if (!best) return res.json({ ok: true, rank: null, score: 0 });
-    const rank = await TetrixScore.countDocuments({ mode, score: { $gt: best.score } });
-    res.json({ ok: true, rank: rank + 1, score: best.score });
-  } catch (err) {
-    console.error("tetrix rank error", err);
     res.status(500).json({ ok: false, error: "server error" });
   }
 });
