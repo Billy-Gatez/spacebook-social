@@ -16,7 +16,7 @@ function simpleHash(str) {
   return h;
 }
 
-const TETRIX_CLIENT_SALT = 'tetrix-salt-v1-2026';
+const TETRIX_SALT = 'tetrix-salt-v1-2026';
 
 // ====== CLOUDINARY ======
 const cloudinary = require("cloudinary").v2;
@@ -2279,7 +2279,7 @@ app.post("/api/tetrix/score", async (req, res) => {
       return res.status(400).json({ ok: false, error: "missing signature" });
     }
 
-    const expected = simpleHash(`${username}:${score}:${mode}:${TETRIX_CLIENT_SALT}`);
+    const expected = simpleHash(`${username}:${score}:${mode}:${TETRIX_SALT}`);
     if (Number(sig) !== expected) {
       return res.status(400).json({ ok: false, error: "invalid signature" });
     }
