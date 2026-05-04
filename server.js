@@ -1,5 +1,5 @@
 const express = require("express");
-const ageCheckRouter = require("./routes/ageCheck");
+const ageCheckRouter = require("../routes/ageCheck");
 const session = require("express-session");
 const bodyParser = require("body-parser");
 const path = require("path");
