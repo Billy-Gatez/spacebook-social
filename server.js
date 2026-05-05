@@ -160,16 +160,18 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 const isProduction = process.env.NODE_ENV === "production";
+const MongoStore = require('connect-mongo');
+
 app.use(session({
-  secret: "spacebook-secret",
+  secret: 'spacebook-secret',
   resave: false,
   saveUninitialized: false,
+  store: MongoStore.create({ mongoUrl: MONGOURI }), // ← ADD THIS LINE
   cookie: {
-    sameSite: isProduction ? "none" : "lax",
-    secure: isProduction ? true : false
+    sameSite: isProduction ? 'none' : 'lax',
+    secure:   isProduction ? true   : false
   }
 }));
-
 app.use(express.static(path.join(__dirname, "public")));
 
 app.use(ageCheckRouter);
