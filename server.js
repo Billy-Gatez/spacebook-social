@@ -8,7 +8,7 @@ const multer = require("multer");
 const attachChessServer = require("./chess-ws");
 const attachStories = require("./modules/stories");
 const cors = require("cors");
-
+const rateLimit = require('express-rate-limit');
 const crypto = require("crypto");
 const TETRIX_SECRET = process.env.TETRIX_SECRET || 'fallback-change-in-render';
 function makeTetrixSig(username, score, mode) {
@@ -2471,6 +2471,15 @@ app.get('/api/tetrix-session', async (req, res) => {
     res.json({ ok: false });
   }
 });
+// ── TETRIX RATE LIMIT: 1 score / minute ──────────────────────
+const tetrixScoreLimiter = rateLimit({
+  windowMs: 60 * 1000,                 // 1 minute
+  max: 1,                              // max 1 score per IP per window
+  message: { ok: false, error: 'Too many score submissions. Try again in a minute.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 
 // TETRIX SCORE SUBMIT
 // ── TETRIX TOKEN (one-time submit token) ──────────────────────
@@ -2481,7 +2490,7 @@ app.get('/api/tetrix/token', requireLogin, (req, res) => {
   res.json({ token });
 });
 
-app.post('/api/tetrix/score', requireLogin, async (req, res) => {
+app.post('/api/tetrix/score', requireLogin, tetrixScoreLimiter, async (req, res) => {
   try {
     let { username, avatar, title, score, mode, token } = req.body;
 
@@ -2504,10 +2513,10 @@ app.post('/api/tetrix/score', requireLogin, async (req, res) => {
     avatar   = String(avatar || '🎮').slice(0, 4);
     title    = String(title  || '').slice(0, 32);
 
-    if (!username)                  return res.status(400).json({ ok: false, error: 'username required' });
-    if (!Number.isFinite(score))    return res.status(400).json({ ok: false, error: 'invalid score' });
-    if (score <= 0)                 return res.json({ ok: true, saved: false });
-    if (score > 99_999_999)         score = 99_999_999;
+    if (!username)               return res.status(400).json({ ok: false, error: 'username required' });
+    if (!Number.isFinite(score)) return res.status(400).json({ ok: false, error: 'invalid score' });
+    if (score <= 0)              return res.json({ ok: true, saved: false });
+    if (score > 99_999_999)      score = 99_999_999;
 
     await TetrixScore.create({ username, avatar, title, score, mode });
     const rank = await TetrixScore.countDocuments({ mode, score: { $gt: score } });
@@ -2516,9 +2525,7 @@ app.post('/api/tetrix/score', requireLogin, async (req, res) => {
     console.error('tetrix score error', err);
     res.status(500).json({ ok: false, error: 'server error' });
   }
-});
-
-// TETRIX LEADERBOARD FETCH
+});// TETRIX LEADERBOARD FETCH
 app.get('/api/tetrix/leaderboard', async (req, res) => {
   try {
     const mode = req.query.mode || 'classic';
