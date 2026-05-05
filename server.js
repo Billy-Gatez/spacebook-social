@@ -162,7 +162,7 @@ app.use(bodyParser.json());
 const isProduction = process.env.NODE_ENV === "production";
 const MongoStore = require('connect-mongo');
 
-mongoose.connect(MONGOURI)
+
 
 app.use(session({
   secret: 'spacebook-secret',
