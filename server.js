@@ -2270,52 +2270,38 @@ app.get("/api/chess/rank/:username", async (req, res) => {
   }
 });
 
-// ====== TETRIX LEADERBOARD ======
-
-// POST /api/tetrix/score
-// body: { username, avatar, title, score, mode, sig }
-app.post("/api/tetrix/score", async (req, res) => {
+app.post('/api/tetrix/score', requireLogin, async (req, res) => {
   try {
-    let { username, avatar, title, score, mode, sig } = req.body;
+    let { username, avatar, title, score, mode, token } = req.body;
 
-    if (!username || score === undefined) {
-      return res.status(400).json({ ok: false, error: "username and score required" });
+    if (
+      !token ||
+      token !== req.session.tetrixToken ||
+      !req.session.tetrixTokenExp ||
+      Date.now() > req.session.tetrixTokenExp
+    ) {
+      return res.status(403).json({ ok: false, error: 'Invalid or expired token' });
     }
+    req.session.tetrixToken = null;
+    req.session.tetrixTokenExp = null;
 
-    // Sanitize in the SAME way as the frontend
-    username = String(username).trim().slice(0, 16) || "Player";
-    score    = Math.max(0, Math.floor(Number(score)));
-    if (!Number.isFinite(score) || score <= 0) {
-      return res.status(400).json({ ok: false, error: "invalid score" });
-    }
-    if (score > 99999999) score = 99999999;
+    username = String(username || '').trim().slice(0, 16);
+    score    = Math.floor(Number(score));
+    mode     = String(mode   || 'Unknown').slice(0, 32);
+    avatar   = String(avatar || '🎮').slice(0, 4);
+    title    = String(title  || '').slice(0, 32);
 
-    mode   = String(mode || "Unknown").slice(0, 32);
-    avatar = String(avatar || "🎮").slice(0, 4);
-    title  = String(title  || "").slice(0, 32);
-
-    // Signature required
-    if (sig === undefined) {
-      return res.status(400).json({ ok: false, error: "missing signature" });
-    }
-
-    const expected = simpleHash(`${username}:${score}:${mode}:${TETRIX_SALT}`);
-    if (Number(sig) !== expected) {
-      return res.status(400).json({ ok: false, error: "invalid signature" });
-    }
-
-    // Only save if it's a new personal best for this mode
-    const existing = await TetrixScore.findOne({ username, mode }).sort({ score: -1 });
-    if (existing && existing.score >= score) {
-      return res.json({ ok: true, saved: false, message: "Not a new personal best" });
-    }
+    if (!username)               return res.status(400).json({ ok: false, error: 'username required' });
+    if (!Number.isFinite(score)) return res.status(400).json({ ok: false, error: 'invalid score' });
+    if (score <= 0)              return res.json({ ok: true, saved: false });
+    if (score > 99_999_999)      score = 99_999_999;
 
     await TetrixScore.create({ username, avatar, title, score, mode });
     const rank = await TetrixScore.countDocuments({ mode, score: { $gt: score } });
     res.json({ ok: true, saved: true, rank: rank + 1 });
   } catch (err) {
-    console.error("tetrix score error", err);
-    res.status(500).json({ ok: false, error: "server error" });
+    console.error('tetrix score error', err);
+    res.status(500).json({ ok: false, error: 'server error' });
   }
 });
 
