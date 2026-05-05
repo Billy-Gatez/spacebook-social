@@ -9,15 +9,14 @@ const attachChessServer = require("./chess-ws");
 const attachStories = require("./modules/stories");
 const cors = require("cors");
 
-function simpleHash(str) {
-  let h = 0;
-  for (let i = 0; i < str.length; i++) {
-    h = ((h << 5) - h) + str.charCodeAt(i);
-    h |= 0;
-  }
-  return h;
+const crypto = require("crypto");
+const TETRIX_SECRET = process.env.TETRIX_SECRET || 'fallback-change-in-render';
+function makeTetrixSig(username, score, mode) {
+  return crypto
+    .createHmac("sha256", TETRIX_SECRET)
+    .update(`${username}:${score}:${mode}`)
+    .digest("hex");
 }
-
 const TETRIX_SALT = 'TETRIXv1-2026-frontend-salt';
 
 // ====== CLOUDINARY ======
@@ -2452,17 +2451,76 @@ app.get("/logout", (req, res) => {
   req.session.destroy(() => res.redirect("/"));
 });
 
-// TETRIX SCORE SUBMIT
-app.post('/api/tetrix/score', async (req, res) => {
+
+// ── TETRIX cross-origin JSON login ────────────────────────────
+app.post('/api/tetrix-login', async (req, res) => {
   try {
-    const { username, avatar, title, score, mode } = req.body;
-    if (!username || !score) return res.status(400).json({ ok: false });
+    const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ ok: false, error: 'Missing fields' });
+    const user = await User.findOne({ email, password });
+    if (!user) return res.status(401).json({ ok: false, error: 'Invalid credentials' });
+    req.session.userId = user._id;
+    res.json({ ok: true, username: user.name });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: 'Server error' });
+  }
+});
+
+// ── TETRIX session check ───────────────────────────────────────
+app.get('/api/tetrix-session', async (req, res) => {
+  if (!req.session.userId) return res.json({ ok: false });
+  try {
+    const user = await User.findById(req.session.userId);
+    if (!user) return res.json({ ok: false });
+    res.json({ ok: true, username: user.name });
+  } catch (err) {
+    res.json({ ok: false });
+  }
+});
+
+// TETRIX SCORE SUBMIT
+// ── TETRIX TOKEN (one-time submit token) ──────────────────────
+app.get('/api/tetrix/token', requireLogin, (req, res) => {
+  const token = crypto.randomBytes(24).toString('hex');
+  req.session.tetrixToken = token;
+  req.session.tetrixTokenExp = Date.now() + 10 * 60 * 1000; // 10 min
+  res.json({ token });
+});
+
+app.post('/api/tetrix/score', requireLogin, async (req, res) => {
+  try {
+    let { username, avatar, title, score, mode, token } = req.body;
+
+    // Validate one-time token
+    if (
+      !token ||
+      token !== req.session.tetrixToken ||
+      !req.session.tetrixTokenExp ||
+      Date.now() > req.session.tetrixTokenExp
+    ) {
+      return res.status(403).json({ ok: false, error: 'Invalid or expired token' });
+    }
+    req.session.tetrixToken = null;
+    req.session.tetrixTokenExp = null;
+
+    // Sanitize inputs
+    username = String(username || '').trim().slice(0, 16);
+    score    = Math.floor(Number(score));
+    mode     = String(mode   || 'Unknown').slice(0, 32);
+    avatar   = String(avatar || '🎮').slice(0, 4);
+    title    = String(title  || '').slice(0, 32);
+
+    if (!username)                  return res.status(400).json({ ok: false, error: 'username required' });
+    if (!Number.isFinite(score))    return res.status(400).json({ ok: false, error: 'invalid score' });
+    if (score <= 0)                 return res.json({ ok: true, saved: false });
+    if (score > 99_999_999)         score = 99_999_999;
+
     await TetrixScore.create({ username, avatar, title, score, mode });
-    const all = await TetrixScore.find({ mode }).sort({ score: -1 }).lean();
-    const rank = all.findIndex(s => s.username === username && s.score === score) + 1;
-    res.json({ ok: true, rank });
-  } catch (e) {
-    res.status(500).json({ ok: false, error: e.message });
+    const rank = await TetrixScore.countDocuments({ mode, score: { $gt: score } });
+    res.json({ ok: true, saved: true, rank: rank + 1 });
+  } catch (err) {
+    console.error('tetrix score error', err);
+    res.status(500).json({ ok: false, error: 'server error' });
   }
 });
 
