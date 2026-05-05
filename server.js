@@ -162,23 +162,29 @@ app.use(bodyParser.json());
 const isProduction = process.env.NODE_ENV === "production";
 const MongoStore = require('connect-mongo');
 
+mongoose.connect(MONGOURI)
+
 app.use(session({
   secret: 'spacebook-secret',
   resave: false,
   saveUninitialized: false,
-  store: MongoStore.create({ mongoUrl: MONGOURI }), // ← ADD THIS LINE
+  store: MongoStore.create({ mongoUrl: MONGOURI }),
   cookie: {
     sameSite: isProduction ? 'none' : 'lax',
     secure:   isProduction ? true   : false
   }
 }));
 app.use(express.static(path.join(__dirname, "public")));
-
 app.use(ageCheckRouter);
 
 // ====== AUTH GUARD ======
 function requireLogin(req, res, next) {
-  if (!req.session.userId) return res.redirect("/");
+  if (!req.session.userId) {
+    if (req.path.startsWith('/api/')) {
+      return res.status(401).json({ ok: false, error: 'Not logged in' });
+    }
+    return res.redirect('/');
+  }
   next();
 }
 
