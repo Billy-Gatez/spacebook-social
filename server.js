@@ -160,7 +160,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 const isProduction = process.env.NODE_ENV === "production";
-const MongoStore = require('connect-mongo');
+const MongoStore = require('connect-mongo').default;
 
 
 
