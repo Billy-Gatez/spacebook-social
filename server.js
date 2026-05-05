@@ -168,7 +168,7 @@ app.use(session({
   secret: 'spacebook-secret',
   resave: false,
   saveUninitialized: false,
-  store: MongoStore.create({ mongoUrl: MONGOURI }),
+  store: MongoStore.create({ mongoUrl: MONGO_URI }),
   cookie: {
     sameSite: isProduction ? 'none' : 'lax',
     secure:   isProduction ? true   : false
