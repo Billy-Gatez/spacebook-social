@@ -2270,6 +2270,7 @@ app.get("/api/chess/rank/:username", async (req, res) => {
   }
 });
 
+
 // GET /api/tetrix/rank/:username?mode=Whatever
 app.get("/api/tetrix/rank/:username", async (req, res) => {
   try {
@@ -2436,16 +2437,18 @@ app.get('/api/tetrix-session', async (req, res) => {
     res.json({ ok: false });
   }
 });
-// TETRIX RATE LIMIT 1 score per minute
+// ── TETRIX RATE LIMIT: 1 score / minute ──────────────────────
 const tetrixScoreLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 1,
+  windowMs: 60 * 1000,                 // 1 minute
+  max: 1,                              // max 1 score per IP per window
   message: { ok: false, error: 'Too many score submissions. Try again in a minute.' },
   standardHeaders: true,
   legacyHeaders: false,
 });
 
-// TETRIX TOKEN (one-time submit token)
+
+// TETRIX SCORE SUBMIT
+// ── TETRIX TOKEN (one-time submit token) ──────────────────────
 app.get('/api/tetrix/token', requireLogin, (req, res) => {
   const token = crypto.randomBytes(24).toString('hex');
   req.session.tetrixToken = token;
@@ -2453,11 +2456,11 @@ app.get('/api/tetrix/token', requireLogin, (req, res) => {
   res.json({ token });
 });
 
-// TETRIX SCORE SUBMIT
 app.post('/api/tetrix/score', requireLogin, tetrixScoreLimiter, async (req, res) => {
   try {
     let { username, avatar, title, score, mode, token } = req.body;
 
+    // Validate one-time token
     if (
       !token ||
       token !== req.session.tetrixToken ||
@@ -2469,6 +2472,7 @@ app.post('/api/tetrix/score', requireLogin, tetrixScoreLimiter, async (req, res)
     req.session.tetrixToken = null;
     req.session.tetrixTokenExp = null;
 
+    // Sanitize inputs
     username = String(username || '').trim().slice(0, 16);
     score    = Math.floor(Number(score));
     mode     = String(mode   || 'Unknown').slice(0, 32);
@@ -2486,6 +2490,15 @@ app.post('/api/tetrix/score', requireLogin, tetrixScoreLimiter, async (req, res)
   } catch (err) {
     console.error('tetrix score error', err);
     res.status(500).json({ ok: false, error: 'server error' });
+  }
+});// TETRIX LEADERBOARD FETCH
+app.get('/api/tetrix/leaderboard', async (req, res) => {
+  try {
+    const mode = req.query.mode || 'classic';
+    const scores = await TetrixScore.find({ mode }).sort({ score: -1 }).limit(50).lean();
+    res.json({ ok: true, scores });
+  } catch (e) {
+    res.status(500).json({ ok: false });
   }
 });
 
