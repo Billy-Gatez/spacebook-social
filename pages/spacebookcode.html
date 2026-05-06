@@ -999,8 +999,25 @@ select{background:#020202!important;color:var(--text)!important;border:1px solid
         method:"POST", headers:{"Content-Type":"application/json"},
         body:JSON.stringify({files:filesToSend})
       });
-      const data=await res.json();
-      if(data.error){ conData.errors=data.error; setConTab("errors"); }
+    const data=await res.json();
+
+const compileOk = data.compile?.success;
+const compileErr = data.compile?.stderr || "";
+const runOut = data.run?.stdout || "";
+const runErr = data.run?.stderr || "";
+const exitCode = data.run?.exitCode ?? data.compile?.exitCode;
+
+if(!compileOk){
+  conData.errors = compileErr || "compile failed with no output";
+  conData.output = "";
+  conData.build = `[build] failed (exit ${data.compile?.exitCode})\n${compileErr}`;
+  setConTab("errors");
+} else {
+  conData.output = runOut || "(no output)";
+  conData.errors = runErr || "";
+  conData.build = `[build] success\n[run] exit code ${exitCode}\n${compileErr ? "warnings:\n"+compileErr : "no warnings"}`;
+  setConTab("output");
+}
       else { conData.output=data.output||""; setConTab("output"); }
     } catch(err){ conData.errors="Request failed:\n"+err.message; setConTab("errors"); }
     finally { if(autogen) delete project.files[autogen]; }
