@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Mini VS – C++ Solution IDE</title>
+  <style>
+    body {
+      margin: 0;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      font-family: Consolas, monospace;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    #topbar {
+      background: #3c3c3c;
+      padding: 8px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    #runBtn {
+      background: #0e639c;
+      border: none;
+      padding: 6px 14px;
+      color: white;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    #runBtn:hover {
+      background: #1177bb;
+    }
+    #layout {
+      flex: 1;
+      display: flex;
+      min-height: 0;
+    }
+    #sidebar {
+      width: 220px;
+      border-right: 1px solid #333;
+      padding: 8px;
+      font-size: 13px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+    }
+    #files {
+      margin-top: 8px;
+      flex: 1;
+      overflow-y: auto;
+    }
+    .file {
+      padding: 4px 6px;
+      cursor: pointer;
+      border-radius: 3px;
+    }
+    .file.active {
+      background: #094771;
+    }
+    #addFileBtn {
+      margin-top: 8px;
+      font-size: 12px;
+      padding: 4px 6px;
+      background: #3c3c3c;
+      border: 1px solid #555;
+      color: #ddd;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    #editor {
+      flex: 1;
+      padding: 8px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+    }
+    #code {
+      width: 100%;
+      flex: 1;
+      background: #1e1e1e;
+      border: 1px solid #333;
+      color: #d4d4d4;
+      padding: 8px;
+      font-size: 13px;
+      resize: none;
+      outline: none;
+      box-sizing: border-box;
+    }
+    #console {
+      height: 30vh;
+      background: #1b1b1b;
+      border-top: 2px solid #007acc;
+      padding: 8px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      font-size: 13px;
+      box-sizing: border-box;
+    }
+  </style>
+</head>
+<body>
+
+<div id="topbar">
+  <div>Mini Visual Studio – C++ Solution</div>
+  <button id="runBtn">Build &amp; Run ▶</button>
+</div>
+
+<div id="layout">
+  <div id="sidebar">
+    <div><strong>Solution 'TestSolution'</strong></div>
+    <div>Project 'App'</div>
+    <div id="files"></div>
+    <button id="addFileBtn">+ Add .cpp</button>
+  </div>
+  <div id="editor">
+    <textarea id="code"></textarea>
+  </div>
+</div>
+
+<div id="console"></div>
+
+<script>
+  // In-memory "solution"
+  const files = {
+    "main.cpp": `#include <iostream>
+using namespace std;
+
+int main() {
+    cout << "Hello from Mini VS solution!" << endl;
+    return 0;
+}
+`
+  };
+
+  let activeFile = "main.cpp";
+
+  const filesEl = document.getElementById("files");
+  const codeEl = document.getElementById("code");
+  const consoleEl = document.getElementById("console");
+  const runBtn = document.getElementById("runBtn");
+  const addFileBtn = document.getElementById("addFileBtn");
+
+  function renderFileList() {
+    filesEl.innerHTML = "";
+    Object.keys(files).forEach(name => {
+      const div = document.createElement("div");
+      div.textContent = name;
+      div.className = "file" + (name === activeFile ? " active" : "");
+      div.onclick = () => {
+        saveActiveFile();
+        activeFile = name;
+        renderFileList();
+        codeEl.value = files[activeFile];
+      };
+      filesEl.appendChild(div);
+    });
+  }
+
+  function saveActiveFile() {
+    if (activeFile) {
+      files[activeFile] = codeEl.value;
+    }
+  }
+
+  addFileBtn.onclick = () => {
+    const name = prompt("New .cpp file name:", "file.cpp");
+    if (!name) return;
+    if (!name.endsWith(".cpp")) {
+      alert("File must end with .cpp");
+      return;
+    }
+    if (files[name]) {
+      alert("File already exists");
+      return;
+    }
+    saveActiveFile();
+    files[name] = `#include <iostream>
+using namespace std;
+
+void ${name.replace(".cpp","")}Func() {
+    cout << "Hello from ${name}!" << endl;
+}
+`;
+    activeFile = name;
+    renderFileList();
+    codeEl.value = files[activeFile];
+  };
+
+  async function buildAndRun() {
+    saveActiveFile();
+    consoleEl.textContent = "Building solution...\n";
+
+    try {
+      const res = await fetch("/compile-cpp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ files })
+      });
+
+      if (!res.ok) {
+        consoleEl.textContent += `Server error: ${res.status} ${res.statusText}\n`;
+        return;
+      }
+
+      const data = await res.json();
+      if (data.error) {
+        consoleEl.textContent += "Build failed:\n" + data.error + "\n";
+      } else {
+        consoleEl.textContent += "Build succeeded.\n\nProgram output:\n\n" + (data.output || "");
+      }
+    } catch (e) {
+      consoleEl.textContent += "Request failed:\n" + e.message + "\n";
+    }
+  }
+
+  runBtn.onclick = buildAndRun;
+
+  // init
+  renderFileList();
+  codeEl.value = files[activeFile];
+</script>
+
+</body>
+</html>
