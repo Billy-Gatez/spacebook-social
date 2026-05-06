@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Spacebook IDE — VS-ready Export</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<script>document.documentElement.classList.add("theme-matrix");</script>
+<style>
+:root{--bg:#000;--panel:#0b0b0b;--border:#222;--accent:#00ff66;--text:#e0ffe8;--text-dim:#7fd9a0}
+body{margin:0;height:100%;font-family:Consolas,monospace;background:#000;color:var(--text);display:flex;flex-direction:column}
+#topbar{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border);z-index:30}
+.btn{background:var(--panel);border:1px solid var(--border);padding:6px 10px;border-radius:6px;color:var(--text-dim);cursor:pointer}
+.btn.primary{background:rgba(0,255,102,0.08);border-color:var(--accent);color:var(--text)}
+#main{display:flex;flex:1;gap:10px;padding:10px;min-height:0}
+#sidebar{width:340px;background:linear-gradient(180deg,#050505,#000);border:1px solid var(--border);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:8px}
+#files{flex:1;overflow:auto;padding-right:6px}
+.tree-item{padding:8px 10px;border-radius:8px;color:var(--text-dim);display:flex;align-items:center;gap:8px}
+.tree-item:hover{background:rgba(255,255,255,0.02)}
+#editor{flex:1;display:flex;flex-direction:column}
+#tabs{display:flex;gap:6px;min-height:34px;align-items:center}
+.tab{padding:6px 10px;border-radius:8px 8px 0 0;background:var(--panel);border:1px solid var(--border);border-bottom:none;color:var(--text-dim);cursor:pointer}
+.tab.active{background:#020202;color:var(--text);border-color:var(--accent)}
+#code{flex:1;padding:14px;border-radius:10px;background:#020202;border:1px solid var(--border);color:var(--text);resize:none;outline:none}
+.menu{position:fixed;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:6px 0;min-width:220px;display:none;z-index:60}
+.menu .item{padding:10px 14px;color:var(--text-dim);cursor:pointer}
+.menu .item:hover{background:rgba(0,255,102,0.06);color:var(--text)}
+#consoleWindow{position:fixed;right:18px;bottom:18px;width:760px;height:360px;background:radial-gradient(circle at top,#050505,#000);border:1px solid var(--accent);border-radius:12px;display:none;flex-direction:column;overflow:hidden;z-index:90}
+#consoleContent{flex:1;padding:12px;overflow:auto;white-space:pre-wrap;color:var(--text)}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</head>
+<body>
+
+<!-- Topbar -->
+<div id="topbar">
+  <div style="display:flex;align-items:center;gap:12px">
+    <div style="font-weight:700;color:var(--text-dim)">SPΛCEBOOK IDE</div>
+    <select id="themeSelect" style="background:#020202;color:var(--text);border:1px solid var(--border)">
+      <option value="matrix">Matrix</option>
+      <option value="cyber">Cyber</option>
+      <option value="space">Space</option>
+      <option value="hacker">Hacker</option>
+    </select>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:8px">
+    <input id="importInput" type="file" accept=".zip,.json,.sln" style="display:none" multiple />
+    <button id="openBtn" class="btn">Open Solution</button>
+    <button id="saveBtn" class="btn">Save</button>
+    <button id="exportBtn" class="btn">Export ZIP</button>
+    <button id="exportSlnBtn" class="btn">Export Visual Studio Solution</button>
+    <button id="runBtn" class="btn primary">Build & Run ▶</button>
+  </div>
+</div>
+
+<!-- Main -->
+<div id="main">
+  <div id="sidebar">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div style="font-weight:700;color:var(--accent)">Solution 'TestSolution'</div>
+      <button id="addBtn" class="btn">+ Add</button>
+    </div>
+    <div id="files" aria-label="Solution Explorer"></div>
+    <div style="font-size:12px;color:var(--text-dim);margin-top:6px">Drag files/folders here to add them</div>
+  </div>
+
+  <div id="editor">
+    <div id="tabs"></div>
+    <textarea id="code" spellcheck="false"></textarea>
+  </div>
+</div>
+
+<!-- Menus -->
+<div id="addMenu" class="menu" role="menu">
+  <div class="item" data-action="newCpp">New C++ File (.cpp)</div>
+  <div class="item" data-action="newHeader">New Header File (.h)</div>
+  <div class="item" data-action="newFolder">New Folder</div>
+</div>
+<div id="contextMenu" class="menu" role="menu"></div>
+
+<!-- Console -->
+<div id="consoleWindow">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border);background:linear-gradient(90deg,rgba(0,0,0,0.85),rgba(0,0,0,0.35))">
+    <div>Console</div>
+    <div style="display:flex;gap:8px">
+      <button id="consoleClose" class="btn" style="padding:4px 8px">✕</button>
+    </div>
+  </div>
+  <div id="consoleContent"></div>
+</div>
+
+<script>
+/* Spacebook IDE — Visual Studio export fixed
+   - Exports a ZIP that Visual Studio can open: includes .sln, .vcxproj, .vcxproj.filters, files, README.md
+   - Keeps previous IDE features: rename, drag/drop, import, export, build backend (calls /compile-cpp)
+   - This file is self-contained except JSZip CDN (included above)
+*/
+
+(async function(){
+
+  // ---------- Utilities ----------
+  function uid(){ // GUID for project references
+    function s4(){ return Math.floor((1+Math.random())*0x10000).toString(16).substring(1); }
+    return `${s4()}${s4()}-${s4()}-${s4()}-${s4()}-${s4()}${s4()}${s4()}`.toUpperCase();
+  }
+
+  // ---------- Default project ----------
+  const defaultProject = {
+    name: "TestSolution",
+    folders: { "src": true },
+    files: {
+      "src/main.cpp": `#include <iostream>\nusing namespace std;\n\nint main(){ cout << "Hello from Spacebook IDE!\\n"; return 0; }\n`
+    }
+  };
+
+  // Load or init
+  let project = JSON.parse(localStorage.getItem("spacebook_ide_project") || "null")?.project || JSON.parse(JSON.stringify(defaultProject));
+  let activePath = Object.keys(project.files)[0] || "src/main.cpp";
+  let openFiles = [activePath];
+
+  // Elements
+  const filesEl = document.getElementById("files");
+  const codeEl = document.getElementById("code");
+  const tabsEl = document.getElementById("tabs");
+  const addBtn = document.getElementById("addBtn");
+  const addMenu = document.getElementById("addMenu");
+  const contextMenu = document.getElementById("contextMenu");
+  const saveBtn = document.getElementById("saveBtn");
+  const exportBtn = document.getElementById("exportBtn");
+  const exportSlnBtn = document.getElementById("exportSlnBtn");
+  const runBtn = document.getElementById("runBtn");
+  const importInput = document.getElementById("importInput");
+  const openBtn = document.getElementById("openBtn");
+  const consoleWindow = document.getElementById("consoleWindow");
+  const consoleContent = document.getElementById("consoleContent");
+  const consoleClose = document.getElementById("consoleClose");
+
+  // ---------- Tree & UI helpers ----------
+  function ensureFolderPath(path){
+    if(!path) return;
+    const parts = path.split("/");
+    let cur = "";
+    for(let i=0;i<parts.length;i++){
+      cur = cur ? cur + "/" + parts[i] : parts[i];
+      project.folders[cur] = true;
+    }
+  }
+  function ensureFolderForFile(filePath){
+    if(!filePath.includes("/")) return;
+    const folder = filePath.substring(0, filePath.lastIndexOf("/"));
+    ensureFolderPath(folder);
+  }
+
+  function buildTree(files, folders){
+    const root = {};
+    Object.keys(folders).forEach(path=>{
+      const parts = path.split("/");
+      let node = root;
+      for(const p of parts){ if(!node[p]) node[p] = {}; node = node[p]; }
+    });
+    Object.keys(files).forEach(path=>{
+      const parts = path.split("/");
+      let node = root;
+      for(let i=0;i<parts.length;i++){
+        const p = parts[i];
+        const isFile = i === parts.length - 1;
+        if(!node[p]) node[p] = isFile ? null : {};
+        if(!isFile) node = node[p];
+      }
+    });
+    return root;
+  }
+
+  function renderTree(node, parentEl, base=""){
+    parentEl.innerHTML = "";
+    const keys = Object.keys(node).sort();
+    keys.forEach(name=>{
+      const isFile = node[name] === null;
+      const full = base ? base + "/" + name : name;
+      const item = document.createElement("div");
+      item.className = "tree-item " + (isFile ? "tree-file" : "tree-folder");
+      item.dataset.path = full;
+      item.dataset.type = isFile ? "file" : "folder";
+
+      const label = document.createElement("div");
+      label.className = "label";
+      label.textContent = name;
+      label.style.flex = "1";
+      label.title = full;
+
+      label.addEventListener("dblclick", (e)=>{
+        e.stopPropagation();
+        if(isFile) renameFilePrompt(full);
+        else renameFolderPrompt(full);
+      });
+
+      item.appendChild(label);
+      parentEl.appendChild(item);
+
+      if(isFile){
+        if(full === activePath) item.classList.add("active");
+        item.addEventListener("click", ()=> openFile(full));
+      } else {
+        const children = document.createElement("div");
+        children.className = "tree-children";
+        item.appendChild(children);
+        renderTree(node[name], children, full);
+        item.classList.add("open");
+        children.style.display = "block";
+        item.addEventListener("click", (e)=>{
+          if(e.target !== label) return;
+          item.classList.toggle("open");
+          children.style.display = children.style.display === "none" ? "block" : "none";
+        });
+      }
+
+      item.addEventListener("contextmenu", (e)=>{
+        e.preventDefault();
+        showContextMenu(e.clientX, e.clientY, { type: isFile ? "file" : "folder", path: full });
+      });
+    });
+  }
+
+  function renderFileTree(){ const tree = buildTree(project.files, project.folders); renderTree(tree, filesEl); }
+
+  function renderTabs(){
+    tabsEl.innerHTML = "";
+    openFiles.forEach(path=>{
+      const tab = document.createElement("div");
+      tab.className = "tab" + (path === activePath ? " active" : "");
+      tab.dataset.path = path;
+      tab.textContent = path.split("/").pop();
+      tab.title = path;
+
+      const close = document.createElement("span");
+      close.className = "close";
+      close.textContent = "×";
+      close.style.marginLeft = "8px";
+      close.addEventListener("click", (e)=>{
+        e.stopPropagation();
+        closeTab(path);
+      });
+
+      tab.appendChild(close);
+      tab.addEventListener("click", ()=> openFile(path));
+      tabsEl.appendChild(tab);
+    });
+  }
+
+  function openFile(path, add=true){
+    saveActiveFile();
+    activePath = path;
+    if(add && !openFiles.includes(path)) openFiles.push(path);
+    renderTabs(); renderFileTree();
+    codeEl.value = project.files[activePath] || "";
+    codeEl.focus();
+  }
+
+  function closeTab(path){
+    const i = openFiles.indexOf(path);
+    if(i === -1) return;
+    openFiles.splice(i,1);
+    if(activePath === path){
+      activePath = openFiles[openFiles.length-1] || Object.keys(project.files)[0] || "";
+      codeEl.value = project.files[activePath] || "";
+    }
+    renderTabs(); renderFileTree();
+  }
+
+  function saveActiveFile(){
+    if(activePath && project.files[activePath] !== undefined) project.files[activePath] = codeEl.value;
+  }
+
+  // ---------- Add menu ----------
+  addBtn.addEventListener("click", (e)=>{ positionMenu(addMenu, addBtn); addMenu.style.display = "block"; });
+  document.addEventListener("click", (e)=>{ if(!addMenu.contains(e.target) && e.target !== addBtn) addMenu.style.display = "none"; if(!contextMenu.contains(e.target)) contextMenu.style.display = "none"; });
+
+  function positionMenu(menu, anchor){
+    const rect = anchor.getBoundingClientRect();
+    const menuW = 240, menuH = 220;
+    let left = rect.left, top = rect.bottom + 6;
+    if(left + menuW > window.innerWidth - 8) left = window.innerWidth - menuW - 12;
+    if(top + menuH > window.innerHeight - 8) top = rect.top - menuH - 6;
+    menu.style.left = left + "px"; menu.style.top = top + "px";
+  }
+
+  addMenu.addEventListener("click", (e)=>{
+    const item = e.target.closest(".item");
+    if(!item) return;
+    const action = item.dataset.action;
+    addMenu.style.display = "none";
+    if(action === "newCpp"){
+      const name = prompt("New C++ file name:", "src/file.cpp");
+      if(!name) return;
+      if(!name.endsWith(".cpp")) return alert("Must end with .cpp");
+      createCpp(name);
+    } else if(action === "newHeader"){
+      const name = prompt("New header file name:", "src/file.h");
+      if(!name) return;
+      if(!name.endsWith(".h")) return alert("Must end with .h");
+      createHeader(name);
+    } else if(action === "newFolder"){
+      const name = prompt("New folder name:", "src");
+      if(!name) return;
+      ensureFolderPath(name);
+      renderFileTree();
+    }
+  });
+
+  function createCpp(path){
+    ensureFolderForFile(path);
+    const base = path.split("/").pop().replace(".cpp","");
+    project.files[path] = `#include <iostream>\nusing namespace std;\n\nvoid ${base}Func(){ cout << "Hello from ${path}!\\n"; }\n`;
+    openFile(path);
+    renderFileTree();
+  }
+  function createHeader(path){
+    ensureFolderForFile(path);
+    const guard = path.split("/").pop().replace(/\W/g,"_").toUpperCase();
+    project.files[path] = `#ifndef ${guard}\n#define ${guard}\n\n// declarations\n\n#endif\n`;
+    openFile(path);
+    renderFileTree();
+  }
+
+  // ---------- Context menu ----------
+  function showContextMenu(x,y,target){
+    contextMenu.innerHTML = "";
+    const type = target.type, path = target.path;
+    function add(label, fn){
+      const div = document.createElement("div");
+      div.className = "item";
+      div.textContent = label;
+      div.addEventListener("click", ()=>{ contextMenu.style.display = "none"; fn(); });
+      contextMenu.appendChild(div);
+    }
+    if(type === "file"){
+      add("Open", ()=> openFile(path));
+      add("Rename", ()=> renameFilePrompt(path));
+      add("Delete", ()=> deleteFile(path));
+    } else {
+      add("New C++ File", ()=>{ const n = prompt("Name:", path + "/file.cpp"); if(n) createCpp(n); });
+      add("New Header File", ()=>{ const n = prompt("Name:", path + "/file.h"); if(n) createHeader(n); });
+      add("New Folder", ()=>{ const n = prompt("Name:", path + "/subfolder"); if(n){ ensureFolderPath(n); renderFileTree(); }});
+      add("Rename Folder", ()=> renameFolderPrompt(path));
+      add("Delete Folder", ()=> deleteFolder(path));
+    }
+    const menuW = 240, menuH = 240;
+    let left = x, top = y;
+    if(left + menuW > window.innerWidth - 8) left = window.innerWidth - menuW - 12;
+    if(top + menuH > window.innerHeight - 8) top = window.innerHeight - menuH - 12;
+    contextMenu.style.left = left + "px"; contextMenu.style.top = top + "px"; contextMenu.style.display = "block";
+  }
+
+  document.addEventListener("contextmenu", (e)=>{
+    const item = e.target.closest(".tree-item");
+    if(!item) return;
+    e.preventDefault();
+    const type = item.dataset.type, path = item.dataset.path;
+    showContextMenu(e.clientX, e.clientY, { type, path });
+  });
+
+  function renameFilePrompt(oldPath){
+    const newPath = prompt("Rename file:", oldPath);
+    if(!newPath || newPath === oldPath) return;
+    if(project.files[newPath]) return alert("File exists");
+    const content = project.files[oldPath];
+    delete project.files[oldPath];
+    project.files[newPath] = content;
+    ensureFolderForFile(newPath);
+    const idx = openFiles.indexOf(oldPath); if(idx !== -1) openFiles[idx] = newPath;
+    if(activePath === oldPath) activePath = newPath;
+    renderFileTree(); renderTabs(); codeEl.value = project.files[activePath] || "";
+  }
+
+  function deleteFile(path){
+    if(!confirm("Delete file '" + path + "'?")) return;
+    delete project.files[path];
+    const idx = openFiles.indexOf(path); if(idx !== -1) openFiles.splice(idx,1);
+    if(activePath === path){ activePath = openFiles[openFiles.length-1] || Object.keys(project.files)[0] || ""; codeEl.value = project.files[activePath] || ""; }
+    renderFileTree(); renderTabs();
+  }
+
+  function renameFolderPrompt(oldPath){
+    const newPath = prompt("Rename folder:", oldPath);
+    if(!newPath || newPath === oldPath) return;
+    const newFolders = {};
+    Object.keys(project.folders).forEach(f=>{
+      if(f === oldPath || f.startsWith(oldPath + "/")){
+        const suffix = f.substring(oldPath.length);
+        newFolders[newPath + suffix] = true;
+      } else newFolders[f] = true;
+    });
+    project.folders = newFolders;
+    const newFiles = {};
+    Object.keys(project.files).forEach(p=>{
+      if(p.startsWith(oldPath + "/")){
+        const suffix = p.substring(oldPath.length);
+        const np = newPath + suffix;
+        newFiles[np] = project.files[p];
+        const idx = openFiles.indexOf(p); if(idx !== -1) openFiles[idx] = np;
+        if(activePath === p) activePath = np;
+      } else newFiles[p] = project.files[p];
+    });
+    project.files = newFiles;
+    renderFileTree(); renderTabs(); codeEl.value = project.files[activePath] || "";
+  }
+
+  function deleteFolder(path){
+    const hasFiles = Object.keys(project.files).some(p => p === path || p.startsWith(path + "/"));
+    if(hasFiles) return alert("Folder not empty. Move or delete files first.");
+    if(!confirm("Delete folder '" + path + "'?")) return;
+    const newFolders = {};
+    Object.keys(project.folders).forEach(f => { if(f !== path && !f.startsWith(path + "/")) newFolders[f] = true; });
+    project.folders = newFolders;
+    renderFileTree();
+  }
+
+  // ---------- Console ----------
+  function openConsole(){ consoleWindow.style.display = "flex"; }
+  function setConsoleText(text){ consoleContent.textContent = text; openConsole(); }
+  consoleClose.addEventListener("click", ()=> consoleWindow.style.display = "none");
+
+  // ---------- Build & Run (backend) ----------
+  async function buildAndRun(){
+    saveActiveFile();
+    const filesToSend = Object.assign({}, project.files);
+    const cppPaths = Object.keys(filesToSend).filter(p => p.endsWith(".cpp"));
+    let hasMain = false;
+    for(const p of cppPaths) if(/int\s+main\s*\(/.test(filesToSend[p])) { hasMain = true; break; }
+    let autogenName = null;
+    if(!hasMain){
+      autogenName = "__autogen_main.cpp";
+      filesToSend[autogenName] =
+`#include <iostream>
+int main(){
+  std::cout << "No main() found. Autogenerated runner created." << std::endl;
+${Object.keys(filesToSend).map(p => `  std::cout << "${p}" << std::endl;`).join("\n")}
+  return 0;
+}
+`;
+    }
+    const slnPaths = Object.keys(filesToSend).filter(p => p.endsWith(".sln"));
+    const payload = { files: filesToSend, buildSolution: slnPaths.length > 0, solution: slnPaths[0] || null };
+
+    setConsoleText("Building solution...\n");
+    try {
+      const res = await fetch("https://spacebook-app.onrender.com/compile-cpp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if(data.error) setConsoleText("Errors:\n\n" + data.error);
+      else setConsoleText("Output:\n\n" + (data.output || ""));
+    } catch(err){
+      setConsoleText("Request failed:\n" + err.message);
+    } finally {
+      if(autogenName && project.files[autogenName]) delete project.files[autogenName];
+    }
+  }
+  runBtn.addEventListener("click", buildAndRun);
+
+  // ---------- Export ZIP (Visual Studio ready) ----------
+  function generateReadmeWindows(proj){
+    const files = Object.keys(proj.files).sort();
+    const cppFiles = files.filter(f => f.endsWith(".cpp"));
+    const header = `# ${proj.name}\r\n\r\nThis archive contains the project files and folders.\r\n\r\n`;
+    const list = `## Files\r\n\r\n${files.map(f => `- ${f}`).join("\r\n")}\r\n\r\n`;
+    const msbuild = `### Build with Visual Studio (MSBuild)\r\n\r\nOpen the solution (${proj.name}.sln) in Visual Studio and build, or use MSBuild from Developer Command Prompt:\r\n\r\nmsbuild ${proj.name}.sln /p:Configuration=Release\r\n\r\n`;
+    const cl = `### Build with cl.exe (Developer Command Prompt)\r\n\r\nFrom a Visual Studio Developer Command Prompt (x64):\r\n\r\ncl /EHsc /std:c++17 ${cppFiles.map(f => `"${f}"`).join(" ")} /Fe:app.exe\r\n\r\nThen run:\r\napp.exe\r\n\r\n`;
+    const mingw = `### Build with MinGW (g++) on Windows (MSYS2 / MinGW)\r\n\r\ng++ -std=c++17 ${cppFiles.map(f => `"${f}"`).join(" ")} -o app.exe\r\n\r\nThen run:\r\n./app.exe\r\n\r\n`;
+    const cmake = `### Build with CMake\r\n\r\nmkdir build\r\ncd build\r\ncmake .. -G "Visual Studio 17 2022" -A x64\r\ncmake --build . --config Release\r\n\r\n`;
+    return header + list + msbuild + cl + mingw + cmake + "Generated by Spacebook IDE\r\n";
+  }
+
+  function generateVcxprojXml(proj, projectGuid){
+    // Proper MSBuild VCXPROJ skeleton with ItemGroup entries for ClCompile and ClInclude
+    const files = Object.keys(proj.files).filter(f => f.endsWith(".cpp") || f.endsWith(".c") || f.endsWith(".h") || f.endsWith(".hpp"));
+    const clCompile = files.filter(f => f.endsWith(".cpp") || f.endsWith(".c")).map(f => `    <ClCompile Include="${f}" />`).join("\r\n");
+    const clInclude = files.filter(f => f.endsWith(".h") || f.endsWith(".hpp")).map(f => `    <ClInclude Include="${f}" />`).join("\r\n");
+    const projectName = proj.name || "TestSolution";
+    return `<?xml version="1.0" encoding="utf-8"?>\r\n<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">\r\n  <ItemGroup Label="ProjectConfigurations">\r\n    <ProjectConfiguration Include="Debug|x64">\r\n      <Configuration>Debug</Configuration>\r\n      <Platform>x64</Platform>\r\n    </ProjectConfiguration>\r\n    <ProjectConfiguration Include="Release|x64">\r\n      <Configuration>Release</Configuration>\r\n      <Platform>x64</Platform>\r\n    </ProjectConfiguration>\r\n  </ItemGroup>\r\n  <PropertyGroup Label="Globals">\r\n    <ProjectGuid>{${projectGuid}}</ProjectGuid>\r\n    <Keyword>Win32Proj</Keyword>\r\n    <RootNamespace>${projectName}</RootNamespace>\r\n  </PropertyGroup>\r\n  <Import Project=\"$(VCTargetsPath)\\Microsoft.Cpp.Default.props\" />\r\n  <PropertyGroup Condition=\"'$(Configuration)|$(Platform)'=='Debug|x64'\" Label=\"Configuration\">\r\n    <ConfigurationType>Application</ConfigurationType>\r\n    <UseDebugLibraries>true</UseDebugLibraries>\r\n    <PlatformToolset>v143</PlatformToolset>\r\n    <CharacterSet>MultiByte</CharacterSet>\r\n  </PropertyGroup>\r\n  <PropertyGroup Condition=\"'$(Configuration)|$(Platform)'=='Release|x64'\" Label=\"Configuration\">\r\n    <ConfigurationType>Application</ConfigurationType>\r\n    <UseDebugLibraries>false</UseDebugLibraries>\r\n    <PlatformToolset>v143</PlatformToolset>\r\n    <WholeProgramOptimization>true</WholeProgramOptimization>\r\n    <CharacterSet>MultiByte</CharacterSet>\r\n  </PropertyGroup>\r\n  <Import Project=\"$(VCTargetsPath)\\Microsoft.Cpp.props\" />\r\n  <ItemGroup>\r\n${clCompile}\r\n  </ItemGroup>\r\n  <ItemGroup>\r\n${clInclude}\r\n  </ItemGroup>\r\n  <Import Project=\"$(VCTargetsPath)\\Microsoft.Cpp.targets\" />\r\n</Project>\r\n`;
+  }
+
+  function generateVcxprojFilters(proj){
+    // Create filters grouping by folder
+    const files = Object.keys(proj.files).filter(f => f.endsWith(".cpp") || f.endsWith(".c") || f.endsWith(".h") || f.endsWith(".hpp"));
+    const folders = new Set();
+    files.forEach(f => {
+      const idx = f.lastIndexOf("/");
+      if(idx !== -1) folders.add(f.substring(0, idx));
+    });
+    const folderEntries = Array.from(folders).map((f, i) => `    <Filter Include="${f}">\r\n      <UniqueIdentifier>{${uid()}}</UniqueIdentifier>\r\n    </Filter>`).join("\r\n");
+    const fileEntries = files.map(f => {
+      const idx = f.lastIndexOf("/");
+      const filter = idx !== -1 ? f.substring(0, idx) : "";
+      const tag = f.endsWith(".cpp") || f.endsWith(".c") ? "ClCompile" : "ClInclude";
+      return `    <${tag} Include="${f}">\r\n      <Filter>${filter}</Filter>\r\n    </${tag}>`;
+    }).join("\r\n");
+    return `<?xml version="1.0" encoding="utf-8"?>\r\n<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">\r\n  <ItemGroup>\r\n${folderEntries}\r\n  </ItemGroup>\r\n  <ItemGroup>\r\n${fileEntries}\r\n  </ItemGroup>\r\n</Project>\r\n`;
+  }
+
+  function generateSln(proj, projectGuid){
+    // Visual Studio 2019/2022 compatible sln header and project entry
+    const projGuid = uid();
+    const projName = proj.name || "TestSolution";
+    const lines = [];
+    lines.push("Microsoft Visual Studio Solution File, Format Version 12.00");
+    lines.push("# Visual Studio Version 17");
+    lines.push("VisualStudioVersion = 17.0.31912.275");
+    lines.push("MinimumVisualStudioVersion = 10.0.40219.1");
+    lines.push(`Project("{${projectGuid}}") = "${projName}", "${projName}.vcxproj", "{${projGuid}}"`);
+    lines.push("EndProject");
+    lines.push("Global");
+    lines.push("\tGlobalSection(SolutionConfigurationPlatforms) = preSolution");
+    lines.push("\t\tDebug|x64 = Debug|x64");
+    lines.push("\t\tRelease|x64 = Release|x64");
+    lines.push("\tEndGlobalSection");
+    lines.push("\tGlobalSection(ProjectConfigurationPlatforms) = postSolution");
+    lines.push(`\t\t{${projGuid}}.Debug|x64.ActiveCfg = Debug|x64`);
+    lines.push(`\t\t{${projGuid}}.Debug|x64.Build.0 = Debug|x64`);
+    lines.push(`\t\t{${projGuid}}.Release|x64.ActiveCfg = Release|x64`);
+    lines.push(`\t\t{${projGuid}}.Release|x64.Build.0 = Release|x64`);
+    lines.push("\tEndGlobalSection");
+    lines.push("\tGlobalSection(SolutionProperties) = preSolution");
+    lines.push("\t\tHideSolutionNode = FALSE");
+    lines.push("\tEndGlobalSection");
+    lines.push("EndGlobal");
+    return lines.join("\r\n");
+  }
+
+  // Export ZIP with .sln and .vcxproj that Visual Studio can open
+  exportSlnBtn.addEventListener("click", async ()=>{
+    saveActiveFile();
+    try {
+      const projectGuid = uid();
+      const projGuid = uid();
+      const projName = project.name || "TestSolution";
+      const vcxproj = generateVcxprojXml(project, projGuid);
+      const vcxprojFilters = generateVcxprojFilters(project);
+      const sln = generateSln(project, projectGuid);
+      // Add files to zip with correct relative paths
+      const zip = new JSZip();
+      // ensure folders exist in zip
+      Object.keys(project.folders).forEach(f => zip.folder(f));
+      // add project files
+      Object.keys(project.files).forEach(p => zip.file(p, project.files[p]));
+      // add vcxproj and filters and sln at root
+      zip.file(`${projName}.vcxproj`, vcxproj);
+      zip.file(`${projName}.vcxproj.filters`, vcxprojFilters);
+      zip.file(`${projName}.sln`, sln);
+      zip.file("README.md", generateReadmeWindows(project));
+      const content = await zip.generateAsync({ type: "blob" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(content);
+      a.download = `${projName}-VS.zip`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(a.href);
+      setConsoleText(`Exported Visual Studio solution ZIP: ${projName}-VS.zip\n\nIncluded files:\n${Object.keys(project.files).join("\n")}\n\n.sln and .vcxproj generated.`);
+    } catch(err){
+      alert("Export SLN failed: " + err.message);
+    }
+  });
+
+  // ---------- Export generic ZIP (with README.md) ----------
+  exportBtn.addEventListener("click", async ()=>{
+    saveActiveFile();
+    try {
+      const zip = new JSZip();
+      Object.keys(project.folders).forEach(f => zip.folder(f));
+      Object.keys(project.files).forEach(p => zip.file(p, project.files[p]));
+      zip.file("README.md", generateReadmeWindows(project));
+      const content = await zip.generateAsync({ type: "blob" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(content);
+      a.download = (project.name || "project") + ".zip";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(a.href);
+      setConsoleText("Exported ZIP with README.md included.");
+    } catch(err){
+      alert("Export failed: " + err.message);
+    }
+  });
+
+  // ---------- Import / Open ----------
+  openBtn.addEventListener("click", ()=> importInput.click());
+  importInput.addEventListener("change", async (ev)=>{
+    const files = Array.from(ev.target.files || []);
+    for(const f of files){
+      const name = f.name.toLowerCase();
+      if(name.endsWith(".json")){
+        const txt = await f.text();
+        try {
+          const parsed = JSON.parse(txt);
+          if(parsed && parsed.project && parsed.project.files){
+            project = parsed.project;
+            activePath = Object.keys(project.files)[0] || "src/main.cpp";
+            if(!project.folders) project.folders = {};
+            openFiles = [activePath];
+            renderFileTree(); renderTabs(); codeEl.value = project.files[activePath] || "";
+            alert("Project loaded from JSON.");
+          } else alert("JSON does not contain a valid project.");
+        } catch(e){ alert("Invalid JSON: " + e.message); }
+      } else if(name.endsWith(".zip")){
+        try {
+          const data = await f.arrayBuffer();
+          const zip = await JSZip.loadAsync(data);
+          project = { name: f.name.replace(/\.zip$/i, ""), folders: {}, files: {} };
+          const entries = Object.keys(zip.files);
+          for(const entry of entries){
+            const fileObj = zip.files[entry];
+            if(fileObj.dir){
+              const folderPath = entry.replace(/\/$/,"");
+              if(folderPath) project.folders[folderPath] = true;
+            } else {
+              const content = await fileObj.async("string");
+              project.files[entry] = content;
+              if(entry.includes("/")) ensureFolderPath(entry.substring(0, entry.lastIndexOf("/")));
+            }
+          }
+          activePath = Object.keys(project.files)[0] || "src/main.cpp";
+          openFiles = [activePath];
+          renderFileTree(); renderTabs(); codeEl.value = project.files[activePath] || "";
+          alert("ZIP project imported.");
+        } catch(e){ alert("Failed to import ZIP: " + e.message); }
+      } else if(name.endsWith(".sln")){
+        const txt = await f.text();
+        project.files[f.name] = txt;
+        project.name = f.name.replace(/\.sln$/i, "");
+        activePath = f.name;
+        if(!project.folders) project.folders = {};
+        if(!openFiles.includes(activePath)) openFiles = [activePath];
+        renderFileTree(); renderTabs(); codeEl.value = project.files[activePath] || "";
+        alert(".sln imported into project.");
+      } else {
+        const txt = await f.text();
+        project.files[f.name] = txt;
+        if(f.name.includes("/")) ensureFolderPath(f.name.substring(0, f.name.lastIndexOf("/")));
+        activePath = f.name;
+        if(!openFiles.includes(activePath)) openFiles = [activePath];
+        renderFileTree(); renderTabs(); codeEl.value = project.files[activePath] || "";
+        alert("File added: " + f.name);
+      }
+    }
+    importInput.value = "";
+  });
+
+  // ---------- Drag & Drop ----------
+  filesEl.addEventListener("dragenter", (e)=>{ e.preventDefault(); filesEl.classList.add("drop-target"); });
+  filesEl.addEventListener("dragover", (e)=>{ e.preventDefault(); });
+  filesEl.addEventListener("dragleave", (e)=>{ filesEl.classList.remove("drop-target"); });
+  filesEl.addEventListener("drop", async (e)=>{
+    e.preventDefault(); filesEl.classList.remove("drop-target");
+    const dt = e.dataTransfer;
+    if(!dt) return;
+    const items = dt.items;
+    if(items && items.length && items[0].webkitGetAsEntry){
+      for(let i=0;i<items.length;i++){
+        const entry = items[i].webkitGetAsEntry();
+        if(entry) await traverseEntry(entry, "");
+      }
+    } else {
+      const files = dt.files;
+      for(let i=0;i<files.length;i++){
+        const f = files[i];
+        const text = await f.text();
+        project.files[f.name] = text;
+        if(f.name.includes("/")) ensureFolderPath(f.name.substring(0, f.name.lastIndexOf("/")));
+      }
+    }
+    renderFileTree();
+  });
+
+  function traverseEntry(entry, path){
+    return new Promise((resolve) => {
+      if(entry.isFile){
+        entry.file(file => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const fullPath = path ? (path + "/" + file.name) : file.name;
+            project.files[fullPath] = reader.result;
+            if(fullPath.includes("/")) ensureFolderPath(fullPath.substring(0, fullPath.lastIndexOf("/")));
+            resolve();
+          };
+          reader.readAsText(file);
+        }, () => resolve());
+      } else if(entry.isDirectory){
+        const dirReader = entry.createReader();
+        const folderPath = path ? (path + "/" + entry.name) : entry.name;
+        ensureFolderPath(folderPath);
+        dirReader.readEntries(async (entries) => {
+          for(const ent of entries) await traverseEntry(ent, folderPath);
+          resolve();
+        }, () => resolve());
+      } else resolve();
+    });
+  }
+
+  // ---------- Keyboard shortcuts ----------
+  document.addEventListener("keydown", (e)=>{
+    if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s"){ e.preventDefault(); saveBtn.click(); }
+  });
+
+  // ---------- Init ----------
+  function init(){
+    if(!project.folders) project.folders = {};
+    if(!project.files || Object.keys(project.files).length === 0) project = JSON.parse(JSON.stringify(defaultProject));
+    if(!activePath || !project.files[activePath]) activePath = Object.keys(project.files)[0];
+    if(!openFiles.includes(activePath)) openFiles = [activePath];
+    renderFileTree(); renderTabs(); codeEl.value = project.files[activePath] || "";
+  }
+  init();
+
+  // Expose for debugging
+  window.__spacebook = { project, openFile, createCpp, createHeader, ensureFolderPath, saveActiveFile };
+
+})();
+</script>
+</body>
+</html>
