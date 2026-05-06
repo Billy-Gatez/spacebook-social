@@ -91,7 +91,7 @@ const tetrixScoreSchema = new mongoose.Schema({
   avatar:   { type: String, default: '🎮' },
   title:    { type: String, default: '' },
   score:    { type: Number, required: true },
-  mode:     { type: String, default: 'Classic' },
+  mode:     { type: String, default: 'Online VS' },
   createdAt:{ type: Date,   default: Date.now }
 });
 
