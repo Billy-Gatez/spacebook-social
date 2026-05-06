@@ -37,7 +37,7 @@ const app = express();
 // 1) JSON body parser for age-check POST
 app.use(express.json());
 
-app.use("/", compileRouter);
+
 
 // 3) Mount the age-check API
 
@@ -59,7 +59,7 @@ app.use(cors({
   credentials: true
 }))
 
-
+app.use("/", compileRouter);
 
 // ====== CONFIG ======
 const MONGO_URI = "mongodb+srv://jercahill:Spacebook2026@spacebook.mpqjbcv.mongodb.net/spacebook?retryWrites=true&w=majority";
