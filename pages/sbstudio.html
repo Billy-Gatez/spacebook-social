@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Spacebook IDE — VS-ready Export</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<script>document.documentElement.classList.add("theme-matrix");</script>
+<style>
+:root{--bg:#000;--panel:#0b0b0b;--border:#222;--accent:#00ff66;--text:#e0ffe8;--text-dim:#7fd9a0}
+body.theme-matrix{--accent:#00ff66;--text:#e0ffe8;--text-dim:#7fd9a0}
+body.theme-cyber{--accent:#38bdf8;--text:#e0f2fe;--text-dim:#7dd3fc}
+body.theme-space{--accent:#f97316;--text:#ffedd5;--text-dim:#fed7aa}
+body.theme-hacker{--accent:#fff;--text:#f5f5f5;--text-dim:#a3a3a3}
+
+html,body{height:100%;background:#000!important;color:#fff!important}
+*{box-sizing:border-box}
+body{margin:0;font-family:Consolas,monospace;display:flex;flex-direction:column;overflow:hidden}
+#starfield{position:fixed;inset:0;z-index:0;pointer-events:none}
+#topbar{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border);z-index:30;position:relative;background:linear-gradient(90deg,rgba(0,0,0,0.9),rgba(0,0,0,0.5))}
+.btn{background:var(--panel);border:1px solid var(--border);padding:6px 10px;border-radius:6px;color:var(--text-dim);cursor:pointer;font-size:12px}
+.btn.primary{background:rgba(0,255,102,0.08);border-color:var(--accent);color:var(--text)}
+.btn:hover{filter:brightness(1.15)}
+#main{display:flex;flex:1;gap:10px;padding:10px;min-height:0;position:relative;z-index:5}
+#sidebar{width:340px;background:linear-gradient(180deg,#050505,#000);border:1px solid var(--border);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:8px}
+#solutionTitle{font-weight:700;color:var(--accent);cursor:pointer;user-select:none}
+#solutionTitle:hover{opacity:0.8}
+#files{flex:1;overflow:auto;padding-right:6px}
+.tree-item{padding:8px 10px;border-radius:8px;color:var(--text-dim);display:flex;align-items:center;gap:8px;user-select:none}
+.tree-item:hover{background:rgba(255,255,255,0.02)}
+.tree-item.active{background:rgba(0,255,102,0.08);color:var(--text)}
+.tree-folder>.label::before{content:"▸";margin-right:6px;color:var(--accent)}
+.tree-folder.open>.label::before{content:"▾"}
+.tree-file>.label::before{content:"●";margin-right:6px;color:var(--accent);font-size:9px}
+.tree-children{margin-left:14px}
+#editor{flex:1;display:flex;flex-direction:column;gap:6px}
+#tabs{display:flex;gap:6px;min-height:34px;align-items:center}
+.tab{padding:6px 10px;border-radius:8px 8px 0 0;background:var(--panel);border:1px solid var(--border);border-bottom:none;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;gap:6px}
+.tab.active{background:#020202;color:var(--text);border-color:var(--accent)}
+.tab .close{font-size:12px;opacity:.7;cursor:pointer}
+#code{flex:1;padding:14px;border-radius:10px;background:#020202;border:1px solid var(--border);color:var(--text);resize:none;outline:none;font-family:Consolas,monospace;font-size:13px;min-height:200px}
+.menu{position:fixed;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:6px 0;min-width:220px;display:none;z-index:60;box-shadow:0 0 18px rgba(0,0,0,0.6)}
+.menu .item{padding:10px 14px;color:var(--text-dim);cursor:pointer}
+.menu .item:hover{background:rgba(0,255,102,0.06);color:var(--text)}
+#consoleWindow{position:fixed;right:18px;bottom:18px;width:760px;height:360px;background:radial-gradient(circle at top,#050505,#000);border:1px solid var(--accent);border-radius:12px;display:none;flex-direction:column;overflow:hidden;z-index:90;box-shadow:0 0 24px rgba(0,255,102,0.1)}
+#consoleTitle{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border);cursor:move;background:linear-gradient(90deg,rgba(0,0,0,0.85),rgba(0,0,0,0.35))}
+#consoleTabs{display:flex;gap:6px;padding:6px;background:#050505;border-bottom:1px solid var(--border)}
+.con-tab{padding:5px 10px;color:var(--text-dim);cursor:pointer;font-size:12px}
+.con-tab.active{background:rgba(0,255,102,0.08);color:var(--text);border-bottom:2px solid var(--accent)}
+#consoleContent{flex:1;padding:12px;overflow:auto;white-space:pre-wrap;color:var(--text);font-size:13px}
+.signature{position:fixed;right:18px;bottom:18px;z-index:2;pointer-events:none;color:var(--text-dim);font-size:12px;display:flex;align-items:center;gap:8px}
+.signature .logo{width:32px;height:32px;border-radius:7px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.04);color:var(--accent);font-weight:700;font-size:13px}
+select{background:#020202!important;color:var(--text)!important;border:1px solid var(--border)!important;padding:4px 6px;border-radius:6px;appearance:none}
+
+/* ── PATCH: Modal ── */
+#modalOverlay{position:fixed;inset:0;background:rgba(0,0,0,0.82);z-index:200;display:none;align-items:center;justify-content:center}
+#modalBox{background:#0b0b0b;border:1px solid var(--accent);border-radius:12px;padding:24px 28px;min-width:360px;max-width:480px;display:flex;flex-direction:column;gap:14px;box-shadow:0 0 40px rgba(0,255,102,0.08)}
+#modalBox h3{margin:0;color:var(--accent);font-size:15px;letter-spacing:.05em}
+#modalBox label{font-size:12px;color:var(--text-dim);display:flex;flex-direction:column;gap:5px}
+#modalBox input,#modalBox select.modal-sel{background:#020202;border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:6px;font-family:Consolas,monospace;font-size:13px;outline:none;width:100%}
+#modalBox input:focus,#modalBox select.modal-sel:focus{border-color:var(--accent)}
+.modal-note{font-size:11px;color:var(--text-dim);opacity:.7;margin-top:-6px}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:4px}
+/* ── PATCH: Save slots ── */
+.slot-list{display:flex;flex-direction:column;gap:8px;max-height:320px;overflow-y:auto}
+.slot-row{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-radius:7px;border:1px solid var(--border);background:#050505;cursor:pointer;gap:10px}
+.slot-row:hover{border-color:var(--accent)}
+.slot-info{flex:1;min-width:0}
+.slot-name{color:var(--text);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.slot-meta{font-size:11px;color:var(--text-dim);margin-top:2px}
+.slot-del{color:#ff5555;cursor:pointer;font-size:13px;padding:2px 7px;border-radius:4px;flex-shrink:0}
+.slot-del:hover{background:rgba(255,80,80,0.1)}
+.empty-saves{color:var(--text-dim);font-size:13px;padding:8px 0}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</head>
+<body class="theme-matrix" style="background:#000;color:#fff">
+
+<canvas id="starfield"></canvas>
+
+<div class="signature" aria-hidden="true" id="sig" style="display:none">
+  <div class="logo">SPΛ</div>
+  <div>Spacebook • IDE</div>
+</div>
+
+<div id="topbar">
+  <div style="display:flex;align-items:center;gap:12px">
+    <div style="font-weight:700;color:var(--text-dim);letter-spacing:.1em">SPΛCEBOOK IDE</div>
+    <select id="themeSelect">
+      <option value="matrix">Matrix</option>
+      <option value="cyber">Cyber</option>
+      <option value="space">Space</option>
+      <option value="hacker">Hacker</option>
+    </select>
+  </div>
+  <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+    <input id="importInput" type="file" accept=".zip,.json,.sln" style="display:none" multiple />
+    <!-- PATCH: two new buttons -->
+    <button id="newBtn"      class="btn">✦ New</button>
+    <button id="loadSaveBtn" class="btn">📂 Load Save</button>
+    <button id="openBtn"     class="btn">📁 Open</button>
+    <button id="saveBtn"     class="btn">💾 Save</button>
+    <button id="exportBtn"   class="btn">Export ZIP</button>
+    <button id="exportSlnBtn" class="btn">Export VS Solution</button>
+    <button id="runBtn"      class="btn primary">Build & Run ▶</button>
+  </div>
+</div>
+
+<div id="main">
+  <div id="sidebar">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div id="solutionTitle">Solution 'TestSolution'</div>
+      <button id="addBtn" class="btn">+ Add</button>
+    </div>
+    <div id="files" aria-label="Solution Explorer"></div>
+    <div style="font-size:11px;color:var(--text-dim);margin-top:4px;opacity:0.6">Drop files/folders here • Double-click to rename</div>
+  </div>
+  <div id="editor">
+    <div id="tabs"></div>
+    <textarea id="code" spellcheck="false"></textarea>
+  </div>
+</div>
+
+<div id="addMenu" class="menu" role="menu">
+  <div class="item" data-action="newCpp">New C++ File (.cpp)</div>
+  <div class="item" data-action="newHeader">New Header File (.h)</div>
+  <div class="item" data-action="newFolder">New Folder</div>
+</div>
+<div id="contextMenu" class="menu" role="menu"></div>
+
+<div id="consoleWindow">
+  <div id="consoleTitle">
+    <div>Console</div>
+    <div style="display:flex;gap:6px">
+      <button id="consoleMin" class="btn" style="padding:3px 7px">—</button>
+      <button id="consoleMax" class="btn" style="padding:3px 7px">□</button>
+      <button id="consoleClose" class="btn" style="padding:3px 7px">✕</button>
+    </div>
+  </div>
+  <div id="consoleTabs">
+    <div class="con-tab active" data-tab="output">Output</div>
+    <div class="con-tab" data-tab="build">Build</div>
+    <div class="con-tab" data-tab="errors">Errors</div>
+  </div>
+  <div id="consoleContent"></div>
+</div>
+
+<!-- PATCH: Modal overlay -->
+<div id="modalOverlay">
+  <div id="modalBox">
+    <h3 id="modalTitle"></h3>
+    <div id="modalBody"></div>
+    <div class="modal-actions" id="modalActions"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+
+  /* ═══════════════════════════════════════════
+     REALISTIC STARFIELD
+  ═══════════════════════════════════════════ */
+  const canvas = document.getElementById('starfield');
+  const ctx = canvas.getContext('2d');
+  let stars=[], shooters=[], W=0, H=0;
+  const DPR = Math.max(1, window.devicePixelRatio||1);
+  const COLORS=[[220,235,255],[255,255,255],[255,248,220],[255,220,180],[200,220,255],[255,200,150]];
+
+  function resizeCanvas(){
+    W=window.innerWidth; H=window.innerHeight;
+    canvas.width=Math.floor(W*DPR); canvas.height=Math.floor(H*DPR);
+    canvas.style.width=W+'px'; canvas.style.height=H+'px';
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    initStars();
+  }
+  function initStars(){
+    stars=[];
+    const layers=[
+      {count:Math.floor(W*H/3800),rMin:.25,rMax:.65,aMin:.15,aMax:.45,tw:.3},
+      {count:Math.floor(W*H/7000),rMin:.5,rMax:1.1,aMin:.4,aMax:.75,tw:.8},
+      {count:Math.floor(W*H/18000),rMin:1.0,rMax:1.8,aMin:.65,aMax:1.0,tw:1.4}
+    ];
+    for(const l of layers){
+      for(let i=0;i<l.count;i++){
+        const c=COLORS[Math.floor(Math.random()*COLORS.length)];
+        stars.push({x:Math.random()*W,y:Math.random()*H,r:l.rMin+Math.random()*(l.rMax-l.rMin),
+          baseA:l.aMin+Math.random()*(l.aMax-l.aMin),a:0,tw:l.tw*(0.6+Math.random()*.8),
+          ph:Math.random()*Math.PI*2,cr:c[0],cg:c[1],cb:c[2],spike:Math.random()<.04});
+      }
+    }
+  }
+  function spawnShooter(){
+    const from=Math.random()<.6;
+    const angle=(20+Math.random()*25)*Math.PI/180;
+    const spd=420+Math.random()*340;
+    const hue=Math.random()<.2?(Math.random()<.5?[200,240,255]:[255,240,180]):[255,255,255];
+    shooters.push({x:from?Math.random()*W*.7:-10,y:from?-10:Math.random()*H*.35,
+      vx:Math.cos(angle)*spd,vy:Math.sin(angle)*spd,len:180+Math.random()*260,
+      life:0,maxLife:.55+Math.random()*.55,hue});
+  }
+  let lastSpawn=0;
+  function update(dt){
+    for(const s of stars){
+      s.ph+=dt*s.tw;
+      s.a=s.baseA*(0.55+0.45*Math.abs(Math.sin(s.ph))*Math.abs(Math.cos(s.ph*.7)));
+    }
+    for(let i=shooters.length-1;i>=0;i--){
+      const ss=shooters[i];
+      ss.x+=ss.vx*dt; ss.y+=ss.vy*dt; ss.life+=dt;
+      if(ss.life>ss.maxLife) shooters.splice(i,1);
+    }
+    lastSpawn+=dt;
+    if(lastSpawn>1.8+Math.random()*3.5){spawnShooter();lastSpawn=0;}
+  }
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    const neb=ctx.createRadialGradient(W*.18,H*.12,0,W*.5,H*.5,Math.max(W,H)*.9);
+    neb.addColorStop(0,'rgba(5,15,30,0.18)'); neb.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=neb; ctx.fillRect(0,0,W,H);
+    for(const s of stars){
+      if(s.r>1.0){
+        const g=ctx.createRadialGradient(s.x,s.y,0,s.x,s.y,s.r*5);
+        g.addColorStop(0,`rgba(${s.cr},${s.cg},${s.cb},${s.a*.22})`);
+        g.addColorStop(1,'rgba(0,0,0,0)');
+        ctx.fillStyle=g; ctx.beginPath(); ctx.arc(s.x,s.y,s.r*5,0,Math.PI*2); ctx.fill();
+      }
+      ctx.beginPath(); ctx.fillStyle=`rgba(${s.cr},${s.cg},${s.cb},${s.a})`;
+      ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fill();
+      if(s.spike&&s.r>1.0&&s.a>.6){
+        ctx.strokeStyle=`rgba(${s.cr},${s.cg},${s.cb},${s.a*.55})`;
+        ctx.lineWidth=.6; const sp=s.r*3.5;
+        ctx.beginPath(); ctx.moveTo(s.x-sp,s.y); ctx.lineTo(s.x+sp,s.y);
+        ctx.moveTo(s.x,s.y-sp); ctx.lineTo(s.x,s.y+sp); ctx.stroke();
+      }
+    }
+    for(const ss of shooters){
+      const prog=ss.life/ss.maxLife;
+      const fi=Math.min(1,ss.life/.08), fo=1-Math.pow(prog,1.5), a=fi*fo;
+      const mag=Math.hypot(ss.vx,ss.vy);
+      const tx=ss.x-(ss.vx/mag)*ss.len, ty=ss.y-(ss.vy/mag)*ss.len;
+      const [r,g,b]=ss.hue;
+      const tr=ctx.createLinearGradient(ss.x,ss.y,tx,ty);
+      tr.addColorStop(0,`rgba(${r},${g},${b},${a})`);
+      tr.addColorStop(.25,`rgba(${r},${g},${b},${a*.6})`);
+      tr.addColorStop(1,`rgba(${r},${g},${b},0)`);
+      ctx.strokeStyle=tr; ctx.lineWidth=1.8; ctx.lineCap='round';
+      ctx.beginPath(); ctx.moveTo(ss.x,ss.y); ctx.lineTo(tx,ty); ctx.stroke();
+      const cr=ctx.createLinearGradient(ss.x,ss.y,tx,ty);
+      cr.addColorStop(0,`rgba(255,255,255,${a*.9})`);
+      cr.addColorStop(.12,`rgba(255,255,255,${a*.3})`);
+      cr.addColorStop(1,'rgba(255,255,255,0)');
+      ctx.strokeStyle=cr; ctx.lineWidth=.7;
+      ctx.beginPath(); ctx.moveTo(ss.x,ss.y); ctx.lineTo(tx,ty); ctx.stroke();
+      const gw=ctx.createRadialGradient(ss.x,ss.y,0,ss.x,ss.y,6);
+      gw.addColorStop(0,`rgba(255,255,255,${a*.95})`);
+      gw.addColorStop(.4,`rgba(${r},${g},${b},${a*.4})`);
+      gw.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=gw; ctx.beginPath(); ctx.arc(ss.x,ss.y,6,0,Math.PI*2); ctx.fill();
+    }
+  }
+  let lastT=performance.now();
+  function loop(now){ const dt=Math.min(.05,(now-lastT)/1000); lastT=now; update(dt); draw(); requestAnimationFrame(loop); }
+  window.addEventListener('resize',resizeCanvas);
+  resizeCanvas(); requestAnimationFrame(loop);
+  setTimeout(()=>document.getElementById('sig').style.display='flex',200);
+
+  /* ═══════════════════════════════════════════
+     GUID UTILITY
+  ═══════════════════════════════════════════ */
+  function uid(){
+    function s4(){ return Math.floor((1+Math.random())*0x10000).toString(16).substring(1).toUpperCase(); }
+    return `${s4()}${s4()}-${s4()}-${s4()}-${s4()}-${s4()}${s4()}${s4()}`;
+  }
+  const CPP_PROJECT_TYPE_GUID = "8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942";
+
+  /* ═══════════════════════════════════════════
+     PROJECT STATE
+  ═══════════════════════════════════════════ */
+  const defaultProject = {
+    name: "TestSolution",
+    folders: { "src": true },
+    files: {
+      "src/main.cpp": `#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "Hello from Spacebook IDE!" << endl;\n    return 0;\n}\n`
+    }
+  };
+
+  let project = JSON.parse(localStorage.getItem("spacebook_ide_project")||"null")?.project
+                || JSON.parse(JSON.stringify(defaultProject));
+  let activePath = Object.keys(project.files)[0] || "src/main.cpp";
+  let openFiles  = [activePath];
+
+  const filesEl       = document.getElementById("files");
+  const codeEl        = document.getElementById("code");
+  const tabsEl        = document.getElementById("tabs");
+  const addBtn        = document.getElementById("addBtn");
+  const addMenu       = document.getElementById("addMenu");
+  const contextMenu   = document.getElementById("contextMenu");
+  const saveBtn       = document.getElementById("saveBtn");
+  const exportBtn     = document.getElementById("exportBtn");
+  const exportSlnBtn  = document.getElementById("exportSlnBtn");
+  const runBtn        = document.getElementById("runBtn");
+  const importInput   = document.getElementById("importInput");
+  const openBtn       = document.getElementById("openBtn");
+  const consoleWindow = document.getElementById("consoleWindow");
+  const consoleContent= document.getElementById("consoleContent");
+  const consoleClose  = document.getElementById("consoleClose");
+  const consoleMin    = document.getElementById("consoleMin");
+  const consoleMax    = document.getElementById("consoleMax");
+  const conTabs       = document.querySelectorAll(".con-tab");
+  const solutionTitle = document.getElementById("solutionTitle");
+  const themeSelect   = document.getElementById("themeSelect");
+  // PATCH
+  const newBtn        = document.getElementById("newBtn");
+  const loadSaveBtn   = document.getElementById("loadSaveBtn");
+  const modalOverlay  = document.getElementById("modalOverlay");
+  const modalTitle    = document.getElementById("modalTitle");
+  const modalBody     = document.getElementById("modalBody");
+  const modalActions  = document.getElementById("modalActions");
+
+  const conData = { output:"", build:"", errors:"" };
+  let conActive="output", conMaxed=false, conPrev=null;
+
+  /* ═══════════════════════════════════════════
+     THEME
+  ═══════════════════════════════════════════ */
+  function applyTheme(n){ document.body.className="theme-"+n; themeSelect.value=n; }
+  themeSelect.addEventListener("change",()=>applyTheme(themeSelect.value));
+  applyTheme("matrix");
+
+  /* ═══════════════════════════════════════════
+     SOLUTION TITLE
+  ═══════════════════════════════════════════ */
+  solutionTitle.addEventListener("dblclick",()=>{
+    const n=prompt("Rename solution:",project.name);
+    if(n&&n.trim()){ project.name=n.trim(); updateTitle(); }
+  });
+  function updateTitle(){
+    solutionTitle.textContent=`Solution '${project.name}'`;
+  }
+
+  /* ═══════════════════════════════════════════
+     UTILITIES
+  ═══════════════════════════════════════════ */
+  function ensureFolderPath(path){
+    if(!path) return;
+    const parts=path.split("/"); let cur="";
+    for(const p of parts){ cur=cur?cur+"/"+p:p; project.folders[cur]=true; }
+  }
+  function ensureFolderForFile(fp){
+    if(!fp.includes("/")) return;
+    ensureFolderPath(fp.substring(0,fp.lastIndexOf("/")));
+  }
+  function saveActiveFile(){
+    if(activePath&&project.files[activePath]!==undefined) project.files[activePath]=codeEl.value;
+  }
+
+  /* ═══════════════════════════════════════════
+     PATCH — MODAL SYSTEM
+  ═══════════════════════════════════════════ */
+  function openModal(title, bodyHTML, buttons){
+    modalTitle.textContent=title;
+    modalBody.innerHTML=bodyHTML;
+    modalActions.innerHTML="";
+    buttons.forEach(({label,cls,fn})=>{
+      const b=document.createElement("button");
+      b.className="btn "+(cls||""); b.textContent=label;
+      b.addEventListener("click",()=>{ closeModal(); fn(); });
+      modalActions.appendChild(b);
+    });
+    modalOverlay.style.display="flex";
+  }
+  function closeModal(){
+    modalOverlay.style.display="none";
+    modalBody.innerHTML=""; modalActions.innerHTML="";
+  }
+  modalOverlay.addEventListener("click",e=>{ if(e.target===modalOverlay) closeModal(); });
+
+  /* ═══════════════════════════════════════════
+     PATCH — NEW PROJECT
+  ═══════════════════════════════════════════ */
+  newBtn.addEventListener("click",()=>{
+    openModal("✦ New Project",
+      `<label>Project / Solution Name
+         <input id="np_name" type="text" value="MyProject" />
+       </label>
+       <label>Starter Template
+         <select id="np_tpl" class="modal-sel">
+           <option value="hello">Hello World  (main.cpp)</option>
+           <option value="class">Class + Header  (main + MyClass.h/.cpp)</option>
+           <option value="empty">Empty project</option>
+         </select>
+       </label>
+       <div class="modal-note">⚠ Unsaved changes to the current project will be lost.</div>`,
+      [
+        { label:"Cancel", cls:"", fn:()=>{} },
+        { label:"Create", cls:"primary", fn:()=>{
+          const name=(document.getElementById("np_name")?.value||"").trim()||"MyProject";
+          const tpl=document.getElementById("np_tpl")?.value||"hello";
+          const files={}, folders={};
+          if(tpl==="hello"){
+            folders["src"]=true;
+            files["src/main.cpp"]=`#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "Hello, ${name}!" << endl;\n    return 0;\n}\n`;
+          } else if(tpl==="class"){
+            folders["src"]=true;
+            const cn=name.replace(/\s+/g,"");
+            const guard=cn.toUpperCase()+"_H";
+            files["src/main.cpp"]=`#include "${cn}.h"\n#include <iostream>\nusing namespace std;\n\nint main() {\n    ${cn} obj;\n    obj.greet();\n    return 0;\n}\n`;
+            files[`src/${cn}.h`]=`#ifndef ${guard}\n#define ${guard}\n\nclass ${cn} {\npublic:\n    void greet();\n};\n\n#endif\n`;
+            files[`src/${cn}.cpp`]=`#include "${cn}.h"\n#include <iostream>\nusing namespace std;\n\nvoid ${cn}::greet() {\n    cout << "Hello from ${cn}!" << endl;\n}\n`;
+          }
+          project={ name, folders, files };
+          activePath=Object.keys(files)[0]||"";
+          openFiles=activePath?[activePath]:[];
+          renderFileTree(); renderTabs();
+          codeEl.value=activePath?(project.files[activePath]||""):"";
+        }}
+      ]
+    );
+  });
+
+  /* ═══════════════════════════════════════════
+     PATCH — NAMED SAVE SLOTS
+  ═══════════════════════════════════════════ */
+  const SAVES_KEY="spacebook_saves_v2";
+  function getSaves(){ try{ return JSON.parse(localStorage.getItem(SAVES_KEY)||"[]"); }catch(e){ return []; } }
+  function putSaves(arr){ localStorage.setItem(SAVES_KEY,JSON.stringify(arr)); }
+
+  // Override save — named slot modal
+  saveBtn.addEventListener("click",()=>{
+    saveActiveFile();
+    openModal("💾 Save Project",
+      `<label>Save slot name
+         <input id="sv_name" type="text" value="${project.name} — ${new Date().toLocaleString()}" />
+       </label>
+       <div class="modal-note">Saves to browser localStorage (up to 10 slots). Use Export ZIP to keep a real file backup.</div>`,
+      [
+        { label:"Cancel", cls:"", fn:()=>{} },
+        { label:"Save", cls:"primary", fn:()=>{
+          const name=(document.getElementById("sv_name")?.value||"").trim()||project.name;
+          const saves=getSaves();
+          saves.unshift({ name, date:new Date().toISOString(), project:JSON.parse(JSON.stringify(project)) });
+          putSaves(saves.slice(0,10));
+          // also keep the legacy single-slot save so refresh still restores
+          localStorage.setItem("spacebook_ide_project",JSON.stringify({project}));
+          conData.build=`[Save] ✔ "${name}" saved to browser localStorage.\n`;
+          openConsole(); setConTab("build");
+        }}
+      ]
+    );
+  });
+
+  // Load Save button
+  loadSaveBtn.addEventListener("click",()=>{
+    const saves=getSaves();
+    if(!saves.length){
+      openModal("📂 Load Save",
+        `<div class="empty-saves">No saved projects yet.<br>Use 💾 Save to create your first save slot.</div>`,
+        [{ label:"Close", cls:"", fn:()=>{} }]);
+      return;
+    }
+    let html=`<div class="slot-list">`;
+    saves.forEach((s,i)=>{
+      const d=new Date(s.date).toLocaleString();
+      const fc=Object.keys(s.project?.files||{}).length;
+      html+=`<div class="slot-row" data-idx="${i}">
+        <div class="slot-info">
+          <div class="slot-name">${s.name}</div>
+          <div class="slot-meta">${d} · ${fc} file${fc!==1?"s":""}</div>
+        </div>
+        <span class="slot-del" data-del="${i}" title="Delete save">✕</span>
+      </div>`;
+    });
+    html+=`</div>`;
+    openModal("📂 Load Save", html, [{ label:"Cancel", cls:"", fn:()=>{} }]);
+    // wire after DOM renders
+    setTimeout(()=>{
+      document.querySelectorAll(".slot-row").forEach(row=>{
+        row.addEventListener("click",e=>{
+          if(e.target.dataset.del!==undefined) return;
+          const s=saves[parseInt(row.dataset.idx)];
+          if(!s) return;
+          if(!confirm(`Load "${s.name}"?\nUnsaved changes will be lost.`)) return;
+          closeModal();
+          project=JSON.parse(JSON.stringify(s.project));
+          if(!project.folders) project.folders={};
+          activePath=Object.keys(project.files||{})[0]||"";
+          openFiles=activePath?[activePath]:[];
+          renderFileTree(); renderTabs();
+          codeEl.value=activePath?(project.files[activePath]||""):"";
+        });
+      });
+      document.querySelectorAll(".slot-del").forEach(btn=>{
+        btn.addEventListener("click",e=>{
+          e.stopPropagation();
+          const s=saves[parseInt(btn.dataset.del)];
+          if(!confirm(`Delete save "${s.name}"?`)) return;
+          saves.splice(parseInt(btn.dataset.del),1);
+          putSaves(saves);
+          closeModal();
+          loadSaveBtn.click();
+        });
+      });
+    },0);
+  });
+
+  /* ═══════════════════════════════════════════
+     TREE
+  ═══════════════════════════════════════════ */
+  function buildTree(files,folders){
+    const root={};
+    Object.keys(folders).forEach(path=>{
+      const parts=path.split("/"); let node=root;
+      for(const p of parts){ if(!node[p]) node[p]={}; node=node[p]; }
+    });
+    Object.keys(files).forEach(path=>{
+      const parts=path.split("/"); let node=root;
+      for(let i=0;i<parts.length;i++){
+        const p=parts[i], isFile=i===parts.length-1;
+        if(!node[p]) node[p]=isFile?null:{};
+        if(!isFile) node=node[p];
+      }
+    });
+    return root;
+  }
+
+  function renderTree(node,parentEl,base=""){
+    parentEl.innerHTML="";
+    Object.keys(node).sort().forEach(name=>{
+      const isFile=node[name]===null;
+      const full=base?base+"/"+name:name;
+      const item=document.createElement("div");
+      item.className="tree-item "+(isFile?"tree-file":"tree-folder");
+      item.dataset.path=full; item.dataset.type=isFile?"file":"folder";
+      const label=document.createElement("div");
+      label.className="label"; label.textContent=name; label.style.flex="1"; label.title=full;
+      label.addEventListener("dblclick",e=>{
+        e.stopPropagation();
+        isFile?renameFilePrompt(full):renameFolderPrompt(full);
+      });
+      item.appendChild(label); parentEl.appendChild(item);
+      if(isFile){
+        if(full===activePath) item.classList.add("active");
+        item.addEventListener("click",()=>openFile(full));
+      } else {
+        const ch=document.createElement("div"); ch.className="tree-children";
+        item.appendChild(ch); renderTree(node[name],ch,full);
+        item.classList.add("open"); ch.style.display="block";
+        item.addEventListener("click",e=>{
+          if(e.target!==label) return;
+          item.classList.toggle("open");
+          ch.style.display=ch.style.display==="none"?"block":"none";
+        });
+      }
+      item.addEventListener("contextmenu",e=>{
+        e.preventDefault();
+        showContextMenu(e.clientX,e.clientY,{type:isFile?"file":"folder",path:full});
+      });
+    });
+  }
+
+  function renderFileTree(){ renderTree(buildTree(project.files,project.folders),filesEl); updateTitle(); }
+
+  /* ═══════════════════════════════════════════
+     TABS
+  ═══════════════════════════════════════════ */
+  function renderTabs(){
+    tabsEl.innerHTML="";
+    openFiles.forEach(path=>{
+      const tab=document.createElement("div");
+      tab.className="tab"+(path===activePath?" active":"");
+      tab.textContent=path.split("/").pop(); tab.title=path;
+      const close=document.createElement("span");
+      close.className="close"; close.textContent="×"; close.style.marginLeft="6px";
+      close.addEventListener("click",e=>{ e.stopPropagation(); closeTab(path); });
+      tab.appendChild(close);
+      tab.addEventListener("click",()=>openFile(path));
+      tabsEl.appendChild(tab);
+    });
+  }
+
+  function openFile(path,add=true){
+    saveActiveFile(); activePath=path;
+    if(add&&!openFiles.includes(path)) openFiles.push(path);
+    renderTabs(); renderFileTree();
+    codeEl.value=project.files[activePath]||""; codeEl.focus();
+  }
+
+  function closeTab(path){
+    const i=openFiles.indexOf(path); if(i===-1) return;
+    openFiles.splice(i,1);
+    if(activePath===path){
+      activePath=openFiles[openFiles.length-1]||Object.keys(project.files)[0]||"";
+      codeEl.value=project.files[activePath]||"";
+    }
+    renderTabs(); renderFileTree();
+  }
+
+  /* ═══════════════════════════════════════════
+     ADD MENU
+  ═══════════════════════════════════════════ */
+  addBtn.addEventListener("click",()=>{ positionMenu(addMenu,addBtn); addMenu.style.display="block"; });
+  document.addEventListener("click",e=>{
+    if(!addMenu.contains(e.target)&&e.target!==addBtn) addMenu.style.display="none";
+    if(!contextMenu.contains(e.target)) contextMenu.style.display="none";
+  });
+  function positionMenu(menu,anchor){
+    const r=anchor.getBoundingClientRect();
+    let l=r.left, t=r.bottom+6;
+    if(l+260>window.innerWidth-8) l=window.innerWidth-272;
+    if(t+220>window.innerHeight-8) t=r.top-226;
+    menu.style.left=l+"px"; menu.style.top=t+"px";
+  }
+  addMenu.addEventListener("click",e=>{
+    const item=e.target.closest(".item"); if(!item) return;
+    addMenu.style.display="none";
+    const action=item.dataset.action;
+    if(action==="newCpp"){
+      const n=prompt("New C++ file name:","src/file.cpp"); if(!n) return;
+      if(!n.endsWith(".cpp")) return alert("Must end with .cpp");
+      createCpp(n);
+    } else if(action==="newHeader"){
+      const n=prompt("New header file name:","src/file.h"); if(!n) return;
+      if(!n.endsWith(".h")) return alert("Must end with .h");
+      createHeader(n);
+    } else if(action==="newFolder"){
+      const n=prompt("New folder name:","src"); if(!n) return;
+      ensureFolderPath(n); renderFileTree();
+    }
+  });
+
+  function createCpp(path){
+    ensureFolderForFile(path);
+    const base=path.split("/").pop().replace(".cpp","");
+    project.files[path]=`#include <iostream>\nusing namespace std;\n\nvoid ${base}Func() {\n    cout << "Hello from ${path}!" << endl;\n}\n`;
+    openFile(path); renderFileTree();
+  }
+  function createHeader(path){
+    ensureFolderForFile(path);
+    const guard=path.split("/").pop().replace(/\W/g,"_").toUpperCase();
+    project.files[path]=`#ifndef ${guard}\n#define ${guard}\n\n// declarations\n\n#endif\n`;
+    openFile(path); renderFileTree();
+  }
+
+  /* ═══════════════════════════════════════════
+     CONTEXT MENU
+  ═══════════════════════════════════════════ */
+  function showContextMenu(x,y,target){
+    contextMenu.innerHTML="";
+    const {type,path}=target;
+    function add(label,fn){
+      const div=document.createElement("div"); div.className="item"; div.textContent=label;
+      div.addEventListener("click",()=>{ contextMenu.style.display="none"; fn(); });
+      contextMenu.appendChild(div);
+    }
+    if(type==="file"){
+      add("Open",()=>openFile(path));
+      add("Rename",()=>renameFilePrompt(path));
+      add("Delete",()=>deleteFile(path));
+    } else {
+      add("New C++ File",()=>{ const n=prompt("Name:",path+"/file.cpp"); if(n) createCpp(n); });
+      add("New Header File",()=>{ const n=prompt("Name:",path+"/file.h"); if(n) createHeader(n); });
+      add("New Folder",()=>{ const n=prompt("Name:",path+"/sub"); if(n){ ensureFolderPath(n); renderFileTree(); }});
+      add("Rename Folder",()=>renameFolderPrompt(path));
+      add("Delete Folder",()=>deleteFolder(path));
+    }
+    let l=x,t=y;
+    if(l+260>window.innerWidth-8) l=window.innerWidth-272;
+    if(t+280>window.innerHeight-8) t=window.innerHeight-292;
+    contextMenu.style.left=l+"px"; contextMenu.style.top=t+"px"; contextMenu.style.display="block";
+  }
+  document.addEventListener("contextmenu",e=>{
+    const item=e.target.closest(".tree-item"); if(!item) return;
+    e.preventDefault();
+    showContextMenu(e.clientX,e.clientY,{type:item.dataset.type,path:item.dataset.path});
+  });
+
+  function renameFilePrompt(oldPath){
+    const np=prompt("Rename file:",oldPath); if(!np||np===oldPath) return;
+    if(project.files[np]) return alert("File exists");
+    project.files[np]=project.files[oldPath]; delete project.files[oldPath];
+    ensureFolderForFile(np);
+    const i=openFiles.indexOf(oldPath); if(i!==-1) openFiles[i]=np;
+    if(activePath===oldPath) activePath=np;
+    renderFileTree(); renderTabs(); codeEl.value=project.files[activePath]||"";
+  }
+  function deleteFile(path){
+    if(!confirm("Delete '"+path+"'?")) return;
+    delete project.files[path];
+    const i=openFiles.indexOf(path); if(i!==-1) openFiles.splice(i,1);
+    if(activePath===path){ activePath=openFiles[openFiles.length-1]||Object.keys(project.files)[0]||""; codeEl.value=project.files[activePath]||""; }
+    renderFileTree(); renderTabs();
+  }
+  function renameFolderPrompt(old){
+    const np=prompt("Rename folder:",old); if(!np||np===old) return;
+    const nf={};
+    Object.keys(project.folders).forEach(f=>{ nf[(f===old||f.startsWith(old+"/"))?np+f.substring(old.length):f]=true; });
+    project.folders=nf;
+    const nfiles={};
+    Object.keys(project.files).forEach(p=>{
+      if(p.startsWith(old+"/")){
+        const n2=np+p.substring(old.length); nfiles[n2]=project.files[p];
+        const i=openFiles.indexOf(p); if(i!==-1) openFiles[i]=n2;
+        if(activePath===p) activePath=n2;
+      } else nfiles[p]=project.files[p];
+    });
+    project.files=nfiles;
+    renderFileTree(); renderTabs(); codeEl.value=project.files[activePath]||"";
+  }
+  function deleteFolder(path){
+    if(Object.keys(project.files).some(p=>p===path||p.startsWith(path+"/")))
+      return alert("Folder not empty. Delete files first.");
+    if(!confirm("Delete folder '"+path+"'?")) return;
+    const nf={};
+    Object.keys(project.folders).forEach(f=>{ if(f!==path&&!f.startsWith(path+"/")) nf[f]=true; });
+    project.folders=nf; renderFileTree();
+  }
+
+  /* ═══════════════════════════════════════════
+     CONSOLE
+  ═══════════════════════════════════════════ */
+  function openConsole(){ consoleWindow.style.display="flex"; }
+  function setConTab(tab){
+    conActive=tab;
+    conTabs.forEach(t=>t.classList.toggle("active",t.dataset.tab===tab));
+    consoleContent.textContent=conData[tab]||"";
+    consoleContent.scrollTop=consoleContent.scrollHeight;
+  }
+  conTabs.forEach(t=>t.addEventListener("click",()=>setConTab(t.dataset.tab)));
+  consoleClose.addEventListener("click",()=>consoleWindow.style.display="none");
+  consoleMin.addEventListener("click",()=>consoleWindow.classList.toggle("minimized"));
+  consoleMax.addEventListener("click",()=>{
+    if(!conMaxed){
+      conPrev={l:consoleWindow.style.left,t:consoleWindow.style.top,w:consoleWindow.style.width,h:consoleWindow.style.height};
+      consoleWindow.style.left="10px"; consoleWindow.style.top="40px";
+      consoleWindow.style.width="calc(100vw - 20px)"; consoleWindow.style.height="calc(100vh - 60px)";
+      conMaxed=true;
+    } else {
+      if(conPrev){ consoleWindow.style.left=conPrev.l||""; consoleWindow.style.top=conPrev.t||""; consoleWindow.style.width=conPrev.w||"760px"; consoleWindow.style.height=conPrev.h||"360px"; }
+      conMaxed=false;
+    }
+  });
+  (()=>{
+    const title=document.getElementById("consoleTitle");
+    let drag=false,ox=0,oy=0;
+    title.addEventListener("mousedown",e=>{ drag=true; ox=e.clientX-consoleWindow.offsetLeft; oy=e.clientY-consoleWindow.offsetTop; });
+    document.addEventListener("mousemove",e=>{ if(!drag)return; consoleWindow.style.left=(e.clientX-ox)+"px"; consoleWindow.style.top=(e.clientY-oy)+"px"; });
+    document.addEventListener("mouseup",()=>drag=false);
+  })();
+
+  /* ═══════════════════════════════════════════
+     BUILD GENERATORS
+  ═══════════════════════════════════════════ */
+  function generateReadme(){
+    const name=project.name||"MyProject";
+    const cppFiles=Object.keys(project.files).filter(f=>f.endsWith(".cpp"));
+    return `# ${name}\r\n\r\nGenerated by **Spacebook IDE** — ${new Date().toLocaleDateString()}\r\n\r\n## Files\r\n\r\n${Object.keys(project.files).sort().map(f=>`- ${f}`).join("\r\n")}\r\n\r\n## Build Instructions\r\n\r\n### Option A — Visual Studio 2019/2022 (recommended on Windows)\r\n\r\nOpen \`${name}.sln\` directly in Visual Studio, then press **Ctrl+Shift+B** to build.\r\n\r\nOr from a **Developer Command Prompt**:\r\n\r\n    msbuild ${name}.sln /p:Configuration=Release /p:Platform=x64\r\n\r\n### Option B — cl.exe (Developer Command Prompt)\r\n\r\n    cl /EHsc /std:c++17 ${cppFiles.map(f=>`"${f}"`).join(" ")} /Fe:${name}.exe\r\n    ${name}.exe\r\n\r\n### Option C — MinGW / g++ (MSYS2)\r\n\r\n    g++ -std=c++17 -Isrc ${cppFiles.map(f=>`"${f}"`).join(" ")} -o ${name}.exe\r\n    ./${name}.exe\r\n\r\n### Option D — CMake\r\n\r\n    mkdir build\r\n    cd build\r\n    cmake .. -G "Visual Studio 17 2022" -A x64\r\n    cmake --build . --config Release\r\n\r\n## Notes\r\n- Requires Visual Studio 2019+ with C++ Desktop Development workload installed\r\n- MinGW/g++ requires MSYS2 (winget install msys2.msys2)\r\n- CMake requires cmake.org installer with PATH checked\r\n\r\nGenerated by Spacebook IDE\r\n`;
+  }
+
+  function generateCMake(){
+    const name=project.name||"MyProject";
+    const cpp=Object.keys(project.files).filter(p=>p.endsWith(".cpp")).map(p=>`    ${p}`).join("\n");
+    return `cmake_minimum_required(VERSION 3.10)\nproject(${name})\n\nset(CMAKE_CXX_STANDARD 17)\nset(CMAKE_CXX_STANDARD_REQUIRED True)\n\nadd_executable(${name}\n${cpp}\n)\n\ntarget_include_directories(${name} PRIVATE src)\n`;
+  }
+
+  function generateMakefile(){
+    const name=project.name||"program";
+    const srcs=Object.keys(project.files).filter(p=>p.endsWith(".cpp")).join(" ");
+    return `CXX = g++\nCXXFLAGS = -std=c++17 -Wall -Isrc\nTARGET = ${name}.exe\nSRCS = ${srcs}\n\nall:\n\t$(CXX) $(CXXFLAGS) -o $(TARGET) $(SRCS)\n\nclean:\n\tdel $(TARGET)\n`;
+  }
+
+  function generateVcxproj(projGuid){
+    const name=project.name||"TestSolution";
+    const files=Object.keys(project.files).filter(f=>f.match(/\.(cpp|c|h|hpp)$/));
+    const clComp=files.filter(f=>f.match(/\.(cpp|c)$/)).map(f=>`    <ClCompile Include="${f.replace(/\//g,"\\")}" />`).join("\r\n");
+    const clInc=files.filter(f=>f.match(/\.(h|hpp)$/)).map(f=>`    <ClInclude Include="${f.replace(/\//g,"\\")}" />`).join("\r\n");
+    return `<?xml version="1.0" encoding="utf-8"?>\r\n<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">\r\n  <ItemGroup Label="ProjectConfigurations">\r\n    <ProjectConfiguration Include="Debug|x64">\r\n      <Configuration>Debug</Configuration>\r\n      <Platform>x64</Platform>\r\n    </ProjectConfiguration>\r\n    <ProjectConfiguration Include="Release|x64">\r\n      <Configuration>Release</Configuration>\r\n      <Platform>x64</Platform>\r\n    </ProjectConfiguration>\r\n  </ItemGroup>\r\n  <PropertyGroup Label="Globals">\r\n    <ProjectGuid>{${projGuid}}</ProjectGuid>\r\n    <Keyword>Win32Proj</Keyword>\r\n    <RootNamespace>${name}</RootNamespace>\r\n    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>\r\n  </PropertyGroup>\r\n  <Import Project="$(VCTargetsPath)\\Microsoft.Cpp.Default.props" />\r\n  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">\r\n    <ConfigurationType>Application</ConfigurationType>\r\n    <UseDebugLibraries>true</UseDebugLibraries>\r\n    <PlatformToolset>v143</PlatformToolset>\r\n    <CharacterSet>MultiByte</CharacterSet>\r\n  </PropertyGroup>\r\n  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">\r\n    <ConfigurationType>Application</ConfigurationType>\r\n    <UseDebugLibraries>false</UseDebugLibraries>\r\n    <PlatformToolset>v143</PlatformToolset>\r\n    <WholeProgramOptimization>true</WholeProgramOptimization>\r\n    <CharacterSet>MultiByte</CharacterSet>\r\n  </PropertyGroup>\r\n  <Import Project="$(VCTargetsPath)\\Microsoft.Cpp.props" />\r\n  <ImportGroup Label="ExtensionSettings" />\r\n  <ImportGroup Label="Shared" />\r\n  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">\r\n    <Import Project="$(UserRootDir)\\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\\Microsoft.Cpp.$(Platform).user.props')" />\r\n  </ImportGroup>\r\n  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">\r\n    <Import Project="$(UserRootDir)\\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\\Microsoft.Cpp.$(Platform).user.props')" />\r\n  </ImportGroup>\r\n  <PropertyGroup Label="UserMacros" />\r\n  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">\r\n    <ClCompile>\r\n      <WarningLevel>Level3</WarningLevel>\r\n      <SDLCheck>true</SDLCheck>\r\n      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>\r\n      <ConformanceMode>true</ConformanceMode>\r\n      <LanguageStandard>stdcpp17</LanguageStandard>\r\n      <AdditionalIncludeDirectories>src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>\r\n    </ClCompile>\r\n    <Link>\r\n      <SubSystem>Console</SubSystem>\r\n    </Link>\r\n  </ItemDefinitionGroup>\r\n  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">\r\n    <ClCompile>\r\n      <WarningLevel>Level3</WarningLevel>\r\n      <FunctionLevelLinking>true</FunctionLevelLinking>\r\n      <IntrinsicFunctions>true</IntrinsicFunctions>\r\n      <SDLCheck>true</SDLCheck>\r\n      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>\r\n      <ConformanceMode>true</ConformanceMode>\r\n      <LanguageStandard>stdcpp17</LanguageStandard>\r\n      <AdditionalIncludeDirectories>src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>\r\n    </ClCompile>\r\n    <Link>\r\n      <SubSystem>Console</SubSystem>\r\n      <EnableCOMDATFolding>true</EnableCOMDATFolding>\r\n      <OptimizeReferences>true</OptimizeReferences>\r\n    </Link>\r\n  </ItemDefinitionGroup>\r\n  <ItemGroup>\r\n${clComp}\r\n  </ItemGroup>\r\n  <ItemGroup>\r\n${clInc}\r\n  </ItemGroup>\r\n  <Import Project="$(VCTargetsPath)\\Microsoft.Cpp.targets" />\r\n  <ImportGroup Label="ExtensionTargets" />\r\n</Project>\r\n`;
+  }
+
+  function generateVcxprojFilters(){
+    const files=Object.keys(project.files).filter(f=>f.match(/\.(cpp|c|h|hpp)$/));
+    const folders=new Set();
+    files.forEach(f=>{ const i=f.lastIndexOf("/"); if(i!==-1) folders.add(f.substring(0,i)); });
+    const folderEntries=[...folders].map(f=>`    <Filter Include="${f.replace(/\//g,"\\")}">\r\n      <UniqueIdentifier>{${uid()}}</UniqueIdentifier>\r\n    </Filter>`).join("\r\n");
+    const fileEntries=files.map(f=>{
+      const i=f.lastIndexOf("/");
+      const filter=i!==-1?f.substring(0,i):"";
+      const tag=f.match(/\.(cpp|c)$/)?"ClCompile":"ClInclude";
+      return `    <${tag} Include="${f.replace(/\//g,"\\")}">\r\n      <Filter>${filter.replace(/\//g,"\\")}</Filter>\r\n    </${tag}>`;
+    }).join("\r\n");
+    return `<?xml version="1.0" encoding="utf-8"?>\r\n<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">\r\n  <ItemGroup>\r\n${folderEntries}\r\n  </ItemGroup>\r\n  <ItemGroup>\r\n${fileEntries}\r\n  </ItemGroup>\r\n</Project>\r\n`;
+  }
+
+  function generateSln(projGuid){
+    const name=project.name||"TestSolution";
+    const slnProjGuid=uid();
+    const lines=[
+      "\xEF\xBB\xBF",
+      "Microsoft Visual Studio Solution File, Format Version 12.00",
+      "# Visual Studio Version 17",
+      "VisualStudioVersion = 17.5.33516.290",
+      "MinimumVisualStudioVersion = 10.0.40219.1",
+      `Project("{${CPP_PROJECT_TYPE_GUID}}") = "${name}", "${name}.vcxproj", "{${slnProjGuid}}"`,
+      "EndProject",
+      "Global",
+      "\tGlobalSection(SolutionConfigurationPlatforms) = preSolution",
+      "\t\tDebug|x64 = Debug|x64",
+      "\t\tRelease|x64 = Release|x64",
+      "\tEndGlobalSection",
+      "\tGlobalSection(ProjectConfigurationPlatforms) = postSolution",
+      `\t\t{${slnProjGuid}}.Debug|x64.ActiveCfg = Debug|x64`,
+      `\t\t{${slnProjGuid}}.Debug|x64.Build.0 = Debug|x64`,
+      `\t\t{${slnProjGuid}}.Release|x64.ActiveCfg = Release|x64`,
+      `\t\t{${slnProjGuid}}.Release|x64.Build.0 = Release|x64`,
+      "\tEndGlobalSection",
+      "\tGlobalSection(SolutionProperties) = preSolution",
+      "\t\tHideSolutionNode = FALSE",
+      "\tEndGlobalSection",
+      "EndGlobal"
+    ];
+    return lines.join("\r\n");
+  }
+
+  /* ═══════════════════════════════════════════
+     EXPORT — Visual Studio Solution ZIP
+  ═══════════════════════════════════════════ */
+  exportSlnBtn.addEventListener("click", async ()=>{
+    saveActiveFile();
+    try {
+      const projGuid=uid();
+      const name=project.name||"TestSolution";
+      const zip=new JSZip();
+      Object.keys(project.folders).forEach(f=>zip.folder(f));
+      Object.keys(project.files).forEach(p=>zip.file(p,project.files[p]));
+      zip.file(`${name}.vcxproj`,         generateVcxproj(projGuid));
+      zip.file(`${name}.vcxproj.filters`, generateVcxprojFilters());
+      zip.file(`${name}.sln`,             generateSln(projGuid));
+      zip.file("CMakeLists.txt",          generateCMake());
+      zip.file("Makefile",                generateMakefile());
+      zip.file("README.md",               generateReadme());
+      const blob=await zip.generateAsync({type:"blob"});
+      const a=document.createElement("a");
+      a.href=URL.createObjectURL(blob);
+      a.download=`${name}-VS.zip`;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(a.href);
+      conData.build=`[Export VS] ✔ ${name}-VS.zip\n  ✔ ${name}.sln\n  ✔ ${name}.vcxproj\n  ✔ ${name}.vcxproj.filters\n  ✔ CMakeLists.txt\n  ✔ Makefile\n  ✔ README.md\n  ✔ ${Object.keys(project.files).length} source file(s)\n\nTo build:\n  1. Unzip\n  2. Double-click ${name}.sln in Visual Studio\n  3. Ctrl+Shift+B to build\n`;
+      openConsole(); setConTab("build");
+    } catch(err){ alert("Export VS failed: "+err.message); }
+  });
+
+  /* ═══════════════════════════════════════════
+     EXPORT — Generic ZIP
+  ═══════════════════════════════════════════ */
+  exportBtn.addEventListener("click", async ()=>{
+    saveActiveFile();
+    try {
+      const name=project.name||"project";
+      const zip=new JSZip();
+      Object.keys(project.folders).forEach(f=>zip.folder(f));
+      Object.keys(project.files).forEach(p=>zip.file(p,project.files[p]));
+      zip.file("CMakeLists.txt", generateCMake());
+      zip.file("Makefile",       generateMakefile());
+      zip.file("README.md",      generateReadme());
+      const blob=await zip.generateAsync({type:"blob"});
+      const a=document.createElement("a");
+      a.href=URL.createObjectURL(blob); a.download=name+".zip";
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(a.href);
+      conData.build=`[Export ZIP] ✔ ${name}.zip\n  ✔ CMakeLists.txt\n  ✔ Makefile\n  ✔ README.md\n`;
+      openConsole(); setConTab("build");
+    } catch(err){ alert("Export failed: "+err.message); }
+  });
+
+  /* ═══════════════════════════════════════════
+     IMPORT / OPEN SOLUTION
+  ═══════════════════════════════════════════ */
+  openBtn.addEventListener("click",()=>importInput.click());
+  importInput.addEventListener("change", async ev=>{
+    const files=Array.from(ev.target.files||[]);
+    for(const f of files){
+      const n=f.name.toLowerCase();
+      if(n.endsWith(".json")){
+        try {
+          const parsed=JSON.parse(await f.text());
+          if(parsed?.project?.files){
+            project=parsed.project;
+            if(!project.folders) project.folders={};
+            activePath=Object.keys(project.files)[0]||"src/main.cpp";
+            openFiles=[activePath];
+            renderFileTree(); renderTabs(); codeEl.value=project.files[activePath]||"";
+          } else alert("Invalid project JSON.");
+        } catch(e){ alert("Invalid JSON: "+e.message); }
+      } else if(n.endsWith(".zip")){
+        try {
+          const zip=await JSZip.loadAsync(await f.arrayBuffer());
+          const np={ name:f.name.replace(/\.zip$/i,""), folders:{}, files:{} };
+          for(const [path,entry] of Object.entries(zip.files)){
+            if(path.startsWith("__MACOSX")||path.includes(".DS_Store")) continue;
+            if(entry.dir){ const fp=path.replace(/\/$/,""); if(fp) np.folders[fp]=true; }
+            else {
+              np.files[path]=await entry.async("string");
+              if(path.includes("/")) ensureFolderPath(path.substring(0,path.lastIndexOf("/")));
+            }
+          }
+          if(!Object.keys(np.files).length){ alert("No files in ZIP."); continue; }
+          if(!confirm(`Load "${np.name}"? This replaces your current project.`)) continue;
+          project=np; activePath=Object.keys(np.files)[0]; openFiles=[activePath];
+          renderFileTree(); renderTabs(); codeEl.value=project.files[activePath]||"";
+        } catch(e){ alert("ZIP error: "+e.message); }
+      } else if(n.endsWith(".sln")){
+        const txt=await f.text();
+        const slnName=f.name.replace(/\.sln$/i,"");
+        const projRx=/Project\("[^"]*"\)\s*=\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"/g;
+        const projs=[]; let m;
+        while((m=projRx.exec(txt))!==null){
+          if(m[2].includes(".")) projs.push({name:m[1],path:m[2].replace(/\\/g,"/")});
+        }
+        const np={ name:slnName, folders:{}, files:{} };
+        np.files["solution_info.txt"]=`// Solution: ${slnName}\n// Projects (${projs.length}):\n${projs.map(p=>`//   [${p.name}] → ${p.path}`).join("\n")}\n//\n// Open the exported VS ZIP to edit source files.\n`;
+        for(const p of projs){
+          const folder=p.path.includes("/")?p.path.substring(0,p.path.lastIndexOf("/")):p.name;
+          ensureFolderPath(folder); np.folders[folder]=true;
+          if(p.path.endsWith(".vcxproj")) np.files[folder+"/main.cpp"]=`#include <iostream>\nusing namespace std;\n\n// Project: ${p.name}\nint main() {\n    cout << "Project: ${p.name}" << endl;\n    return 0;\n}\n`;
+        }
+        if(!projs.length){ np.files["src/main.cpp"]=defaultProject.files["src/main.cpp"]; np.folders["src"]=true; }
+        if(!confirm(`Load "${slnName}" (${projs.length} project(s))?`)) continue;
+        project=np; activePath=Object.keys(np.files)[0]; openFiles=[activePath];
+        renderFileTree(); renderTabs(); codeEl.value=project.files[activePath]||"";
+        conData.build=`[Open .sln] ${slnName}\n${projs.map(p=>`  • ${p.name} → ${p.path}`).join("\n")}\n`;
+        openConsole(); setConTab("build");
+      } else {
+        const txt=await f.text();
+        project.files[f.name]=txt;
+        if(f.name.includes("/")) ensureFolderPath(f.name.substring(0,f.name.lastIndexOf("/")));
+        activePath=f.name;
+        if(!openFiles.includes(activePath)) openFiles=[activePath];
+        renderFileTree(); renderTabs(); codeEl.value=project.files[activePath]||"";
+      }
+    }
+    importInput.value="";
+  });
+
+  /* ═══════════════════════════════════════════
+     DRAG & DROP INTO SIDEBAR
+  ═══════════════════════════════════════════ */
+  filesEl.addEventListener("dragenter",e=>{ e.preventDefault(); filesEl.style.outline="1px dashed var(--accent)"; });
+  filesEl.addEventListener("dragover",e=>e.preventDefault());
+  filesEl.addEventListener("dragleave",()=>filesEl.style.outline="");
+  filesEl.addEventListener("drop", async e=>{
+    e.preventDefault(); filesEl.style.outline="";
+    const items=e.dataTransfer?.items;
+    if(items&&items[0]?.webkitGetAsEntry){
+      for(const item of items){ const entry=item.webkitGetAsEntry(); if(entry) await traverseEntry(entry,""); }
+    } else {
+      for(const f of e.dataTransfer.files){
+        project.files[f.name]=await f.text();
+        if(f.name.includes("/")) ensureFolderPath(f.name.substring(0,f.name.lastIndexOf("/")));
+      }
+    }
+    renderFileTree();
+  });
+  function traverseEntry(entry,path){
+    return new Promise(res=>{
+      if(entry.isFile){
+        entry.file(file=>{
+          const reader=new FileReader();
+          reader.onload=()=>{
+            const fp=path?path+"/"+file.name:file.name;
+            project.files[fp]=reader.result;
+            if(fp.includes("/")) ensureFolderPath(fp.substring(0,fp.lastIndexOf("/")));
+            res();
+          };
+          reader.readAsText(file);
+        },()=>res());
+      } else if(entry.isDirectory){
+        const fp=path?path+"/"+entry.name:entry.name;
+        ensureFolderPath(fp);
+        entry.createReader().readEntries(async entries=>{ for(const e of entries) await traverseEntry(e,fp); res(); },()=>res());
+      } else res();
+    });
+  }
+
+  /* ═══════════════════════════════════════════
+     BUILD & RUN
+  ═══════════════════════════════════════════ */
+  async function buildAndRun(){
+    saveActiveFile();
+    const filesToSend=Object.assign({},project.files);
+    const cpps=Object.keys(filesToSend).filter(p=>p.endsWith(".cpp"));
+    let hasMain=cpps.some(p=>/int\s+main\s*\(/.test(filesToSend[p]));
+    let autogen=null;
+    if(!hasMain){
+      autogen="__autogen_main.cpp";
+      filesToSend[autogen]=`#include <iostream>\nint main(){\n    std::cout << "No main() found." << std::endl;\n${cpps.map(p=>`    std::cout << "${p}" << std::endl;`).join("\n")}\n    return 0;\n}\n`;
+    }
+    conData.build="Building solution...\n"; conData.output=""; conData.errors="";
+    setConTab("build"); openConsole();
+    try {
+      const res=await fetch("https://spacebook-app.onrender.com/compile-cpp",{
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({files:filesToSend})
+      });
+      const data=await res.json();
+      if(data.error){ conData.errors=data.error; setConTab("errors"); }
+      else { conData.output=data.output||""; setConTab("output"); }
+    } catch(err){ conData.errors="Request failed:\n"+err.message; setConTab("errors"); }
+    finally { if(autogen) delete project.files[autogen]; }
+  }
+  runBtn.addEventListener("click",buildAndRun);
+
+  /* ═══════════════════════════════════════════
+     KEYBOARD SHORTCUTS
+  ═══════════════════════════════════════════ */
+  document.addEventListener("keydown",e=>{
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="s"){ e.preventDefault(); saveBtn.click(); }
+    if((e.ctrlKey||e.metaKey)&&e.key==="1") applyTheme("matrix");
+    if((e.ctrlKey||e.metaKey)&&e.key==="2") applyTheme("cyber");
+    if((e.ctrlKey||e.metaKey)&&e.key==="3") applyTheme("space");
+    if((e.ctrlKey||e.metaKey)&&e.key==="4") applyTheme("hacker");
+  });
+
+  /* ═══════════════════════════════════════════
+     INIT
+  ═══════════════════════════════════════════ */
+  function init(){
+    if(!project.folders) project.folders={};
+    if(!project.files||!Object.keys(project.files).length) project=JSON.parse(JSON.stringify(defaultProject));
+    if(!activePath||!project.files[activePath]) activePath=Object.keys(project.files)[0];
+    if(!openFiles.includes(activePath)) openFiles=[activePath];
+    renderFileTree(); renderTabs(); codeEl.value=project.files[activePath]||"";
+  }
+  init();
+
+  window.__spacebook={project,openFile,createCpp,createHeader,ensureFolderPath,saveActiveFile};
+})();
+</script>
+</body>
+</html>
