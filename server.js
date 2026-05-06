@@ -84,6 +84,20 @@ const userSchema = new mongoose.Schema({
   topFriends: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }]
 });
 
+
+// ── TETRIX SCORE SCHEMA ───────────────────────────────────────
+const tetrixScoreSchema = new mongoose.Schema({ ... });
+const TetrixScore = mongoose.model('TetrixScore', tetrixScoreSchema);
+
+// ── TETRIX LINK CODE SCHEMA ───────────────────────────────────
+const tetrixLinkSchema = new mongoose.Schema({
+  code:      { type: String, required: true, unique: true },
+  username:  { type: String, required: true },
+  avatar:    { type: String, default: '🎮' },
+  expiresAt: { type: Date,   required: true },
+});
+const TetrixLink = mongoose.model('TetrixLink', tetrixLinkSchema);
+
 const postSchema = new mongoose.Schema({
   userId: mongoose.Schema.Types.ObjectId,
   userName: String,
@@ -2446,8 +2460,6 @@ const tetrixScoreLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-
-// TETRIX SCORE SUBMIT
 // ── TETRIX TOKEN (one-time submit token) ──────────────────────
 app.get('/api/tetrix/token', requireLogin, (req, res) => {
   const token = crypto.randomBytes(24).toString('hex');
@@ -2456,6 +2468,105 @@ app.get('/api/tetrix/token', requireLogin, (req, res) => {
   res.json({ token });
 });
 
+// ── TETRIX SCORE SUBMIT ───────────────────────────────────────
+app.post('/api/tetrix/score', requireLogin, tetrixScoreLimiter, async (req, res) => {
+  try {
+    let { username, avatar, title, score, mode, token } = req.body;
+
+    // Validate one-time token
+    if (
+      !token ||
+      token !== req.session.tetrixToken ||
+      !req.session.tetrixTokenExp ||
+      Date.now() > req.session.tetrixTokenExp
+    ) {
+      return res.status(403).json({ ok: false, error: 'Invalid or expired token' });
+    }
+    req.session.tetrixToken = null;
+    req.session.tetrixTokenExp = null;
+
+    // Sanitize inputs
+    username = String(username || '').trim().slice(0, 16);
+    score    = Math.floor(Number(score));
+    mode     = String(mode   || 'Unknown').slice(0, 32);
+    avatar   = String(avatar || '🎮').slice(0, 4);
+    title    = String(title  || '').slice(0, 32);
+
+    if (!username)               return res.status(400).json({ ok: false, error: 'username required' });
+    if (!Number.isFinite(score)) return res.status(400).json({ ok: false, error: 'invalid score' });
+    if (score <= 0)              return res.json({ ok: true, saved: false });
+    if (score > 99_999_999)      score = 99_999_999;
+
+    await TetrixScore.create({ username, avatar, title, score, mode });
+    const rank = await TetrixScore.countDocuments({ mode, score: { $gt: score } });
+    res.json({ ok: true, saved: true, rank: rank + 1 });
+  } catch (err) {
+    console.error('tetrix score error', err);
+    res.status(500).json({ ok: false, error: 'server error' });
+  }
+});
+
+// ── TETRIX LEADERBOARD FETCH ──────────────────────────────────
+app.get('/api/tetrix/leaderboard', async (req, res) => {
+  try {
+    const mode = req.query.mode || 'Online VS'; // match your online mode
+    const scores = await TetrixScore.find({ mode })
+      .sort({ score: -1 })
+      .limit(50)
+      .lean();
+    res.json({ ok: true, scores });
+  } catch (e) {
+    console.error('tetrix leaderboard error', e);
+    res.status(500).json({ ok: false, error: 'leaderboard error' });
+  }
+});
+
+// ── TETRIX LINK: logged-in user generates a 6-char code ──────
+app.post('/api/tetrix/link-code', requireLogin, async (req, res) => {
+  try {
+    const user = await User.findById(req.session.userId).lean();
+    if (!user) return res.status(401).json({ ok: false, error: 'Not logged in' });
+
+    const code = crypto.randomBytes(3).toString('hex').toUpperCase();
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 min
+
+    await TetrixLink.deleteMany({ username: user.name });
+    await TetrixLink.create({
+      code,
+      username: user.name,
+      avatar: user.profilePic || '🎮',
+      expiresAt
+    });
+
+    res.json({ ok: true, code });
+  } catch (err) {
+    console.error('tetrix link-code error', err);
+    res.status(500).json({ ok: false, error: 'server error' });
+  }
+});
+
+// ── TETRIX LINK: Tetrix submits the code to get a player profile ─
+app.post('/api/tetrix/verify-link', async (req, res) => {
+  try {
+    const { code } = req.body;
+    if (!code) return res.status(400).json({ ok: false, error: 'code required' });
+
+    const entry = await TetrixLink.findOne({ code: String(code).toUpperCase().trim() });
+    if (!entry) return res.status(404).json({ ok: false, error: 'Invalid code' });
+    if (Date.now() > entry.expiresAt.getTime()) {
+      await TetrixLink.deleteOne({ _id: entry._id });
+      return res.status(410).json({ ok: false, error: 'Code expired. Generate a new one.' });
+    }
+
+    const { username, avatar } = entry;
+    await TetrixLink.deleteOne({ _id: entry._id });
+
+    res.json({ ok: true, username, avatar });
+  } catch (err) {
+    console.error('tetrix verify-link error', err);
+    res.status(500).json({ ok: false, error: 'server error' });
+  }
+});
 app.post('/api/tetrix/score', requireLogin, tetrixScoreLimiter, async (req, res) => {
   try {
     let { username, avatar, title, score, mode, token } = req.body;
@@ -2501,6 +2612,8 @@ app.get('/api/tetrix/leaderboard', async (req, res) => {
     res.status(500).json({ ok: false });
   }
 });
+
+
 
 // ====== START SERVER ======
 const server = app.listen(PORT, () => {
