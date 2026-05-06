@@ -980,49 +980,66 @@ select{background:#020202!important;color:var(--text)!important;border:1px solid
   }
 
   /* ═══════════════════════════════════════════
-     BUILD & RUN
-  ═══════════════════════════════════════════ */
-  async function buildAndRun(){
-    saveActiveFile();
-    const filesToSend=Object.assign({},project.files);
-    const cpps=Object.keys(filesToSend).filter(p=>p.endsWith(".cpp"));
-    let hasMain=cpps.some(p=>/int\s+main\s*\(/.test(filesToSend[p]));
-    let autogen=null;
-    if(!hasMain){
-      autogen="__autogen_main.cpp";
-      filesToSend[autogen]=`#include <iostream>\nint main(){\n    std::cout << "No main() found." << std::endl;\n${cpps.map(p=>`    std::cout << "${p}" << std::endl;`).join("\n")}\n    return 0;\n}\n`;
-    }
-    conData.build="Building solution...\n"; conData.output=""; conData.errors="";
-    setConTab("build"); openConsole();
-    try {
-      const res=await fetch("https://spacebook-app.onrender.com/compile-cpp",{
-        method:"POST", headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({files:filesToSend})
-      });
-    const data=await res.json();
+   BUILD & RUN
+═══════════════════════════════════════════ */
+async function buildAndRun(){
+  saveActiveFile();
+  const filesToSend = Object.assign({}, project.files);
+  const cpps = Object.keys(filesToSend).filter(p => p.endsWith(".cpp"));
+  let hasMain = cpps.some(p => /int\s+main\s*\(/.test(filesToSend[p]));
+  let autogen = null;
 
-const compileOk = data.compile?.success;
-const compileErr = data.compile?.stderr || "";
-const runOut = data.run?.stdout || "";
-const runErr = data.run?.stderr || "";
-const exitCode = data.run?.exitCode ?? data.compile?.exitCode;
-
-if(!compileOk){
-  conData.errors = compileErr || "compile failed with no output";
-  conData.output = "";
-  conData.build = `[build] failed (exit ${data.compile?.exitCode})\n${compileErr}`;
-  setConTab("errors");
-} else {
-  conData.output = runOut || "(no output)";
-  conData.errors = runErr || "";
-  conData.build = `[build] success\n[run] exit code ${exitCode}\n${compileErr ? "warnings:\n"+compileErr : "no warnings"}`;
-  setConTab("output");
-}
-      else { conData.output=data.output||""; setConTab("output"); }
-    } catch(err){ conData.errors="Request failed:\n"+err.message; setConTab("errors"); }
-    finally { if(autogen) delete project.files[autogen]; }
+  if (!hasMain) {
+    autogen = "__autogen_main.cpp";
+    filesToSend[autogen] =
+      `#include <iostream>\nint main(){\n    std::cout << "No main() found." << std::endl;\n` +
+      cpps.map(p => `    std::cout << "${p}" << std::endl;`).join("\n") +
+      `\n    return 0;\n}\n`;
   }
-  runBtn.addEventListener("click",buildAndRun);
+
+  conData.build = "Building solution...\n";
+  conData.output = "";
+  conData.errors = "";
+  setConTab("build");
+  openConsole();
+
+  try {
+    const res = await fetch("https://spacebook-app.onrender.com/compile-cpp", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ files: filesToSend, buildSolution: false, solution: null })
+    });
+
+    const data = await res.json();
+
+    const compileOk  = data.compile?.success;
+    const compileErr = data.compile?.stderr || "";
+    const runOut     = data.run?.stdout  || "";
+    const runErr     = data.run?.stderr  || "";
+    const exitCode   = data.run?.exitCode ?? data.compile?.exitCode;
+
+    if (!compileOk) {
+      conData.errors = compileErr || "compile failed with no output";
+      conData.output = "";
+      conData.build  = `[build] failed (exit ${data.compile?.exitCode})\n${compileErr}`;
+      setConTab("errors");
+    } else {
+      conData.output = runOut || "(no output)";
+      conData.errors = runErr || "";
+      conData.build  = `[build] success\n[run] exit code ${exitCode}\n` +
+                       (compileErr ? "warnings:\n" + compileErr : "no warnings");
+      setConTab("output");
+    }
+
+  } catch (err) {
+    conData.errors = "Request failed:\n" + err.message;
+    setConTab("errors");
+  } finally {
+    if (autogen) delete project.files[autogen];
+  }
+}
+
+runBtn.addEventListener("click", buildAndRun);
 
   /* ═══════════════════════════════════════════
      KEYBOARD SHORTCUTS
