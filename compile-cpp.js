@@ -1,10 +1,10 @@
-import express from "express";
-import fs from "fs";
-import path from "path";
-import { exec } from "child_process";
-import { v4 as uuid } from "uuid";
+const express = require("express");
+const fs = require("fs");
+const path = require("path");
+const { exec } = require("child_process");
+const { v4: uuid } = require("uuid");
 
-export const router = express.Router();
+const router = express.Router();
 
 router.post("/compile-cpp", async (req, res) => {
   try {
@@ -17,7 +17,7 @@ router.post("/compile-cpp", async (req, res) => {
       fs.writeFileSync(path.join(dir, name), content);
     }
 
-    // Collect all .cpp files
+    // Collect .cpp files
     const cppFiles = Object.keys(req.body.files)
       .filter(f => f.endsWith(".cpp"))
       .map(f => `"${f}"`)
@@ -44,3 +44,5 @@ router.post("/compile-cpp", async (req, res) => {
     res.json({ error: e.message });
   }
 });
+
+module.exports = router;
