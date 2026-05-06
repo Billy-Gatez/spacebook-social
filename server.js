@@ -2469,43 +2469,6 @@ app.get('/api/tetrix/token', requireLogin, (req, res) => {
   res.json({ token });
 });
 
-// ── TETRIX SCORE SUBMIT ───────────────────────────────────────
-app.post('/api/tetrix/score', requireLogin, tetrixScoreLimiter, async (req, res) => {
-  try {
-    let { username, avatar, title, score, mode, token } = req.body;
-
-    // Validate one-time token
-    if (
-      !token ||
-      token !== req.session.tetrixToken ||
-      !req.session.tetrixTokenExp ||
-      Date.now() > req.session.tetrixTokenExp
-    ) {
-      return res.status(403).json({ ok: false, error: 'Invalid or expired token' });
-    }
-    req.session.tetrixToken = null;
-    req.session.tetrixTokenExp = null;
-
-    // Sanitize inputs
-    username = String(username || '').trim().slice(0, 16);
-    score    = Math.floor(Number(score));
-    mode     = String(mode   || 'Unknown').slice(0, 32);
-    avatar   = String(avatar || '🎮').slice(0, 4);
-    title    = String(title  || '').slice(0, 32);
-
-    if (!username)               return res.status(400).json({ ok: false, error: 'username required' });
-    if (!Number.isFinite(score)) return res.status(400).json({ ok: false, error: 'invalid score' });
-    if (score <= 0)              return res.json({ ok: true, saved: false });
-    if (score > 99_999_999)      score = 99_999_999;
-
-    await TetrixScore.create({ username, avatar, title, score, mode });
-    const rank = await TetrixScore.countDocuments({ mode, score: { $gt: score } });
-    res.json({ ok: true, saved: true, rank: rank + 1 });
-  } catch (err) {
-    console.error('tetrix score error', err);
-    res.status(500).json({ ok: false, error: 'server error' });
-  }
-});
 
 // ── TETRIX LEADERBOARD FETCH ──────────────────────────────────
 app.get('/api/tetrix/leaderboard', async (req, res) => {
