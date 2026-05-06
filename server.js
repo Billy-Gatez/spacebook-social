@@ -143,16 +143,7 @@ const playerSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now }
 });
 
-// ── TETRIX SCORE SCHEMA ──────────────────────────────────────
-const tetrixScoreSchema = new mongoose.Schema({
-  username:  { type: String, required: true },
-  avatar:    { type: String, default: "🎮" },
-  title:     { type: String, default: "" },
-  score:     { type: Number, required: true },
-  mode:      { type: String, default: "Classic" },
-  createdAt: { type: Date,   default: Date.now }
-});
-const TetrixScore = mongoose.model("TetrixScore", tetrixScoreSchema);
+
 
 // ====== MODELS ======
 const User = mongoose.model("User", userSchema);
