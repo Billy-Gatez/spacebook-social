@@ -997,7 +997,7 @@ select{background:#020202!important;color:var(--text)!important;border:1px solid
     try {
       const res=await fetch("https://spacebook-app.onrender.com/compile-cpp",{
         method:"POST", headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({files:filesToSend, buildSolution:false, solution:null})
+        body:JSON.stringify({files:filesToSend})
       });
       const data=await res.json();
       if(data.error){ conData.errors=data.error; setConTab("errors"); }
