@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Spacebook IDE – C++ Solution</title>
+  <style>
+    :root {
+      --bg: #000000;
+      --bg-alt: #050505;
+      --panel: #101010;
+      --border: #222;
+      --accent: #00ff66;
+      --accent-soft: rgba(0, 255, 102, 0.2);
+      --text: #e0ffe8;
+      --text-dim: #7fd9a0;
+      --shadow: 0 0 25px rgba(0, 255, 102, 0.35);
+    }
+
+    body.theme-matrix {
+      --bg: #020403;
+      --bg-alt: #050807;
+      --panel: #050b08;
+      --border: #0f2a1a;
+      --accent: #00ff66;
+      --accent-soft: rgba(0, 255, 102, 0.2);
+      --text: #e0ffe8;
+      --text-dim: #7fd9a0;
+      --shadow: 0 0 25px rgba(0, 255, 102, 0.35);
+    }
+
+    body.theme-cyber {
+      --bg: #020617;
+      --bg-alt: #050b24;
+      --panel: #050b24;
+      --border: #1e293b;
+      --accent: #38bdf8;
+      --accent-soft: rgba(56, 189, 248, 0.2);
+      --text: #e0f2fe;
+      --text-dim: #7dd3fc;
+      --shadow: 0 0 25px rgba(56, 189, 248, 0.35);
+    }
+
+    body.theme-space {
+      --bg: #050308;
+      --bg-alt: #12040f;
+      --panel: #12040f;
+      --border: #3f1f2f;
+      --accent: #f97316;
+      --accent-soft: rgba(249, 115, 22, 0.2);
+      --text: #ffedd5;
+      --text-dim: #fed7aa;
+      --shadow: 0 0 25px rgba(249, 115, 22, 0.35);
+    }
+
+    body.theme-hacker {
+      --bg: #000000;
+      --bg-alt: #050505;
+      --panel: #050505;
+      --border: #333;
+      --accent: #ffffff;
+      --accent-soft: rgba(255, 255, 255, 0.1);
+      --text: #f5f5f5;
+      --text-dim: #a3a3a3;
+      --shadow: 0 0 25px rgba(255, 255, 255, 0.25);
+    }
+
+    body {
+      margin: 0;
+      background: radial-gradient(circle at top, var(--bg-alt) 0, var(--bg) 45%, #000 100%);
+      color: var(--text);
+      font-family: Consolas, monospace;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #topbar {
+      background: linear-gradient(90deg, rgba(0,0,0,0.9), rgba(0,0,0,0.4));
+      padding: 8px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      position: relative;
+      z-index: 10;
+    }
+
+    #topbar-left {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    #brand {
+      font-size: 14px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    #themeSelect {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    #topbar-right {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .btn {
+      background: var(--accent-soft);
+      border: 1px solid var(--accent);
+      padding: 6px 14px;
+      color: var(--text);
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      box-shadow: var(--shadow);
+    }
+
+    .btn:hover {
+      background: var(--accent);
+      color: #000;
+    }
+
+    #layout {
+      flex: 1;
+      display: flex;
+      min-height: 0;
+      padding: 8px;
+      gap: 8px;
+      box-sizing: border-box;
+    }
+
+    #sidebar {
+      width: 260px;
+      background: linear-gradient(180deg, rgba(0,0,0,0.7), rgba(0,0,0,0.95));
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px;
+      font-size: 12px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow);
+    }
+
+    #solutionHeader {
+      margin-bottom: 6px;
+      font-weight: bold;
+      color: var(--accent);
+      text-shadow: 0 0 8px var(--accent);
+    }
+
+    #files {
+      margin-top: 4px;
+      flex: 1;
+      overflow-y: auto;
+      font-size: 12px;
+    }
+
+    .tree-item {
+      cursor: pointer;
+      padding: 2px 4px;
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: var(--text-dim);
+    }
+
+    .tree-item.active {
+      background: var(--accent-soft);
+      color: var(--text);
+    }
+
+    .tree-folder > .tree-label::before {
+      content: "▸";
+      margin-right: 4px;
+      color: var(--accent);
+      font-size: 10px;
+    }
+
+    .tree-folder.open > .tree-label::before {
+      content: "▾";
+    }
+
+    .tree-file > .tree-label::before {
+      content: "●";
+      margin-right: 4px;
+      color: var(--accent);
+      font-size: 8px;
+    }
+
+    .tree-children {
+      margin-left: 14px;
+    }
+
+    #addMenuBtn {
+      margin-top: 8px;
+      font-size: 12px;
+      padding: 4px 6px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      border-radius: 3px;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    #addMenuBtn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    #addMenu {
+      position: absolute;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 4px 0;
+      display: none;
+      z-index: 1000;
+      font-size: 12px;
+      min-width: 160px;
+      box-shadow: var(--shadow);
+    }
+
+    .addMenuItem {
+      padding: 4px 10px;
+      cursor: pointer;
+      white-space: nowrap;
+      color: var(--text-dim);
+    }
+
+    .addMenuItem:hover {
+      background: var(--accent-soft);
+      color: var(--text);
+    }
+
+    #editor {
+      flex: 1;
+      background: linear-gradient(180deg, rgba(0,0,0,0.85), rgba(0,0,0,0.98));
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow);
+    }
+
+    #code {
+      width: 100%;
+      flex: 1;
+      background: #020202;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px;
+      font-size: 13px;
+      resize: none;
+      outline: none;
+      box-sizing: border-box;
+      border-radius: 4px;
+    }
+
+    /* Floating console window */
+    #vsConsoleWindow {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 600px;
+      height: 260px;
+      background: radial-gradient(circle at top, var(--bg-alt), #000);
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      display: none;
+      flex-direction: column;
+      box-shadow: var(--shadow);
+      animation: slideUp 0.25s ease-out;
+      resize: both;
+      overflow: hidden;
+      z-index: 99999;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(40px); opacity: 0; }
+      to   { transform: translateY(0); opacity: 1; }
+    }
+
+    #vsConsoleTitle {
+      background: linear-gradient(90deg, rgba(0,0,0,0.9), rgba(0,0,0,0.4));
+      padding: 6px 10px;
+      cursor: move;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--text-dim);
+      font-size: 13px;
+      user-select: none;
+      border-bottom: 1px solid var(--border);
+    }
+
+    #vsConsoleTabs {
+      display: flex;
+      background: #050505;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .vsTab {
+      padding: 6px 12px;
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .vsTab.active {
+      background: var(--accent-soft);
+      border-bottom: 2px solid var(--accent);
+      color: var(--text);
+    }
+
+    #vsConsoleContent {
+      flex: 1;
+      padding: 10px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      font-size: 13px;
+      color: var(--text);
+    }
+
+    .vsBtn {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 14px;
+      margin-left: 8px;
+    }
+
+    .vsBtn:hover {
+      color: var(--accent);
+    }
+
+    #vsConsoleWindow.minimized {
+      height: 32px;
+      resize: none;
+    }
+
+    #vsConsoleWindow.minimized #vsConsoleTabs,
+    #vsConsoleWindow.minimized #vsConsoleContent {
+      display: none;
+    }
+  </style>
+</head>
+<body class="theme-matrix">
+
+<div id="topbar">
+  <div id="topbar-left">
+    <div id="brand">SPΛCEBOOK IDE</div>
+    <select id="themeSelect">
+      <option value="matrix">Matrix Green</option>
+      <option value="cyber">Cyberpunk Blue</option>
+      <option value="space">Spacebook Orange</option>
+      <option value="hacker">Hacker Mono</option>
+    </select>
+  </div>
+  <div id="topbar-right">
+    <button class="btn" id="runBtn">Build &amp; Run ▶</button>
+  </div>
+</div>
+
+<div id="layout">
+  <div id="sidebar">
+    <div id="solutionHeader">Solution 'TestSolution'</div>
+    <div id="files"></div>
+    <button id="addMenuBtn">Add ▾</button>
+    <div id="addMenu">
+      <div class="addMenuItem" data-action="newItem">New Item…</div>
+      <div class="addMenuItem" data-action="newCpp">New C++ File (.cpp)</div>
+      <div class="addMenuItem" data-action="newHeader">New Header File (.h)</div>
+      <div class="addMenuItem" data-action="newFolder">New Folder</div>
+    </div>
+  </div>
+  <div id="editor">
+    <textarea id="code"></textarea>
+  </div>
+</div>
+
+<div id="vsConsoleWindow">
+  <div id="vsConsoleTitle">
+    <span>Console</span>
+    <div>
+      <button class="vsBtn" id="vsMin">—</button>
+      <button class="vsBtn" id="vsMax">□</button>
+      <button class="vsBtn" id="vsClose">✕</button>
+    </div>
+  </div>
+  <div id="vsConsoleTabs">
+    <div class="vsTab active" data-tab="output">Output</div>
+    <div class="vsTab" data-tab="build">Build</div>
+    <div class="vsTab" data-tab="errors">Errors</div>
+  </div>
+  <div id="vsConsoleContent"></div>
+</div>
+
+<script>
+  // ---------- Project structure ----------
+  const project = {
+    name: "TestSolution",
+    files: {
+      "main.cpp": `#include <iostream>
+using namespace std;
+
+int main() {
+    cout << "Hello from Spacebook IDE!" << endl;
+    return 0;
+}
+`
+    }
+  };
+
+  let activePath = "main.cpp";
+
+  const filesEl = document.getElementById("files");
+  const codeEl = document.getElementById("code");
+  const runBtn = document.getElementById("runBtn");
+  const addMenuBtn = document.getElementById("addMenuBtn");
+  const addMenu = document.getElementById("addMenu");
+  const themeSelect = document.getElementById("themeSelect");
+
+  // ---------- Theme switching ----------
+  function applyTheme(name) {
+    document.body.className = "theme-" + name;
+  }
+  themeSelect.onchange = () => applyTheme(themeSelect.value);
+  applyTheme(themeSelect.value);
+
+  // ---------- Tree building ----------
+  function buildTree(files) {
+    const root = {};
+    for (const path in files) {
+      const parts = path.split("/");
+      let node = root;
+      for (let i = 0; i < parts.length; i++) {
+        const part = parts[i];
+        const isFile = i === parts.length - 1;
+        if (!node[part]) {
+          node[part] = isFile ? null : {};
+        }
+        if (!isFile) node = node[part];
+      }
+    }
+    return root;
+  }
+
+  function renderTree(node, parentEl, basePath = "") {
+    parentEl.innerHTML = "";
+    const entries = Object.keys(node).sort();
+    entries.forEach(name => {
+      const isFile = node[name] === null;
+      const fullPath = basePath ? basePath + "/" + name : name;
+
+      const item = document.createElement("div");
+      item.className = "tree-item " + (isFile ? "tree-file" : "tree-folder");
+
+      const label = document.createElement("div");
+      label.className = "tree-label";
+      label.textContent = name;
+
+      item.appendChild(label);
+      parentEl.appendChild(item);
+
+      if (isFile) {
+        if (fullPath === activePath) item.classList.add("active");
+        item.onclick = () => {
+          saveActiveFile();
+          activePath = fullPath;
+          renderFileTree();
+          codeEl.value = project.files[activePath];
+        };
+      } else {
+        const children = document.createElement("div");
+        children.className = "tree-children";
+        item.appendChild(children);
+        renderTree(node[name], children, fullPath);
+
+        item.onclick = (e) => {
+          if (e.target !== label) return;
+          item.classList.toggle("open");
+          children.style.display = children.style.display === "none" ? "block" : "none";
+        };
+        item.classList.add("open");
+      }
+    });
+  }
+
+  function renderFileTree() {
+    const tree = buildTree(project.files);
+    renderTree(tree, filesEl);
+  }
+
+  function saveActiveFile() {
+    if (activePath) {
+      project.files[activePath] = codeEl.value;
+    }
+  }
+
+  // ---------- Add menu ----------
+  addMenuBtn.onclick = (e) => {
+    const rect = addMenuBtn.getBoundingClientRect();
+    addMenu.style.left = rect.left + "px";
+    addMenu.style.top = (rect.bottom + 2) + "px";
+    addMenu.style.display = "block";
+  };
+
+  document.addEventListener("click", (e) => {
+    if (!addMenu.contains(e.target) && e.target !== addMenuBtn) {
+      addMenu.style.display = "none";
+    }
+  });
+
+  function promptNewPath(defaultName) {
+    const name = prompt("New item name (you can include folders like src/main.cpp):", defaultName);
+    if (!name) return null;
+    if (project.files[name]) {
+      alert("Item already exists");
+      return null;
+    }
+    return name;
+  }
+
+  function createCppFile(name) {
+    saveActiveFile();
+    const base = name.split("/").pop().replace(".cpp", "");
+    project.files[name] =
+`#include <iostream>
+using namespace std;
+
+void ${base}Func() {
+    cout << "Hello from ${name}!" << endl;
+}
+`;
+    activePath = name;
+    renderFileTree();
+    codeEl.value = project.files[activePath];
+  }
+
+  function createHeaderFile(name) {
+    saveActiveFile();
+    const guard = name.split("/").pop().replace(".", "_").toUpperCase();
+    project.files[name] =
+`#ifndef ${guard}
+#define ${guard}
+
+// Your declarations here
+
+#endif`;
+    activePath = name;
+    renderFileTree();
+    codeEl.value = project.files[activePath];
+  }
+
+  addMenu.addEventListener("click", (e) => {
+    const item = e.target.closest(".addMenuItem");
+    if (!item) return;
+    const action = item.dataset.action;
+    addMenu.style.display = "none";
+
+    if (action === "newItem") {
+      const name = promptNewPath("file.cpp");
+      if (!name) return;
+      if (name.endsWith(".cpp")) createCppFile(name);
+      else if (name.endsWith(".h")) createHeaderFile(name);
+      else alert("File must end with .cpp or .h");
+    } else if (action === "newCpp") {
+      const name = promptNewPath("file.cpp");
+      if (!name) return;
+      if (!name.endsWith(".cpp")) {
+        alert("Name must end with .cpp");
+        return;
+      }
+      createCppFile(name);
+    } else if (action === "newHeader") {
+      const name = promptNewPath("file.h");
+      if (!name) return;
+      if (!name.endsWith(".h")) {
+        alert("Name must end with .h");
+        return;
+      }
+      createHeaderFile(name);
+    } else if (action === "newFolder") {
+      const name = prompt("New folder name (e.g., src or include):", "src");
+      if (!name) return;
+      alert("Folder '" + name + "' will appear once it contains files.");
+    }
+  });
+
+  // ---------- Console ----------
+  const vsWindow = document.getElementById("vsConsoleWindow");
+  const vsContent = document.getElementById("vsConsoleContent");
+  const vsTabs = document.querySelectorAll(".vsTab");
+  const vsMin = document.getElementById("vsMin");
+  const vsMax = document.getElementById("vsMax");
+  const vsClose = document.getElementById("vsClose");
+
+  let activeTab = "output";
+  const tabData = { output: "", build: "", errors: "" };
+  let isMaximized = false;
+  let prevRect = null;
+
+  function openVSConsole() {
+    vsWindow.style.display = "flex";
+  }
+
+  function setTab(tab) {
+    activeTab = tab;
+    vsTabs.forEach(t => t.classList.toggle("active", t.dataset.tab === tab));
+    vsContent.textContent = tabData[tab];
+    vsContent.scrollTop = vsContent.scrollHeight;
+  }
+
+  vsTabs.forEach(tab => {
+    tab.onclick = () => setTab(tab.dataset.tab);
+  });
+
+  (function() {
+    const title = document.getElementById("vsConsoleTitle");
+    let offsetX, offsetY, dragging = false;
+
+    title.addEventListener("mousedown", e => {
+      if (vsWindow.classList.contains("minimized")) return;
+      dragging = true;
+      offsetX = e.clientX - vsWindow.offsetLeft;
+      offsetY = e.clientY - vsWindow.offsetTop;
+    });
+
+    document.addEventListener("mousemove", e => {
+      if (dragging) {
+        vsWindow.style.left = (e.clientX - offsetX) + "px";
+        vsWindow.style.top = (e.clientY - offsetY) + "px";
+      }
+    });
+
+    document.addEventListener("mouseup", () => dragging = false);
+  })();
+
+  vsClose.onclick = () => vsWindow.style.display = "none";
+
+  vsMin.onclick = () => {
+    vsWindow.classList.toggle("minimized");
+  };
+
+  vsMax.onclick = () => {
+    if (!isMaximized) {
+      prevRect = {
+        left: vsWindow.style.left,
+        top: vsWindow.style.top,
+        width: vsWindow.style.width,
+        height: vsWindow.style.height
+      };
+      vsWindow.style.left = "10px";
+      vsWindow.style.top = "40px";
+      vsWindow.style.width = "calc(100vw - 20px)";
+      vsWindow.style.height = "calc(100vh - 60px)";
+      isMaximized = true;
+    } else {
+      if (prevRect) {
+        vsWindow.style.left = prevRect.left || "";
+        vsWindow.style.top = prevRect.top || "";
+        vsWindow.style.width = prevRect.width || "600px";
+        vsWindow.style.height = prevRect.height || "260px";
+      }
+      isMaximized = false;
+    }
+  };
+
+  // ---------- Build & Run ----------
+  async function buildAndRun() {
+    saveActiveFile();
+
+    tabData.build = "Building solution...\n";
+    tabData.output = "";
+    tabData.errors = "";
+    setTab("build");
+    openVSConsole();
+
+    try {
+      const res = await fetch("https://spacebook-app.onrender.com/compile-cpp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ files: project.files })
+      });
+
+      const data = await res.json();
+
+      if (data.error) {
+        tabData.errors = data.error;
+        setTab("errors");
+      } else {
+        tabData.output = data.output || "";
+        setTab("output");
+      }
+    } catch (e) {
+      tabData.errors = "Request failed:\n" + e.message;
+      setTab("errors");
+    }
+  }
+
+  runBtn.onclick = buildAndRun;
+
+  // ---------- Init ----------
+  renderFileTree();
+  codeEl.value = project.files[activePath];
+</script>
+
+</body>
+</html>
