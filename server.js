@@ -85,9 +85,19 @@ const userSchema = new mongoose.Schema({
 });
 
 
-// ── TETRIX SCORE SCHEMA ───────────────────────────────────────
+// ── TETRIX SCORE SCHEMA ──────────────────────────────────────
+const tetrixScoreSchema = new mongoose.Schema({
+  username: { type: String, required: true },
+  avatar:   { type: String, default: '🎮' },
+  title:    { type: String, default: '' },
+  score:    { type: Number, required: true },
+  mode:     { type: String, default: 'Classic' },
+  createdAt:{ type: Date,   default: Date.now }
+});
 
 const TetrixScore = mongoose.model('TetrixScore', tetrixScoreSchema);
+
+
 
 // ── TETRIX LINK CODE SCHEMA ───────────────────────────────────
 const tetrixLinkSchema = new mongoose.Schema({
