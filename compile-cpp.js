@@ -4,10 +4,9 @@ import path from "path";
 import { exec } from "child_process";
 import { v4 as uuid } from "uuid";
 
-const app = express();
-app.use(express.json({ limit: "10mb" }));
+export const router = express.Router();
 
-app.post("/compile-cpp", async (req, res) => {
+router.post("/compile-cpp", async (req, res) => {
   try {
     const id = uuid();
     const dir = path.join("/tmp", id);
@@ -45,7 +44,3 @@ app.post("/compile-cpp", async (req, res) => {
     res.json({ error: e.message });
   }
 });
-
-app.listen(3000, () => console.log("C++ compiler backend running on port 3000"));
-
-

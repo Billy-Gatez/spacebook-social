@@ -29,6 +29,24 @@ const fs = require("fs");
 // ====== APP ======
 const app = express();
 
+import express from "express";
+import "./compile-cpp.js"; // this registers the route
+
+const app = express();
+app.use(express.json({ limit: "10mb" }));
+
+// IMPORTANT: compile-cpp.js must attach its route to THIS app
+import { router as compileRouter } from "./compile-cpp.js";
+app.use("/", compileRouter);
+
+app.get("/", (req, res) => {
+  res.send("Backend is running");
+});
+
+const port = process.env.PORT || 3000;
+app.listen(port, () => console.log("Server running on port", port));
+
+
 // 1) JSON body parser for age-check POST
 app.use(express.json());
 
