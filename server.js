@@ -86,7 +86,7 @@ const userSchema = new mongoose.Schema({
 
 
 // ── TETRIX SCORE SCHEMA ───────────────────────────────────────
-const tetrixScoreSchema = new mongoose.Schema({ ... });
+
 const TetrixScore = mongoose.model('TetrixScore', tetrixScoreSchema);
 
 // ── TETRIX LINK CODE SCHEMA ───────────────────────────────────
