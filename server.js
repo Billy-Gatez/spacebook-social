@@ -2696,9 +2696,8 @@ try {
   const attachPlaylists = require('./playlists');
   attachPlaylists(app, server, mongoose, requireLogin);
 } catch(e) {
-  console.warn('playlists module not loaded:', e.message);
+  console.error('playlists module FAILED:', e);
 }
-
 try {
   const attachSoundCloud = require('./modules/soundcloud');
   attachSoundCloud(app, mongoose, requireLogin);
