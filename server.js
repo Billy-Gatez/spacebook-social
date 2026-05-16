@@ -310,60 +310,6 @@ app.post("/login", async (req, res) => {
 });
 
 
-// ====== PLAYLIST ROUTES ======
-app.get('/api/playlists', requireLogin, async (req, res) => {
-  const playlists = await Playlist.find({ userId: req.session.userId }).sort({ createdAt: -1 });
-  res.json(playlists);
-});
-
-app.post('/api/playlists', requireLogin, async (req, res) => {
-  const { name, collaborative } = req.body;
-  if (!name) return res.status(400).json({ error: 'Name required' });
-  const pl = await Playlist.create({
-    userId: req.session.userId,
-    name,
-    collaborative: !!collaborative,
-    tracks: []
-  });
-  res.json(pl);
-});
-
-app.post('/api/playlists/:id/tracks', requireLogin, async (req, res) => {
-  const { soundcloudUrl, title } = req.body;
-  if (!soundcloudUrl) return res.status(400).json({ error: 'soundcloudUrl required' });
-  const pl = await Playlist.findOneAndUpdate(
-    { _id: req.params.id, userId: req.session.userId },
-    { $push: { tracks: { soundcloudUrl, title: title || soundcloudUrl } } },
-    { new: true }
-  );
-  if (!pl) return res.status(404).json({ error: 'Playlist not found' });
-  res.json(pl);
-});
-
-app.delete('/api/playlists/:id/tracks/:index', requireLogin, async (req, res) => {
-  const pl = await Playlist.findOne({ _id: req.params.id, userId: req.session.userId });
-  if (!pl) return res.status(404).json({ error: 'Not found' });
-  pl.tracks.splice(Number(req.params.index), 1);
-  await pl.save();
-  res.json(pl);
-});
-
-app.delete('/api/playlists/:id', requireLogin, async (req, res) => {
-  await Playlist.deleteOne({ _id: req.params.id, userId: req.session.userId });
-  res.json({ success: true });
-});
-
-app.post('/api/listen-rooms', requireLogin, async (req, res) => {
-  const { playlistId } = req.body;
-  const room = await ListenRoom.create({ playlistId, hostId: req.session.userId });
-  res.json(room);
-});
-
-app.get('/api/listen-rooms/:id', requireLogin, async (req, res) => {
-  const room = await ListenRoom.findById(req.params.id);
-  if (!room) return res.status(404).json({ error: 'Not found' });
-  res.json(room);
-});
 
 // ====== SESSION USER (used by soundcloud-client.js) ======
 app.get('/api/session-user', requireLogin, async (req, res) => {
@@ -2490,6 +2436,34 @@ app.get("/api/me", requireLogin, async (req, res) => {
   }
 });
 
+app.get("/api/artists/search", requireLogin, async (req, res) => {
+  try {
+    const q = (req.query.q || "").trim();
+    if (!q) return res.json([]);
+    const ArtistProfile = mongoose.models.ArtistProfile;
+    if (!ArtistProfile) return res.json([]);
+    const artists = await ArtistProfile.find({
+      isArtist: true,
+      $or: [
+        { genre: { $regex: q, $options: "i" } },
+        { bio: { $regex: q, $options: "i" } }
+      ]
+    }).lean();
+    const User = mongoose.model("User");
+    const userIds = artists.map(a => a.userId);
+    const users = await User.find({ _id: { $in: userIds } }).select("name");
+    const nameMap = {};
+    users.forEach(u => { nameMap[String(u._id)] = u.name; });
+    res.json(artists.map(a => ({
+      userId: a.userId,
+      userName: nameMap[String(a.userId)] || "Artist",
+      genre: a.genre || "",
+      bio: a.bio || "",
+      isVerified: !!a.isVerified
+    })));
+  } catch(e) { res.json([]); }
+});
+
 // ====== SEARCH USERS API ======
 app.get("/api/users/search", requireLogin, async (req, res) => {
   try {
@@ -2738,4 +2712,9 @@ try {
   const attachListenTogether = require("./modules/listen-together");
   attachListenTogether(app, mongoose, requireLogin);
 } catch(e) { console.warn("listen-together module not found, skipping"); }
+
+try {
+  const attachSoundCloud = require("./modules/soundcloud");
+  attachSoundCloud(app, mongoose, requireLogin);
+} catch(e) { console.warn("soundcloud module not loaded:", e.message); }
 
