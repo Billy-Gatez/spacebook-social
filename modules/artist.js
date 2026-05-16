@@ -3,6 +3,7 @@ const path = require("path");
 
 const artistProfileSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", unique: true },
+  artistName: String,
   isArtist: { type: Boolean, default: false },
   isVerified: { type: Boolean, default: false },
   genre: String,
@@ -13,6 +14,7 @@ const artistProfileSchema = new mongoose.Schema({
     title: String,
     url: String,
     platform: String,
+    plays: { type: Number, default: 0 },
     importedAt: { type: Date, default: Date.now }
   }],
   upcomingShows: [{
@@ -27,6 +29,8 @@ const artistProfileSchema = new mongoose.Schema({
     fromUserId: mongoose.Schema.Types.ObjectId,
     fromName: String,
     message: String,
+    reply: String,
+    repliedAt: Date,
     createdAt: { type: Date, default: Date.now }
   }],
   createdAt: { type: Date, default: Date.now }
@@ -40,141 +44,219 @@ module.exports = function attachArtist(app, mongoose, requireLogin, cloudinary, 
     return new mongoose.Types.ObjectId(req.session.userId);
   }
 
+  // PAGE ROUTES
   app.get("/artist-dashboard", requireLogin, (req, res) => {
     res.sendFile(path.join(__dirname, "../public", "artist-dashboard.html"));
   });
 
+  app.get("/artist/:userId", requireLogin, (req, res) => {
+    res.sendFile(path.join(__dirname, "../public", "artist-profile.html"));
+  });
+
+  // GET MY ARTIST PROFILE
   app.get("/api/artist/me", requireLogin, async (req, res) => {
     try {
       const artist = await ArtistProfile.findOne({ userId: uid(req) });
       res.json(artist || null);
-    } catch (e) {
-      res.json(null);
-    }
+    } catch(e) { res.json(null); }
   });
 
-  app.get("/api/artist/fan-messages/inbox", requireLogin, async (req, res) => {
-    const artist = await ArtistProfile.findOne({ userId: uid(req) });
-    if (!artist) return res.status(404).json({ error: "Not found" });
-    res.json(artist.fanMessages || []);
-  });
-
+  // GET ANY ARTIST BY USERID
   app.get("/api/artist/:userId", async (req, res) => {
     try {
       const artist = await ArtistProfile.findOne({ userId: new mongoose.Types.ObjectId(req.params.userId) });
-      res.json(artist || null);
-    } catch (e) {
-      res.json(null);
-    }
+      if (!artist) return res.status(404).json(null);
+      const User = mongoose.model("User");
+      const user = await User.findById(req.params.userId).select("name profilePic").lean();
+      res.json({ ...artist.toObject(), userName: user?.name || "Artist", profilePic: user?.profilePic || null });
+    } catch(e) { res.json(null); }
   });
 
+  // ENABLE ARTIST MODE
   app.post("/api/artist/enable", requireLogin, async (req, res) => {
-    const { genre, bio, soundcloudProfile, spotifyProfile, tipUrl } = req.body;
-    const artist = await ArtistProfile.findOneAndUpdate(
-      { userId: uid(req) },
-      { isArtist: true, genre, bio, soundcloudProfile, spotifyProfile, tipUrl },
-      { upsert: true, new: true }
-    );
-    res.json(artist);
+    try {
+      const { artistName, genre, bio, soundcloudProfile, spotifyProfile, tipUrl } = req.body;
+      const artist = await ArtistProfile.findOneAndUpdate(
+        { userId: uid(req) },
+        { isArtist: true, artistName, genre, bio, soundcloudProfile, spotifyProfile, tipUrl },
+        { upsert: true, new: true }
+      );
+      res.json(artist);
+    } catch(e) { res.status(500).json({ error: e.message }); }
   });
 
+  // UPDATE ARTIST PROFILE
   app.put("/api/artist", requireLogin, async (req, res) => {
-    const { genre, bio, soundcloudProfile, spotifyProfile, tipUrl } = req.body;
-    const artist = await ArtistProfile.findOneAndUpdate(
-      { userId: uid(req) },
-      { genre, bio, soundcloudProfile, spotifyProfile, tipUrl },
-      { new: true }
-    );
-    res.json(artist);
+    try {
+      const { artistName, genre, bio, soundcloudProfile, spotifyProfile, tipUrl } = req.body;
+      const artist = await ArtistProfile.findOneAndUpdate(
+        { userId: uid(req) },
+        { artistName, genre, bio, soundcloudProfile, spotifyProfile, tipUrl },
+        { new: true }
+      );
+      res.json(artist);
+    } catch(e) { res.status(500).json({ error: e.message }); }
   });
 
-  app.post("/api/artist/shows", requireLogin, async (req, res) => {
-    const { venue, city, date, ticketUrl } = req.body;
-    await ArtistProfile.updateOne(
-      { userId: uid(req) },
-      { $push: { upcomingShows: { venue, city, date, ticketUrl } } }
-    );
-    res.json({ success: true });
-  });
-
-  app.delete("/api/artist/shows/:index", requireLogin, async (req, res) => {
-    const artist = await ArtistProfile.findOne({ userId: uid(req) });
-    if (!artist) return res.status(404).json({ error: "Not found" });
-    artist.upcomingShows.splice(Number(req.params.index), 1);
-    await artist.save();
-    res.json({ success: true });
-  });
-
+  // IMPORT TRACKS
   app.post("/api/artist/import-tracks", requireLogin, async (req, res) => {
-    const { urls, platform } = req.body;
-    const tracks = [];
-    for (const url of (urls || [])) {
-      let title = url;
-      try {
-        const r = await fetch(`https://soundcloud.com/oembed?format=json&url=${encodeURIComponent(url)}`);
-        const d = await r.json();
-        title = d.title || url;
-      } catch {}
-      tracks.push({ title, url, platform: platform || "soundcloud" });
-    }
-    await ArtistProfile.updateOne(
-      { userId: uid(req) },
-      { $push: { importedTracks: { $each: tracks } } }
-    );
-    res.json({ success: true, tracks });
+    try {
+      const { urls, platform } = req.body;
+      const tracks = [];
+      for (const url of (urls || [])) {
+        let title = url;
+        try {
+          const r = await fetch(`https://soundcloud.com/oembed?format=json&url=${encodeURIComponent(url)}`);
+          const d = await r.json();
+          title = d.title || url;
+        } catch {}
+        tracks.push({ title, url, platform: platform || "soundcloud", plays: 0 });
+      }
+      await ArtistProfile.updateOne(
+        { userId: uid(req) },
+        { $push: { importedTracks: { $each: tracks } } }
+      );
+      res.json({ success: true, tracks });
+    } catch(e) { res.status(500).json({ error: e.message }); }
   });
 
+  // INCREMENT TRACK PLAY
+  app.post("/api/artist/:userId/tracks/:index/play", async (req, res) => {
+    try {
+      const artist = await ArtistProfile.findOne({ userId: new mongoose.Types.ObjectId(req.params.userId) });
+      if (!artist) return res.status(404).json({ error: "Not found" });
+      const idx = Number(req.params.index);
+      if (artist.importedTracks[idx] !== undefined) {
+        artist.importedTracks[idx].plays = (artist.importedTracks[idx].plays || 0) + 1;
+        await artist.save();
+      }
+      res.json({ success: true });
+    } catch(e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // DELETE TRACK
   app.delete("/api/artist/tracks/:index", requireLogin, async (req, res) => {
-    const artist = await ArtistProfile.findOne({ userId: uid(req) });
-    if (!artist) return res.status(404).json({ error: "Not found" });
-    artist.importedTracks.splice(Number(req.params.index), 1);
-    await artist.save();
-    res.json({ success: true });
+    try {
+      const artist = await ArtistProfile.findOne({ userId: uid(req) });
+      if (!artist) return res.status(404).json({ error: "Not found" });
+      artist.importedTracks.splice(Number(req.params.index), 1);
+      await artist.save();
+      res.json({ success: true });
+    } catch(e) { res.status(500).json({ error: e.message }); }
   });
 
+  // ADD SHOW
+  app.post("/api/artist/shows", requireLogin, async (req, res) => {
+    try {
+      const { venue, city, date, ticketUrl } = req.body;
+      await ArtistProfile.updateOne(
+        { userId: uid(req) },
+        { $push: { upcomingShows: { venue, city, date, ticketUrl } } }
+      );
+      res.json({ success: true });
+    } catch(e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // DELETE SHOW
+  app.delete("/api/artist/shows/:index", requireLogin, async (req, res) => {
+    try {
+      const artist = await ArtistProfile.findOne({ userId: uid(req) });
+      if (!artist) return res.status(404).json({ error: "Not found" });
+      artist.upcomingShows.splice(Number(req.params.index), 1);
+      await artist.save();
+      res.json({ success: true });
+    } catch(e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // SEND FAN MESSAGE
   app.post("/api/artist/:userId/fan-message", requireLogin, async (req, res) => {
-    const User = mongoose.model("User");
-    const from = await User.findById(req.session.userId);
-    await ArtistProfile.updateOne(
-      { userId: new mongoose.Types.ObjectId(req.params.userId) },
-      {
-        $push: {
-          fanMessages: {
-            fromUserId: req.session.userId,
-            fromName: from.name,
-            message: req.body.message,
-            createdAt: new Date()
+    try {
+      const User = mongoose.model("User");
+      const from = await User.findById(req.session.userId);
+      await ArtistProfile.updateOne(
+        { userId: new mongoose.Types.ObjectId(req.params.userId) },
+        {
+          $push: {
+            fanMessages: {
+              fromUserId: req.session.userId,
+              fromName: from.name,
+              message: req.body.message,
+              createdAt: new Date()
+            }
           }
         }
-      }
-    );
-    res.json({ success: true });
+      );
+      res.json({ success: true });
+    } catch(e) { res.status(500).json({ error: e.message }); }
   });
 
+  // GET FAN MESSAGE INBOX
+  app.get("/api/artist/fan-messages/inbox", requireLogin, async (req, res) => {
+    try {
+      const artist = await ArtistProfile.findOne({ userId: uid(req) });
+      if (!artist) return res.status(404).json({ error: "Not found" });
+      res.json(artist.fanMessages || []);
+    } catch(e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // REPLY TO FAN MESSAGE
+  app.post("/api/artist/fan-messages/:msgId/reply", requireLogin, async (req, res) => {
+    try {
+      const artist = await ArtistProfile.findOne({ userId: uid(req) });
+      if (!artist) return res.status(404).json({ error: "Not found" });
+      const msg = artist.fanMessages.id(req.params.msgId);
+      if (!msg) return res.status(404).json({ error: "Message not found" });
+      msg.reply = req.body.reply;
+      msg.repliedAt = new Date();
+      await artist.save();
+      res.json({ success: true });
+    } catch(e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // DELETE FAN MESSAGE
+  app.delete("/api/artist/fan-messages/:msgId", requireLogin, async (req, res) => {
+    try {
+      const artist = await ArtistProfile.findOne({ userId: uid(req) });
+      if (!artist) return res.status(404).json({ error: "Not found" });
+      artist.fanMessages = artist.fanMessages.filter(m => m._id.toString() !== req.params.msgId);
+      await artist.save();
+      res.json({ success: true });
+    } catch(e) { res.status(500).json({ error: e.message }); }
+  });
+
+  // SEARCH ARTISTS
   app.get("/api/artists/search", requireLogin, async (req, res) => {
     try {
-      const q = (req.query.q || "").trim();
+      const q = (req.query.q || "").trim().toLowerCase();
       if (!q) return res.json([]);
       const artists = await ArtistProfile.find({ isArtist: true }).lean();
       const User = mongoose.model("User");
-      const users = await User.find({}).select("name _id").lean();
-      const nameMap = {};
-      users.forEach(u => { nameMap[String(u._id)] = u.name; });
-      const ql = q.toLowerCase();
+      const users = await User.find({}).select("name _id profilePic").lean();
+      const userMap = {};
+      users.forEach(u => { userMap[String(u._id)] = u; });
       const filtered = artists.filter(a => {
-        const name = (nameMap[String(a.userId)] || "").toLowerCase();
+        const user = userMap[String(a.userId)];
+        const name = (user?.name || "").toLowerCase();
+        const artistName = (a.artistName || "").toLowerCase();
         const genre = (a.genre || "").toLowerCase();
         const bio = (a.bio || "").toLowerCase();
-        return name.includes(ql) || genre.includes(ql) || bio.includes(ql);
+        return name.includes(q) || artistName.includes(q) || genre.includes(q) || bio.includes(q);
       });
-      res.json(filtered.map(a => ({
-        userId: a.userId,
-        userName: nameMap[String(a.userId)] || "Artist",
-        genre: a.genre || "",
-        bio: a.bio || "",
-        isVerified: !!a.isVerified
-      })));
-    } catch (e) {
+      res.json(filtered.map(a => {
+        const user = userMap[String(a.userId)];
+        return {
+          userId: a.userId,
+          artistName: a.artistName || user?.name || "Artist",
+          userName: user?.name || "Artist",
+          profilePic: user?.profilePic || null,
+          genre: a.genre || "",
+          bio: a.bio || "",
+          isVerified: !!a.isVerified,
+          trackCount: (a.importedTracks || []).length,
+          showCount: (a.upcomingShows || []).length
+        };
+      }));
+    } catch(e) {
       console.error("artist search error:", e);
       res.json([]);
     }
