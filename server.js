@@ -593,14 +593,16 @@ app.get("/home", requireLogin, async (req, res) => {
     }
     draw();
 
- // ====== POST REACTIONS ======
 async function loadPostReactions(postId) {
-  const data = await fetch(\`/api/posts/\${postId}/reactions\`, {credentials:"include"}).then(r=>r.json()).catch(()=>({counts:{},myReaction:null}));
-  document.querySelectorAll(\`.react-pill[data-post-id="\${postId}"]\`).forEach(btn => {
+  const data = await fetch("/api/posts/" + postId + "/reactions", { credentials: "include" })
+    .then(r => r.json())
+    .catch(() => ({ counts: {}, myReaction: null }));
+
+  document.querySelectorAll('.react-pill[data-post-id="' + postId + '"]').forEach(btn => {
     const emoji = btn.dataset.emoji;
-    const countEl = btn.querySelector('.rpill-count');
+    const countEl = btn.querySelector(".rpill-count");
     if (countEl) countEl.textContent = data.counts[emoji] || 0;
-    btn.classList.toggle('mine', data.myReaction === emoji);
+    btn.classList.toggle("mine", data.myReaction === emoji);
   });
 }
 
@@ -851,15 +853,19 @@ const friendIds = user.friends.map(f => f.id);
     draw();
 
     // ====== REACTIONS ======
-   async function loadPostReactions(postId) {
-  const data = await fetch(`/api/posts/${postId}/reactions`, {credentials:"include"}).then(r=>r.json()).catch(()=>({counts:{},myReaction:null}));
-  document.querySelectorAll(`.react-pill[data-post-id="${postId}"]`).forEach(btn => {
+async function loadPostReactions(postId) {
+  const data = await fetch("/api/posts/" + postId + "/reactions", { credentials: "include" })
+    .then(r => r.json())
+    .catch(() => ({ counts: {}, myReaction: null }));
+
+  document.querySelectorAll('.react-pill[data-post-id="' + postId + '"]').forEach(btn => {
     const emoji = btn.dataset.emoji;
-    const countEl = btn.querySelector('.rpill-count');
+    const countEl = btn.querySelector(".rpill-count");
     if (countEl) countEl.textContent = data.counts[emoji] || 0;
-    btn.classList.toggle('mine', data.myReaction === emoji);
+    btn.classList.toggle("mine", data.myReaction === emoji);
   });
 }
+
 
     // ====== COMMENTS ======
     async function loadPostComments(postId) {
@@ -1607,15 +1613,18 @@ app.get("/profile", requireLogin, async (req, res) => {
         }
 
 async function loadPostReactions(postId) {
-  const data = await fetch(`/api/posts/${postId}/reactions`, {credentials:"include"}).then(r=>r.json()).catch(()=>({counts:{},myReaction:null}));
-  document.querySelectorAll(`.react-pill[data-post-id="${postId}"]`).forEach(btn => {
+  const data = await fetch("/api/posts/" + postId + "/reactions", { credentials: "include" })
+    .then(r => r.json())
+    .catch(() => ({ counts: {}, myReaction: null }));
+
+  document.querySelectorAll('.react-pill[data-post-id="' + postId + '"]').forEach(btn => {
     const emoji = btn.dataset.emoji;
-    const countEl = btn.querySelector('.rpill-count');
+    const countEl = btn.querySelector(".rpill-count");
     if (countEl) countEl.textContent = data.counts[emoji] || 0;
-    btn.classList.toggle('mine', data.myReaction === emoji);
+    btn.classList.toggle("mine", data.myReaction === emoji);
   });
 }
-        async function loadPostComments(postId) {
+     async function loadPostComments(postId) {
           const comments = await fetch("/api/posts/" + postId + "/comments", { credentials: "include" }).then(r => r.json()).catch(() => []);
           const list = document.getElementById("cl-" + postId);
           if (!list) return;
@@ -2060,15 +2069,19 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
           await loadProfileComments();
         }
 
-        async function loadPostReactions(postId) {
-  const data = await fetch(`/api/posts/${postId}/reactions`, {credentials:"include"}).then(r=>r.json()).catch(()=>({counts:{},myReaction:null}));
-  document.querySelectorAll(`.react-pill[data-post-id="${postId}"]`).forEach(btn => {
+  async function loadPostReactions(postId) {
+  const data = await fetch("/api/posts/" + postId + "/reactions", { credentials: "include" })
+    .then(r => r.json())
+    .catch(() => ({ counts: {}, myReaction: null }));
+
+  document.querySelectorAll('.react-pill[data-post-id="' + postId + '"]').forEach(btn => {
     const emoji = btn.dataset.emoji;
-    const countEl = btn.querySelector('.rpill-count');
+    const countEl = btn.querySelector(".rpill-count");
     if (countEl) countEl.textContent = data.counts[emoji] || 0;
-    btn.classList.toggle('mine', data.myReaction === emoji);
+    btn.classList.toggle("mine", data.myReaction === emoji);
   });
 }
+
 
         async function loadPostComments(postId) {
           const comments = await fetch("/api/posts/" + postId + "/comments", { credentials: "include" }).then(r => r.json()).catch(() => []);
