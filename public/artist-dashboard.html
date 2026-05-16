@@ -13,56 +13,52 @@
   .nav-links { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
   .nav-links a { color: #ccc; text-decoration: none; font-size: 13px; }
   .nav-links a:hover { color: #ff6a00; }
-  .btn-primary { display: inline-block; padding: 8px 16px; background: #ff6a00; color: #000; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; transition: 0.2s; font-size: 14px; }
+  .btn-primary { display: inline-block; padding: 8px 16px; background: #ff6a00; color: #000; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; transition: 0.2s; font-size: 14px; width: auto; }
   .btn-primary:hover { background: #ff8c32; }
   .btn-secondary { padding: 6px 12px; background: rgba(255,255,255,0.08); border-radius: 6px; border: 1px solid #ff6a00; color: #ff6a00; cursor: pointer; font-weight: bold; transition: 0.2s; font-size: 13px; }
   .btn-secondary:hover { background: rgba(255,106,0,0.15); }
   .btn-danger { padding: 5px 10px; background: rgba(255,50,50,0.1); border-radius: 6px; border: 1px solid #ff4444; color: #ff4444; cursor: pointer; font-size: 12px; transition: 0.2s; }
-  .btn-danger:hover { background: rgba(255,50,50,0.2); }
-  input[type=text], input[type=text]:focus, input[type=date], textarea { width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.07); border: 1px solid #444; border-radius: 8px; color: #fff; padding: 10px 14px; font-size: 13px; outline: none; margin-bottom: 10px; font-family: Arial, sans-serif; }
+  .btn-danger:hover { background: rgba(255,50,50,0.25); }
+  input[type=text], input[type=date], textarea { width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.07); border: 1px solid #444; border-radius: 8px; color: #fff; padding: 10px 14px; font-size: 13px; outline: none; margin-bottom: 10px; font-family: Arial, sans-serif; }
   input[type=text]:focus, input[type=date]:focus, textarea:focus { border-color: #ff6a00; }
   textarea { resize: vertical; min-height: 80px; }
-  .page { max-width: 1000px; margin: 30px auto; padding: 0 16px; box-sizing: border-box; }
+  .page { max-width: 860px; margin: 30px auto; padding: 0 16px; box-sizing: border-box; }
   .card { border-radius: 12px; background: rgba(0,0,0,0.45); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.15); padding: 20px; margin-bottom: 20px; }
   .section-label { font-weight: 700; color: #ff6a00; margin-bottom: 12px; font-size: 15px; }
-  .stats-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
-  .stat-box { flex: 1; min-width: 100px; background: rgba(255,106,0,0.07); border: 1px solid rgba(255,106,0,0.2); border-radius: 10px; padding: 16px; text-align: center; }
-  .stat-num { font-size: 28px; font-weight: 900; color: #ff6a00; }
+  .stats-row { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 20px; }
+  .stat-box { flex: 1; min-width: 90px; background: rgba(255,106,0,0.07); border: 1px solid rgba(255,106,0,0.2); border-radius: 10px; padding: 16px; text-align: center; }
+  .stat-num { font-size: 26px; font-weight: 900; color: #ff6a00; }
   .stat-label { font-size: 12px; color: #888; margin-top: 4px; }
-  .dash-header { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
-  .dash-avatar { width: 64px; height: 64px; border-radius: 50%; border: 3px solid #ff6a00; object-fit: cover; background: #222; }
+  .dash-header { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+  .dash-avatar { width: 64px; height: 64px; border-radius: 50%; border: 3px solid #ff6a00; object-fit: cover; background: #222; flex-shrink: 0; }
   .dash-name { font-size: 22px; font-weight: 900; color: #fff; }
   .dash-genre { font-size: 13px; color: #888; margin-top: 2px; }
   .verified-badge { display: inline-block; background: #ff6a00; color: #000; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; margin-left: 8px; vertical-align: middle; }
+  .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+  .tab-btn { padding: 8px 16px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.04); color: #aaa; cursor: pointer; font-size: 13px; font-weight: 600; transition: .15s; }
+  .tab-btn.active { background: rgba(255,106,0,0.15); border-color: #ff6a00; color: #ff6a00; }
+  .tab-btn:hover { background: rgba(255,106,0,0.1); border-color: #ff6a00; color: #ff6a00; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
   .track-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 8px; background: rgba(255,255,255,0.02); }
-  .track-title { flex: 1; font-size: 13px; color: #f2f2f2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .track-plays { font-size: 11px; color: #888; white-space: nowrap; }
   .show-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 8px; background: rgba(255,255,255,0.02); }
   .show-info { flex: 1; min-width: 0; }
   .show-venue { font-size: 13px; font-weight: 700; color: #ff6a00; }
   .show-meta { font-size: 12px; color: #888; margin-top: 2px; }
-  .msg-item { padding: 12px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 10px; background: rgba(255,255,255,0.02); }
-  .msg-from { font-size: 13px; font-weight: 700; color: #ff6a00; margin-bottom: 4px; }
-  .msg-text { font-size: 13px; color: #ddd; margin-bottom: 8px; }
-  .msg-reply { font-size: 12px; color: #888; background: rgba(255,106,0,0.06); border-left: 3px solid #ff6a00; padding: 6px 10px; border-radius: 4px; margin-bottom: 8px; }
-  .msg-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-  .reply-input-wrap { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-top: 8px; }
-  .reply-input-wrap input { margin-bottom: 0; }
-  .artist-search-result { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 8px; background: rgba(255,255,255,0.02); cursor: pointer; transition: background .15s; }
-  .artist-search-result:hover { background: rgba(255,106,0,0.08); border-color: #ff6a00; }
-  .artist-result-avatar { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #ff6a00; object-fit: cover; background: #222; flex-shrink: 0; }
+  .msg-item { padding: 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 12px; background: rgba(255,255,255,0.02); }
+  .msg-from { font-size: 13px; font-weight: 700; color: #ff6a00; margin-bottom: 6px; }
+  .msg-text { font-size: 13px; color: #ddd; margin-bottom: 10px; line-height: 1.5; }
+  .msg-reply-box { font-size: 12px; color: #aaa; background: rgba(255,106,0,0.06); border-left: 3px solid #ff6a00; padding: 8px 12px; border-radius: 4px; margin-bottom: 10px; }
+  .reply-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .reply-row input { margin-bottom: 0; }
+  .artist-result { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 8px; background: rgba(255,255,255,0.02); cursor: pointer; transition: background .15s; }
+  .artist-result:hover { background: rgba(255,106,0,0.08); border-color: #ff6a00; }
+  .artist-result-avatar { width: 42px; height: 42px; border-radius: 50%; border: 2px solid #ff6a00; object-fit: cover; background: #222; flex-shrink: 0; }
   .artist-result-name { font-size: 14px; font-weight: 700; color: #ff6a00; }
   .artist-result-meta { font-size: 12px; color: #888; margin-top: 2px; }
-  .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
-  .tab-btn { padding: 8px 16px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.04); color: #aaa; cursor: pointer; font-size: 13px; font-weight: 600; transition: .15s; }
-  .tab-btn.active, .tab-btn:hover { background: rgba(255,106,0,0.15); border-color: #ff6a00; color: #ff6a00; }
-  .tab-panel { display: none; }
-  .tab-panel.active { display: block; }
-  .social-link { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15); color: #ccc; text-decoration: none; font-size: 12px; margin-right: 8px; margin-bottom: 8px; transition: .15s; }
-  .social-link:hover { border-color: #ff6a00; color: #ff6a00; }
-  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 500; display: flex; align-items: center; justify-content: center; }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 500; display: flex; align-items: center; justify-content: center; }
   .modal-box { background: #111; border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; padding: 24px; width: 90%; max-width: 440px; }
-  .modal-box h3 { color: #ff6a00; margin: 0 0 16px; }
+  .modal-box h3 { color: #ff6a00; margin: 0 0 12px; }
 </style>
 </head>
 <body>
@@ -77,10 +73,9 @@
   function spawnShootingStar(){shootingStars.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height*0.5,len:Math.random()*120+80,speed:Math.random()*8+6,angle:Math.PI/4,alpha:1});}
   setInterval(spawnShootingStar,2500);
   function draw(){
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    ctx.fillStyle="#000";ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle="#000";ctx.fillRect(0,0,canvas.width,canvas.height);
     stars.forEach(s=>{s.alpha+=s.speed*0.02*(Math.random()>0.5?1:-1);s.alpha=Math.max(0.1,Math.min(1,s.alpha));ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle="rgba(255,255,255,"+s.alpha+")";ctx.fill();});
-    for(let i=shootingStars.length-1;i>=0;i--){const s=shootingStars[i];ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(s.x-Math.cos(s.angle)*s.len,s.y-Math.sin(s.angle)*s.len);const grad=ctx.createLinearGradient(s.x,s.y,s.x-Math.cos(s.angle)*s.len,s.y-Math.sin(s.angle)*s.len);grad.addColorStop(0,"rgba(255,150,50,"+s.alpha+")");grad.addColorStop(1,"rgba(255,150,50,0)");ctx.strokeStyle=grad;ctx.lineWidth=2;ctx.stroke();s.x+=Math.cos(s.angle)*s.speed;s.y+=Math.sin(s.angle)*s.speed;s.alpha-=0.015;if(s.alpha<=0)shootingStars.splice(i,1);}
+    for(let i=shootingStars.length-1;i>=0;i--){const s=shootingStars[i];ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(s.x-Math.cos(s.angle)*s.len,s.y-Math.sin(s.angle)*s.len);const g=ctx.createLinearGradient(s.x,s.y,s.x-Math.cos(s.angle)*s.len,s.y-Math.sin(s.angle)*s.len);g.addColorStop(0,"rgba(255,150,50,"+s.alpha+")");g.addColorStop(1,"rgba(255,150,50,0)");ctx.strokeStyle=g;ctx.lineWidth=2;ctx.stroke();s.x+=Math.cos(s.angle)*s.speed;s.y+=Math.sin(s.angle)*s.speed;s.alpha-=0.015;if(s.alpha<=0)shootingStars.splice(i,1);}
     requestAnimationFrame(draw);
   }
   draw();
@@ -107,17 +102,17 @@
   <!-- FIND ARTISTS -->
   <div class="card">
     <div class="section-label">🔍 Find Artists</div>
-    <div style="display:flex;gap:8px;">
-      <input type="text" id="artist-search-input" placeholder="Search by name, genre, or bio…" style="margin-bottom:0;" onkeydown="if(event.key==='Enter')searchArtists()"/>
-      <button class="btn-primary" style="flex-shrink:0;" onclick="searchArtists()">Search</button>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <input type="text" id="artist-search-input" placeholder="Search by name, genre, or bio…" style="margin-bottom:0;flex:1;" onkeydown="if(event.key==='Enter')searchArtists()"/>
+      <button class="btn-primary" onclick="searchArtists()">Search</button>
     </div>
     <div id="artist-search-results" style="margin-top:12px;"></div>
   </div>
 
-  <!-- ENABLE ARTIST MODE -->
+  <!-- ENABLE PANEL -->
   <div id="enable-panel" class="card" style="display:none;">
     <div class="section-label">🎤 Become an Artist</div>
-    <p style="color:#888;font-size:13px;margin-top:0;">Set up your artist profile to share your music, post shows, and receive fan messages.</p>
+    <p style="color:#888;font-size:13px;margin-top:0;">Set up your artist profile to share music, post shows, and receive fan messages.</p>
     <input type="text" id="enable-artist-name" placeholder="Artist name *"/>
     <input type="text" id="enable-genre" placeholder="Genre (e.g. Hip-Hop, Pop, Indie)"/>
     <textarea id="enable-bio" placeholder="Short bio…"></textarea>
@@ -127,11 +122,11 @@
     <button class="btn-primary" onclick="enableArtist()">Enable Artist Mode</button>
   </div>
 
-  <!-- ARTIST DASHBOARD -->
+  <!-- DASHBOARD -->
   <div id="artist-dashboard" style="display:none;">
 
     <div class="dash-header">
-      <img id="dash-avatar" class="dash-avatar" src="/assets/images/default-avatar.png"/>
+      <img id="dash-avatar" class="dash-avatar" src="/assets/images/default-avatar.png" onerror="this.src='/assets/images/default-avatar.png'"/>
       <div>
         <div class="dash-name" id="dash-name">Artist</div>
         <div class="dash-genre" id="dash-genre"></div>
@@ -147,10 +142,10 @@
     </div>
 
     <div class="tabs">
-      <button class="tab-btn active" onclick="switchTab('tab-profile')">✏️ Profile</button>
-      <button class="tab-btn" onclick="switchTab('tab-tracks')">🎵 Tracks</button>
-      <button class="tab-btn" onclick="switchTab('tab-shows')">📅 Shows</button>
-      <button class="tab-btn" onclick="switchTab('tab-messages')">💬 Messages</button>
+      <button class="tab-btn active" onclick="switchTab('tab-profile', this)">✏️ Profile</button>
+      <button class="tab-btn" onclick="switchTab('tab-tracks', this)">🎵 Tracks</button>
+      <button class="tab-btn" onclick="switchTab('tab-shows', this)">📅 Shows</button>
+      <button class="tab-btn" onclick="switchTab('tab-messages', this)">💬 Messages</button>
     </div>
 
     <!-- PROFILE TAB -->
@@ -172,11 +167,11 @@
       <div class="card">
         <div class="section-label">Import Track</div>
         <input type="text" id="import-url" placeholder="SoundCloud track URL"/>
-        <button class="btn-primary" onclick="importTrack()">Import</button>
+        <button class="btn-primary" id="import-btn" onclick="importTrack()">Import</button>
       </div>
       <div class="card">
         <div class="section-label">My Tracks</div>
-        <div id="tracks-list"></div>
+        <div id="tracks-list"><p style="color:#666;font-size:13px;">No tracks yet.</p></div>
       </div>
     </div>
 
@@ -192,15 +187,15 @@
       </div>
       <div class="card">
         <div class="section-label">Upcoming Shows</div>
-        <div id="shows-list"></div>
+        <div id="shows-list"><p style="color:#666;font-size:13px;">No shows yet.</p></div>
       </div>
     </div>
 
     <!-- MESSAGES TAB -->
     <div class="tab-panel" id="tab-messages">
       <div class="card">
-        <div class="section-label">Fan Messages</div>
-        <div id="messages-list"></div>
+        <div class="section-label">💬 Fan Messages</div>
+        <div id="messages-list"><p style="color:#666;font-size:13px;">No messages yet.</p></div>
       </div>
     </div>
 
@@ -208,18 +203,258 @@
 </div>
 
 <!-- FAN MESSAGE MODAL -->
-<div class="modal-overlay" id="fan-msg-modal" style="display:none;">
+<div class="modal-overlay" id="fan-msg-modal" style="display:none;" onclick="if(event.target===this)closeFanMsgModal()">
   <div class="modal-box">
     <h3>✉️ Send Fan Message</h3>
-    <p id="fan-msg-to" style="color:#888;font-size:13px;margin-top:0;"></p>
+    <p id="fan-msg-to" style="color:#888;font-size:13px;margin:0 0 12px;"></p>
     <textarea id="fan-msg-input" placeholder="Write your message…"></textarea>
-    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px;">
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
       <button class="btn-secondary" onclick="closeFanMsgModal()">Cancel</button>
       <button class="btn-primary" onclick="sendFanMessage()">Send</button>
     </div>
   </div>
 </div>
 
-<script src="/modules/artist-client.js"></script>
+<script>
+let _msgTargetUserId = null;
+let _msgTargetName = null;
+
+async function loadDashboard() {
+  const artist = await fetch('/api/artist/me', {credentials:'include'}).then(r=>r.json()).catch(()=>null);
+  if (!artist || !artist.isArtist) {
+    document.getElementById('enable-panel').style.display = 'block';
+    document.getElementById('artist-dashboard').style.display = 'none';
+    return;
+  }
+  document.getElementById('enable-panel').style.display = 'none';
+  document.getElementById('artist-dashboard').style.display = 'block';
+
+  const sessionUser = await fetch('/api/session-user', {credentials:'include'}).then(r=>r.json()).catch(()=>null);
+  if (sessionUser?.profilePic) document.getElementById('dash-avatar').src = sessionUser.profilePic;
+  document.getElementById('dash-name').textContent = artist.artistName || sessionUser?.name || 'Artist';
+  document.getElementById('dash-genre').textContent = artist.genre || '';
+  if (artist.isVerified) document.getElementById('dash-verified').style.display = 'inline-block';
+
+  const totalPlays = (artist.importedTracks || []).reduce((s,t) => s + (t.plays||0), 0);
+  document.getElementById('stat-tracks').textContent = (artist.importedTracks||[]).length;
+  document.getElementById('stat-shows').textContent = (artist.upcomingShows||[]).length;
+  document.getElementById('stat-msgs').textContent = (artist.fanMessages||[]).length;
+  document.getElementById('stat-plays').textContent = totalPlays;
+
+  document.getElementById('edit-artist-name').value = artist.artistName || '';
+  document.getElementById('edit-genre').value = artist.genre || '';
+  document.getElementById('edit-bio').value = artist.bio || '';
+  document.getElementById('edit-sc').value = artist.soundcloudProfile || '';
+  document.getElementById('edit-sp').value = artist.spotifyProfile || '';
+  document.getElementById('edit-tip').value = artist.tipUrl || '';
+
+  renderTracks(artist.importedTracks || []);
+  renderShows(artist.upcomingShows || []);
+  renderMessages(artist.fanMessages || []);
+}
+
+function switchTab(tabId, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(tabId).classList.add('active');
+  btn.classList.add('active');
+}
+
+function renderTracks(tracks) {
+  const el = document.getElementById('tracks-list');
+  if (!tracks.length) { el.innerHTML = '<p style="color:#666;font-size:13px;">No tracks yet. Import a SoundCloud URL above.</p>'; return; }
+  el.innerHTML = tracks.map((t,i) => `
+    <div class="track-item">
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;color:#f2f2f2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.title||t.url}</div>
+        <div style="font-size:11px;color:#888;margin-top:2px;">
+          <a href="${t.url}" target="_blank" style="color:#ff6a00;text-decoration:none;">Open ↗</a> · ${t.plays||0} play${t.plays!==1?'s':''}
+        </div>
+      </div>
+      <button class="btn-danger" onclick="deleteTrack(${i})">✕</button>
+    </div>
+  `).join('');
+}
+
+function renderShows(shows) {
+  const el = document.getElementById('shows-list');
+  if (!shows.length) { el.innerHTML = '<p style="color:#666;font-size:13px;">No shows yet.</p>'; return; }
+  el.innerHTML = shows.map((s,i) => `
+    <div class="show-item">
+      <div class="show-info">
+        <div class="show-venue">${s.venue}</div>
+        <div class="show-meta">${s.city} · ${new Date(s.date).toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'})}
+          ${s.ticketUrl ? `· <a href="${s.ticketUrl}" target="_blank" style="color:#ff6a00;text-decoration:none;">Tickets ↗</a>` : ''}
+        </div>
+      </div>
+      <button class="btn-danger" onclick="deleteShow(${i})">✕</button>
+    </div>
+  `).join('');
+}
+
+function renderMessages(msgs) {
+  const el = document.getElementById('messages-list');
+  if (!msgs.length) { el.innerHTML = '<p style="color:#666;font-size:13px;">No fan messages yet.</p>'; return; }
+  el.innerHTML = msgs.map(m => `
+    <div class="msg-item">
+      <div class="msg-from">${m.fromName} <span style="color:#555;font-weight:400;font-size:11px;">${new Date(m.createdAt).toLocaleDateString()}</span></div>
+      <div class="msg-text">${m.message}</div>
+      ${m.reply ? `<div class="msg-reply-box">You replied: ${m.reply}</div>` : `
+        <div class="reply-row">
+          <input type="text" placeholder="Reply…" id="reply-${m._id}" onkeydown="if(event.key==='Enter')replyToMessage('${m._id}')"/>
+          <button class="btn-secondary" onclick="replyToMessage('${m._id}')">Reply</button>
+        </div>
+      `}
+      <button class="btn-danger" onclick="deleteMessage('${m._id}')">Delete</button>
+    </div>
+  `).join('');
+}
+
+async function enableArtist() {
+  const artistName = document.getElementById('enable-artist-name').value.trim();
+  if (!artistName) return alert('Artist name is required.');
+  await fetch('/api/artist/enable', {
+    method:'POST', credentials:'include',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      artistName,
+      genre: document.getElementById('enable-genre').value.trim(),
+      bio: document.getElementById('enable-bio').value.trim(),
+      soundcloudProfile: document.getElementById('enable-sc').value.trim(),
+      spotifyProfile: document.getElementById('enable-sp').value.trim(),
+      tipUrl: document.getElementById('enable-tip').value.trim()
+    })
+  });
+  await loadDashboard();
+}
+
+async function saveProfile() {
+  const artistName = document.getElementById('edit-artist-name').value.trim();
+  if (!artistName) return alert('Artist name is required.');
+  await fetch('/api/artist', {
+    method:'PUT', credentials:'include',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      artistName,
+      genre: document.getElementById('edit-genre').value.trim(),
+      bio: document.getElementById('edit-bio').value.trim(),
+      soundcloudProfile: document.getElementById('edit-sc').value.trim(),
+      spotifyProfile: document.getElementById('edit-sp').value.trim(),
+      tipUrl: document.getElementById('edit-tip').value.trim()
+    })
+  });
+  await loadDashboard();
+  alert('Profile saved!');
+}
+
+async function importTrack() {
+  const url = document.getElementById('import-url').value.trim();
+  if (!url) return alert('Paste a SoundCloud URL first.');
+  const btn = document.getElementById('import-btn');
+  btn.textContent = 'Importing…'; btn.disabled = true;
+  await fetch('/api/artist/import-tracks', {
+    method:'POST', credentials:'include',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ urls:[url], platform:'soundcloud' })
+  });
+  document.getElementById('import-url').value = '';
+  btn.textContent = 'Import'; btn.disabled = false;
+  await loadDashboard();
+}
+
+async function deleteTrack(index) {
+  if (!confirm('Remove this track?')) return;
+  await fetch('/api/artist/tracks/'+index, {method:'DELETE', credentials:'include'});
+  await loadDashboard();
+}
+
+async function addShow() {
+  const venue = document.getElementById('show-venue').value.trim();
+  const city = document.getElementById('show-city').value.trim();
+  const date = document.getElementById('show-date').value;
+  if (!venue||!city||!date) return alert('Venue, city, and date are required.');
+  await fetch('/api/artist/shows', {
+    method:'POST', credentials:'include',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ venue, city, date, ticketUrl: document.getElementById('show-ticket').value.trim() })
+  });
+  document.getElementById('show-venue').value='';
+  document.getElementById('show-city').value='';
+  document.getElementById('show-date').value='';
+  document.getElementById('show-ticket').value='';
+  await loadDashboard();
+}
+
+async function deleteShow(index) {
+  if (!confirm('Remove this show?')) return;
+  await fetch('/api/artist/shows/'+index, {method:'DELETE', credentials:'include'});
+  await loadDashboard();
+}
+
+async function replyToMessage(msgId) {
+  const input = document.getElementById('reply-'+msgId);
+  const reply = input?.value.trim();
+  if (!reply) return;
+  await fetch('/api/artist/fan-messages/'+msgId+'/reply', {
+    method:'POST', credentials:'include',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ reply })
+  });
+  await loadDashboard();
+}
+
+async function deleteMessage(msgId) {
+  if (!confirm('Delete this message?')) return;
+  await fetch('/api/artist/fan-messages/'+msgId, {method:'DELETE', credentials:'include'});
+  await loadDashboard();
+}
+
+async function searchArtists() {
+  const q = document.getElementById('artist-search-input').value.trim();
+  const el = document.getElementById('artist-search-results');
+  if (!q) { el.innerHTML=''; return; }
+  el.innerHTML = '<p style="color:#666;font-size:13px;">Searching…</p>';
+  const results = await fetch('/api/artists/search?q='+encodeURIComponent(q), {credentials:'include'}).then(r=>r.json()).catch(()=>[]);
+  if (!results.length) { el.innerHTML=`<p style="color:#666;font-size:13px;">No artists found for "${q}".</p>`; return; }
+  el.innerHTML = results.map(a => `
+    <div class="artist-result" onclick="window.location='/artist/${a.userId}'">
+      <img class="artist-result-avatar" src="${a.profilePic||'/assets/images/default-avatar.png'}" onerror="this.src='/assets/images/default-avatar.png'"/>
+      <div style="flex:1;min-width:0;">
+        <div class="artist-result-name">${a.artistName||a.userName}${a.isVerified?'<span style="background:#ff6a00;color:#000;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:6px;">✓</span>':''}</div>
+        <div class="artist-result-meta">${a.genre||'Artist'} · ${a.trackCount} track${a.trackCount!==1?'s':''} · ${a.showCount} show${a.showCount!==1?'s':''}</div>
+      </div>
+      <button class="btn-secondary" style="flex-shrink:0;font-size:12px;padding:5px 12px;" onclick="event.stopPropagation();openFanMsgModal('${a.userId}','${(a.artistName||a.userName).replace(/'/g,"\\'")}')">✉️ Message</button>
+    </div>
+  `).join('');
+}
+
+function openFanMsgModal(userId, name) {
+  _msgTargetUserId = userId;
+  _msgTargetName = name;
+  document.getElementById('fan-msg-to').textContent = 'To: ' + name;
+  document.getElementById('fan-msg-input').value = '';
+  document.getElementById('fan-msg-modal').style.display = 'flex';
+}
+
+function closeFanMsgModal() {
+  document.getElementById('fan-msg-modal').style.display = 'none';
+  _msgTargetUserId = null;
+}
+
+async function sendFanMessage() {
+  const message = document.getElementById('fan-msg-input').value.trim();
+  if (!message) return alert('Write a message first.');
+  if (!_msgTargetUserId) return;
+  await fetch('/api/artist/'+_msgTargetUserId+'/fan-message', {
+    method:'POST', credentials:'include',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ message })
+  });
+  closeFanMsgModal();
+  alert('Message sent!');
+}
+
+loadDashboard();
+</script>
 </body>
 </html>
