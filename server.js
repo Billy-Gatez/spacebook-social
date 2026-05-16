@@ -269,11 +269,25 @@ app.post("/signup", async (req, res) => {
 // Login handler
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
-  const user = await User.findOne({ email, password });
-  if (!user) return res.send("Invalid credentials. <a href='/'>Try again</a>");
+
+  // Find user by email
+  const user = await User.findOne({ email });
+  if (!user) {
+    return res.send("Invalid credentials. <a href='/'>Try again</a>");
+  }
+
+  // Compare plaintext passwords (your current DB uses plaintext)
+  if (user.password !== password) {
+    return res.send("Invalid credentials. <a href='/'>Try again</a>");
+  }
+
+  // Set session
   req.session.userId = user._id;
+
+  // Redirect
   res.redirect("/feed");
 });
+
 
 // ====== SAVE PAGE TO GITHUB (PERMANENT) ======
 app.post("/createPage", async (req, res) => {
