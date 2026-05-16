@@ -36,7 +36,8 @@ const artistProfileSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
-const ArtistProfile = mongoose.models.ArtistProfile || mongoose.model("ArtistProfile", artistProfileSchema);
+const ArtistProfile =
+  mongoose.models.ArtistProfile || mongoose.model("ArtistProfile", artistProfileSchema);
 
 module.exports = function attachArtist(app, mongoose, requireLogin, cloudinary, upload) {
 
@@ -58,18 +59,32 @@ module.exports = function attachArtist(app, mongoose, requireLogin, cloudinary, 
     try {
       const artist = await ArtistProfile.findOne({ userId: uid(req) });
       res.json(artist || null);
-    } catch(e) { res.json(null); }
+    } catch (e) {
+      res.json(null);
+    }
   });
 
-  // GET ANY ARTIST BY USERID
+  // GET ANY ARTIST BY USERID (Mongo)
   app.get("/api/artist/:userId", async (req, res) => {
     try {
-      const artist = await ArtistProfile.findOne({ userId: new mongoose.Types.ObjectId(req.params.userId) });
+      const artist = await ArtistProfile.findOne({
+        userId: new mongoose.Types.ObjectId(req.params.userId)
+      });
       if (!artist) return res.status(404).json(null);
+
       const User = mongoose.model("User");
-      const user = await User.findById(req.params.userId).select("name profilePic").lean();
-      res.json({ ...artist.toObject(), userName: user?.name || "Artist", profilePic: user?.profilePic || null });
-    } catch(e) { res.json(null); }
+      const user = await User.findById(req.params.userId)
+        .select("name profilePic")
+        .lean();
+
+      res.json({
+        ...artist.toObject(),
+        userName: user?.name || "Artist",
+        profilePic: user?.profilePic || null
+      });
+    } catch (e) {
+      res.json(null);
+    }
   });
 
   // ENABLE ARTIST MODE
@@ -82,7 +97,9 @@ module.exports = function attachArtist(app, mongoose, requireLogin, cloudinary, 
         { upsert: true, new: true }
       );
       res.json(artist);
-    } catch(e) { res.status(500).json({ error: e.message }); }
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
   });
 
   // UPDATE ARTIST PROFILE
@@ -95,7 +112,9 @@ module.exports = function attachArtist(app, mongoose, requireLogin, cloudinary, 
         { new: true }
       );
       res.json(artist);
-    } catch(e) { res.status(500).json({ error: e.message }); }
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
   });
 
   // IMPORT TRACKS
@@ -106,7 +125,9 @@ module.exports = function attachArtist(app, mongoose, requireLogin, cloudinary, 
       for (const url of (urls || [])) {
         let title = url;
         try {
-          const r = await fetch(`https://soundcloud.com/oembed?format=json&url=${encodeURIComponent(url)}`);
+          const r = await fetch(
+            `https://soundcloud.com/oembed?format=json&url=${encodeURIComponent(url)}`
+          );
           const d = await r.json();
           title = d.title || url;
         } catch {}
@@ -117,13 +138,17 @@ module.exports = function attachArtist(app, mongoose, requireLogin, cloudinary, 
         { $push: { importedTracks: { $each: tracks } } }
       );
       res.json({ success: true, tracks });
-    } catch(e) { res.status(500).json({ error: e.message }); }
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
   });
 
   // INCREMENT TRACK PLAY
   app.post("/api/artist/:userId/tracks/:index/play", async (req, res) => {
     try {
-      const artist = await ArtistProfile.findOne({ userId: new mongoose.Types.ObjectId(req.params.userId) });
+      const artist = await ArtistProfile.findOne({
+        userId: new mongoose.Types.ObjectId(req.params.userId)
+      });
       if (!artist) return res.status(404).json({ error: "Not found" });
       const idx = Number(req.params.index);
       if (artist.importedTracks[idx] !== undefined) {
@@ -131,7 +156,9 @@ module.exports = function attachArtist(app, mongoose, requireLogin, cloudinary, 
         await artist.save();
       }
       res.json({ success: true });
-    } catch(e) { res.status(500).json({ error: e.message }); }
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
   });
 
   // DELETE TRACK
@@ -142,7 +169,9 @@ module.exports = function attachArtist(app, mongoose, requireLogin, cloudinary, 
       artist.importedTracks.splice(Number(req.params.index), 1);
       await artist.save();
       res.json({ success: true });
-    } catch(e) { res.status(500).json({ error: e.message }); }
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
   });
 
   // ADD SHOW
@@ -154,7 +183,9 @@ module.exports = function attachArtist(app, mongoose, requireLogin, cloudinary, 
         { $push: { upcomingShows: { venue, city, date, ticketUrl } } }
       );
       res.json({ success: true });
-    } catch(e) { res.status(500).json({ error: e.message }); }
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
   });
 
   // DELETE SHOW
@@ -165,7 +196,9 @@ module.exports = function attachArtist(app, mongoose, requireLogin, cloudinary, 
       artist.upcomingShows.splice(Number(req.params.index), 1);
       await artist.save();
       res.json({ success: true });
-    } catch(e) { res.status(500).json({ error: e.message }); }
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
   });
 
   // SEND FAN MESSAGE
@@ -187,7 +220,9 @@ module.exports = function attachArtist(app, mongoose, requireLogin, cloudinary, 
         }
       );
       res.json({ success: true });
-    } catch(e) { res.status(500).json({ error: e.message }); }
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
   });
 
   // GET FAN MESSAGE INBOX
@@ -196,7 +231,9 @@ module.exports = function attachArtist(app, mongoose, requireLogin, cloudinary, 
       const artist = await ArtistProfile.findOne({ userId: uid(req) });
       if (!artist) return res.status(404).json({ error: "Not found" });
       res.json(artist.fanMessages || []);
-    } catch(e) { res.status(500).json({ error: e.message }); }
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
   });
 
   // REPLY TO FAN MESSAGE
@@ -210,7 +247,9 @@ module.exports = function attachArtist(app, mongoose, requireLogin, cloudinary, 
       msg.repliedAt = new Date();
       await artist.save();
       res.json({ success: true });
-    } catch(e) { res.status(500).json({ error: e.message }); }
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
   });
 
   // DELETE FAN MESSAGE
@@ -218,45 +257,63 @@ module.exports = function attachArtist(app, mongoose, requireLogin, cloudinary, 
     try {
       const artist = await ArtistProfile.findOne({ userId: uid(req) });
       if (!artist) return res.status(404).json({ error: "Not found" });
-      artist.fanMessages = artist.fanMessages.filter(m => m._id.toString() !== req.params.msgId);
+      artist.fanMessages = artist.fanMessages.filter(
+        m => m._id.toString() !== req.params.msgId
+      );
       await artist.save();
       res.json({ success: true });
-    } catch(e) { res.status(500).json({ error: e.message }); }
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
   });
 
-  // SEARCH ARTISTS
+  // SEARCH ARTISTS (all + by name/genre/bio)
   app.get("/api/artists/search", requireLogin, async (req, res) => {
     try {
-      const q = (req.query.q || "").trim().toLowerCase();
-      if (!q) return res.json([]);
+      const rawQ = (req.query.q || "").trim();
+      const q = rawQ.toLowerCase();
+
       const artists = await ArtistProfile.find({ isArtist: true }).lean();
+
       const User = mongoose.model("User");
       const users = await User.find({}).select("name _id profilePic").lean();
+
       const userMap = {};
       users.forEach(u => { userMap[String(u._id)] = u; });
-      const filtered = artists.filter(a => {
-        const user = userMap[String(a.userId)];
-        const name = (user?.name || "").toLowerCase();
-        const artistName = (a.artistName || "").toLowerCase();
-        const genre = (a.genre || "").toLowerCase();
-        const bio = (a.bio || "").toLowerCase();
-        return name.includes(q) || artistName.includes(q) || genre.includes(q) || bio.includes(q);
-      });
-      res.json(filtered.map(a => {
-  const user = userMap[String(a.userId)];
-  return {
-    userId: a.userId,
-    artistName: a.artistName || user?.name || 'Artist',
-    userName: user?.name || 'Artist',
-    profilePic: user?.profilePic || null,
-    genre: a.genre || '',
-    bio: a.bio || '',
-    isVerified: !!a.isVerified,
-    trackCount: (a.importedTracks || []).length,
-    showCount: (a.upcomingShows || []).length
-  };
-}));
-    } catch(e) {
+
+      const filtered = q
+        ? artists.filter(a => {
+            const user = userMap[String(a.userId)];
+            const name = (user?.name || "").toLowerCase();
+            const artistName = (a.artistName || "").toLowerCase();
+            const genre = (a.genre || "").toLowerCase();
+            const bio = (a.bio || "").toLowerCase();
+            return (
+              name.includes(q) ||
+              artistName.includes(q) ||
+              genre.includes(q) ||
+              bio.includes(q)
+            );
+          })
+        : artists;
+
+      res.json(
+        filtered.map(a => {
+          const user = userMap[String(a.userId)];
+          return {
+            userId: a.userId,
+            artistName: a.artistName || user?.name || "Artist",
+            userName: user?.name || "Artist",
+            profilePic: user?.profilePic || null,
+            genre: a.genre || "",
+            bio: a.bio || "",
+            isVerified: !!a.isVerified,
+            trackCount: (a.importedTracks || []).length,
+            showCount: (a.upcomingShows || []).length
+          };
+        })
+      );
+    } catch (e) {
       console.error("artist search error:", e);
       res.json([]);
     }

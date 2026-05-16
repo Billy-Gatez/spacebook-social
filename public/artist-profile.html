@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Spacebook · Artist Profile</title>
+<link rel="stylesheet" href="/assets/css/styles.css"/>
+<style>
+  html, body { background:#000; margin:0; padding:0; color:#fff; font-family:Arial,sans-serif; overflow-x:hidden; }
+  .navbar { width:100%; padding:14px 20px; display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.65); backdrop-filter:blur(10px); position:sticky; top:0; z-index:100; box-sizing:border-box; }
+  .navbar .logo { color:#ff6a00; text-decoration:none; font-size:20px; font-weight:bold; }
+  .nav-links { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+  .nav-links a { color:#ccc; text-decoration:none; font-size:13px; }
+  .nav-links a:hover { color:#ff6a00; }
+
+  .artist-page { max-width:860px; margin:30px auto; padding:0 16px; box-sizing:border-box; }
+  .artist-header { display:flex; align-items:center; gap:16px; margin-bottom:20px; }
+  .artist-avatar { width:80px; height:80px; border-radius:50%; border:3px solid #ff6a00; object-fit:cover; background:#222; }
+  .artist-name { font-size:24px; font-weight:900; color:#fff; }
+  .artist-genre { font-size:13px; color:#aaa; margin-top:4px; }
+  .artist-bio { font-size:14px; color:#ddd; margin-top:10px; line-height:1.5; }
+
+  .section-label { font-weight:700; color:#ff6a00; margin:24px 0 12px; font-size:15px; }
+  .track-item, .show-item { padding:10px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.08); margin-bottom:8px; background:rgba(255,255,255,0.02); }
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a class="logo" href="/feed">Spacebook</a>
+  <div class="nav-links">
+    <a href="/home">Home</a>
+    <a href="/feed">Feed</a>
+    <a href="/profile">Profile</a>
+    <a href="/messages">Messages</a>
+    <a href="/gallery">Gallery</a>
+    <a href="/stories">Stories</a>
+    <a href="/listen-together">Listen Together</a>
+    <a href="/artist-dashboard">Artist</a>
+    <a href="/activity">Activity</a>
+    <a href="/logout">Log Out</a>
+  </div>
+</nav>
+
+<div class="artist-page">
+  <div id="profile-root">Loading artist…</div>
+</div>
+
+<script>
+function getUserIdFromPath() {
+  const parts = window.location.pathname.split("/");
+  // /artist/:userId → ["", "artist", ":userId"]
+  return parts[2] || null;
+}
+
+async function loadArtistProfile() {
+  const userId = getUserIdFromPath();
+  if (!userId) {
+    document.getElementById("profile-root").textContent = "Invalid artist URL.";
+    return;
+  }
+
+  const data = await fetch("/api/artist/" + encodeURIComponent(userId), { credentials: "include" })
+    .then(r => r.json())
+    .catch(() => null);
+
+  if (!data) {
+    document.getElementById("profile-root").textContent = "Artist not found.";
+    return;
+  }
+
+  const name = data.artistName || data.userName || "Artist";
+  const genre = data.genre || "Artist";
+  const bio = data.bio || "This artist has not added a bio yet.";
+  const avatar = data.profilePic || "/assets/images/default-avatar.png";
+
+  const tracks = data.importedTracks || [];
+  const shows = data.upcomingShows || [];
+
+  document.getElementById("profile-root").innerHTML = `
+    <div class="artist-header">
+      <img class="artist-avatar" src="${avatar}"
+           onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=ff6a00&color=000'"/>
+      <div>
+        <div class="artist-name">${name}</div>
+        <div class="artist-genre">${genre}</div>
+      </div>
+    </div>
+
+    <div class="artist-bio">${bio}</div>
+
+    <div class="section-label">Tracks</div>
+    <div>
+      ${
+        tracks.length
+          ? tracks.map(t => `
+              <div class="track-item">
+                <div style="font-size:13px;color:#f2f2f2;">${t.title || t.url}</div>
+                <div style="font-size:11px;color:#888;margin-top:2px;">
+                  <a href="${t.url}" target="_blank" style="color:#ff6a00;text-decoration:none;">Open ↗</a>
+                  · ${t.plays || 0} play${(t.plays || 0) === 1 ? "" : "s"}
+                </div>
+              </div>
+            `).join("")
+          : `<p style="color:#666;font-size:13px;">No tracks yet.</p>`
+      }
+    </div>
+
+    <div class="section-label">Upcoming Shows</div>
+    <div>
+      ${
+        shows.length
+          ? shows.map(s => `
+              <div class="show-item">
+                <div style="font-size:13px;font-weight:700;color:#ff6a00;">${s.venue}</div>
+                <div style="font-size:12px;color:#888;margin-top:2px;">
+                  ${s.city} · ${new Date(s.date).toLocaleDateString()}
+                  ${s.ticketUrl ? `· <a href="${s.ticketUrl}" target="_blank" style="color:#ff6a00;text-decoration:none;">Tickets ↗</a>` : ""}
+                </div>
+              </div>
+            `).join("")
+          : `<p style="color:#666;font-size:13px;">No shows yet.</p>`
+      }
+    </div>
+  `;
+}
+
+loadArtistProfile();
+</script>
+</body>
+</html>

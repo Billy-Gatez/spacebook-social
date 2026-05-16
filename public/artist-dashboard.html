@@ -414,18 +414,47 @@ async function deleteMessage(msgId) {
 async function searchArtists() {
   const q = document.getElementById('artist-search-input').value.trim();
   const el = document.getElementById('artist-search-results');
-  if (!q) { el.innerHTML=''; return; }
+
+  // Allow "search all": if empty, still call API to get everything
   el.innerHTML = '<p style="color:#666;font-size:13px;">Searching…</p>';
-  const results = await fetch('/api/artists/search?q='+encodeURIComponent(q), {credentials:'include'}).then(r=>r.json()).catch(()=>[]);
-  if (!results.length) { el.innerHTML=`<p style="color:#666;font-size:13px;">No artists found for "${q}".</p>`; return; }
+
+  const url = '/api/artists/search' + (q ? '?q=' + encodeURIComponent(q) : '');
+  const results = await fetch(url, {credentials:'include'})
+    .then(r => r.json())
+    .catch(() => []);
+
+  if (!results.length) {
+    el.innerHTML = `<p style="color:#666;font-size:13px;">No artists found${q ? ` for "${q}"` : ''}.</p>`;
+    return;
+  }
+
   el.innerHTML = results.map(a => `
     <div class="artist-result" onclick="window.location='/artist/${a.userId}'">
-      <img class="artist-result-avatar" src="${a.profilePic||''}" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(a.artistName||a.userName)}&background=ff6a00&color=000'"/>
+      <img
+        class="artist-result-avatar"
+        src="${a.profilePic || ''}"
+        onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(a.artistName || a.userName)}&background=ff6a00&color=000'"
+      />
       <div style="flex:1;min-width:0;">
-        <div class="artist-result-name">${a.artistName||a.userName}${a.isVerified?'<span style="background:#ff6a00;color:#000;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:6px;">✓</span>':''}</div>
-        <div class="artist-result-meta">${a.genre||'Artist'} · ${a.trackCount} track${a.trackCount!==1?'s':''} · ${a.showCount} show${a.showCount!==1?'s':''}</div>
+        <div class="artist-result-name">
+          ${a.artistName || a.userName}
+          ${
+            a.isVerified
+              ? '<span style="background:#ff6a00;color:#000;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:6px;">✓</span>'
+              : ''
+          }
+        </div>
+        <div class="artist-result-meta">
+          ${(a.genre || 'Artist')} · ${a.trackCount} track${a.trackCount !== 1 ? 's' : ''} · ${a.showCount} show${a.showCount !== 1 ? 's' : ''}
+        </div>
       </div>
-      <button class="btn-secondary" style="flex-shrink:0;font-size:12px;padding:5px 12px;" onclick="event.stopPropagation();openFanMsgModal('${a.userId}','${(a.artistName||a.userName).replace(/'/g,"\\'")}')">✉️ Message</button>
+      <button
+        class="btn-secondary"
+        style="flex-shrink:0;font-size:12px;padding:5px 12px;"
+        onclick="event.stopPropagation();openFanMsgModal('${a.userId}','${(a.artistName || a.userName).replace(/'/g, '\\\'')}')"
+      >
+        ✉️ Message
+      </button>
     </div>
   `).join('');
 }
