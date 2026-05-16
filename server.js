@@ -595,7 +595,7 @@ app.get("/home", requireLogin, async (req, res) => {
         <ul style="list-style:none;margin-top:10px;font-size:14px;padding-left:0;">
           <li><a href="/profile" style="color:#ff6a00;">Your Profile</a></li>
           <li><a href="/feed" style="color:#ff6a00;">Feed</a></li>
-          <li><a href="/messages" style="color:#ff6a00;">Messages</a></li>
+          <li><a href="https://www.spacebook.world/messenger" style="color:#ff6a00;">Messages</a></li>
           <li><a href="/gallery" style="color:#ff6a00;">Gallery</a></li>
           <li><a href="/stories" style="color:#ff6a00;">Stories</a></li>
           <li><a href="/listen-together" style="color:#ff6a00;">Listen Together</a></li>
@@ -1483,7 +1483,7 @@ app.get("/profile", requireLogin, async (req, res) => {
           <a href="/home">Home</a>
           <a href="/feed">Feed</a>
           <a href="/profile">Profile</a>
-          <a href="/messages">Messages</a>
+          <a href="https://www.spacebook.world/messenger">Messages</a>
           <a href="/gallery">Gallery</a>
           <a href="/stories">Stories</a>
           <a href="/listen-together">Listen Together</a>
