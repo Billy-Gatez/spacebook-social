@@ -122,6 +122,7 @@
   <p style="color:#888;font-size:13px;margin-top:0;">Create playlists, add SoundCloud tracks, and vibe with friends in real-time.</p>
   <div class="lt-layout">
     <div class="lt-sidebar">
+
       <div class="card">
         <h4 class="new-pl-form" style="margin:0 0 10px;">+ New Playlist</h4>
         <input type="text" id="new-pl-name" placeholder="Playlist name"/>
@@ -130,10 +131,18 @@
         </label>
         <button class="btn-primary" onclick="createPlaylist()">Create</button>
       </div>
+
+      <div class="card">
+        <div class="section-label">🔗 Join a Room</div>
+        <input type="text" id="join-room-input" placeholder="Paste Room ID or link"/>
+        <button class="btn-primary" style="width:100%;" onclick="joinExistingRoom()">Join Room</button>
+      </div>
+
       <div class="card">
         <div class="section-label">My Playlists</div>
         <div id="pl-list"><p style="color:#666;font-size:13px;">No playlists yet.</p></div>
       </div>
+
     </div>
     <div>
       <div class="player-area" id="player-area" style="display:none;">
@@ -152,7 +161,7 @@
         </div>
         <div id="room-panel" style="display:none;">
           <div style="font-size:13px;color:#888;margin-bottom:8px;">
-            Room: <span id="room-id-display" style="color:#ff6a00;"></span>
+            Room: <span id="room-id-display" style="color:#ff6a00;font-size:11px;word-break:break-all;"></span>
             <button class="btn-secondary" style="padding:2px 8px;font-size:12px;margin-left:8px;" onclick="copyRoomLink()">Copy Link</button>
           </div>
           <div style="font-size:12px;color:#888;margin-bottom:6px;">Listening together:</div>
@@ -198,6 +207,13 @@ let currentUser = null;
 async function init() {
   try { currentUser = await fetch('/api/session-user', {credentials:'include'}).then(r=>r.json()); } catch(e) {}
   loadPlaylists();
+  // auto-join room if link has ?room=
+  const params = new URLSearchParams(window.location.search);
+  const roomParam = params.get('room');
+  if (roomParam) {
+    document.getElementById('join-room-input').value = roomParam;
+    joinExistingRoom();
+  }
 }
 
 async function loadPlaylists() {
@@ -349,26 +365,53 @@ async function startListenRoom() {
   }).then(r=>r.json()).catch(()=>null);
   if (!room || !room._id) return alert('Could not create room.');
   currentRoomId = room._id;
+  connectSocket();
+  document.getElementById('room-panel').style.display = 'block';
+  document.getElementById('room-id-display').textContent = currentRoomId;
+}
+
+async function joinExistingRoom() {
+  let val = document.getElementById('join-room-input').value.trim();
+  if (val.includes('?room=')) val = val.split('?room=')[1];
+  if (!val) return alert('Paste a Room ID or link first.');
+  currentRoomId = val;
+
+  const room = await fetch('/api/listen-rooms/' + currentRoomId, {credentials:'include'}).then(r=>r.json()).catch(()=>null);
+  if (!room) return alert('Room not found.');
+
+  if (room.playlistId) {
+    currentPlaylist = room.playlistId;
+    document.getElementById('player-area').style.display = 'block';
+    document.getElementById('no-pl-msg').style.display = 'none';
+    document.getElementById('pl-title').textContent = currentPlaylist.name || 'Room Playlist';
+    renderTracks();
+  }
+
+  connectSocket();
+  document.getElementById('room-panel').style.display = 'block';
+  document.getElementById('room-id-display').textContent = currentRoomId;
+  document.getElementById('join-room-input').value = '';
+}
+
+function connectSocket() {
+  if (socket) socket.disconnect();
   try {
     socket = io({path: '/listen-socket', auth: {userId: currentUser?._id, userName: currentUser?.name || 'Guest'}});
     setupSocketListeners();
     socket.emit('joinroom', {roomId: currentRoomId});
   } catch(e) {
     alert('Real-time sync unavailable. You can still use the player solo.');
-    return;
   }
-  document.getElementById('room-panel').style.display = 'block';
-  document.getElementById('room-id-display').textContent = currentRoomId;
 }
 
 function setupSocketListeners() {
   socket.on('userjoined', data => appendRoomChat(`<span class="rc-name">${data.userName}</span> joined`, true));
   socket.on('syncstate', data => {
-    if (data.trackIndex !== undefined && data.trackIndex !== currentTrackIndex) playTrack(data.trackIndex);
+    if (data.currentTrackIndex !== undefined && data.currentTrackIndex !== currentTrackIndex) playTrack(data.currentTrackIndex);
     if (data.isPlaying !== undefined) { isPlaying = data.isPlaying; document.getElementById('play-btn').textContent = isPlaying ? '⏸' : '▶'; }
   });
   socket.on('trackchanged', data => { if (data.trackIndex !== currentTrackIndex) playTrack(data.trackIndex); });
-  socket.on('roomchatmessage', data => appendRoomChat(`<span class="rc-name">${data.userName}</span>${data.message}`));
+  socket.on('roomchatmessage', data => appendRoomChat(`<span class="rc-name">${data.userName}</span> ${data.message}`));
   socket.on('roomreaction', data => spawnReactionBurst(data.emoji));
 }
 
@@ -387,7 +430,7 @@ function sendRoomChat() {
   const message = input.value.trim();
   if (!message) return;
   if (socket && currentRoomId) socket.emit('roomchat', {roomId: currentRoomId, message});
-  else appendRoomChat(`<span class="rc-name">${currentUser?.name || 'You'}</span>${message}`);
+  else appendRoomChat(`<span class="rc-name">${currentUser?.name || 'You'}</span> ${message}`);
   input.value = '';
 }
 
@@ -408,7 +451,7 @@ function spawnReactionBurst(emoji) {
 
 function copyRoomLink() {
   const url = window.location.origin + '/listen-together?room=' + currentRoomId;
-  navigator.clipboard.writeText(url).then(() => alert('Room link copied!')).catch(() => prompt('Copy this link:', url));
+  navigator.clipboard.writeText(url).then(() => alert('Room link copied! Share it with friends.')).catch(() => prompt('Copy this link:', url));
 }
 
 init();
