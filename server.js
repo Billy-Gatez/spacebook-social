@@ -28,6 +28,12 @@ const fs = require("fs");
 
 const compileRouter = require("./compile-cpp");
 
+
+
+
+// ====== APP ======
+const app = express();
+
 app.use(session({
   secret: "spacebook-secret",
   resave: false,
@@ -38,12 +44,6 @@ app.use(session({
     sameSite: "lax"
   }
 }));
-
-
-// ====== APP ======
-const app = express();
-
-
 
 
 // 1) JSON body parser for age-check POST
