@@ -2681,6 +2681,12 @@ app.get("/messages", requireLogin, (req, res) => {
   res.redirect("https://www.spacebook.world/messenger");
 });
 
+
+// Serve listen-together page directly (guaranteed, no module dependency)
+app.get('/listen-together', requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'listen-together.html'));
+});
+
 try {
   const attachArtist = require("./modules/artist");
   attachArtist(app, mongoose, requireLogin, cloudinary, upload);
