@@ -260,8 +260,12 @@ function switchTab(tabId, btn) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById(tabId).classList.add('active');
   btn.classList.add('active');
-}
 
+  // Always reload inbox when Messages tab is shown
+  if (tabId === 'tab-messages') {
+    loadFanInbox();
+  }
+}
 function renderTracks(tracks) {
   const el = document.getElementById('tracks-list');
   if (!tracks.length) { el.innerHTML = '<p style="color:#666;font-size:13px;">No tracks yet. Import a SoundCloud URL above.</p>'; return; }
