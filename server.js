@@ -594,7 +594,7 @@ app.get("/home", requireLogin, async (req, res) => {
     draw();
 
 async function loadPostReactions(postId) {
-  const data = await fetch("/api/posts/" + postId + "/reactions", {credentials:"include"})
+   const data = await fetch("/api/posts/" + postId + "/reactions", {credentials:"include"})
     .then(r=>r.json())
     .catch(()=>({counts:{},myReaction:null}));
   document.querySelectorAll(".react-pill[data-post-id=\"" + postId + "\"]").forEach(function(btn) {
@@ -852,7 +852,7 @@ const friendIds = user.friends.map(f => f.id);
 
     // ====== REACTIONS ======
 async function loadPostReactions(postId) {
-  const data = await fetch("/api/posts/" + postId + "/reactions", {credentials:"include"})
+   const data = await fetch("/api/posts/" + postId + "/reactions", {credentials:"include"})
     .then(r=>r.json())
     .catch(()=>({counts:{},myReaction:null}));
   document.querySelectorAll(".react-pill[data-post-id=\"" + postId + "\"]").forEach(function(btn) {
@@ -1609,7 +1609,7 @@ app.get("/profile", requireLogin, async (req, res) => {
         }
 
 async function loadPostReactions(postId) {
-  const data = await fetch("/api/posts/" + postId + "/reactions", {credentials:"include"})
+    const data = await fetch("/api/posts/" + postId + "/reactions", {credentials:"include"})
     .then(r=>r.json())
     .catch(()=>({counts:{},myReaction:null}));
   document.querySelectorAll(".react-pill[data-post-id=\"" + postId + "\"]").forEach(function(btn) {
@@ -2064,7 +2064,7 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
         }
 
 async function loadPostReactions(postId) {
-  const data = await fetch("/api/posts/" + postId + "/reactions", {credentials:"include"})
+    const data = await fetch("/api/posts/" + postId + "/reactions", {credentials:"include"})
     .then(r=>r.json())
     .catch(()=>({counts:{},myReaction:null}));
   document.querySelectorAll(".react-pill[data-post-id=\"" + postId + "\"]").forEach(function(btn) {
