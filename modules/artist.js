@@ -40,30 +40,25 @@ module.exports = function attachArtist(app, mongoose, requireLogin, cloudinary, 
     return new mongoose.Types.ObjectId(req.session.userId);
   }
 
-  // ✅ Artist Dashboard page
   app.get("/artist-dashboard", requireLogin, (req, res) => {
     res.sendFile(path.join(__dirname, "../public", "artist-dashboard.html"));
   });
 
-  // ✅ FIXED: /me and /fan-messages/inbox MUST come before /:userId wildcard
   app.get("/api/artist/me", requireLogin, async (req, res) => {
     try {
       const artist = await ArtistProfile.findOne({ userId: uid(req) });
       res.json(artist || null);
     } catch (e) {
-      console.error("Artist load error:", e);
       res.json(null);
     }
   });
 
-  // ✅ FIXED: moved above /:userId
   app.get("/api/artist/fan-messages/inbox", requireLogin, async (req, res) => {
     const artist = await ArtistProfile.findOne({ userId: uid(req) });
     if (!artist) return res.status(404).json({ error: "Not found" });
     res.json(artist.fanMessages || []);
   });
 
-  // ✅ Wildcard now last — won't swallow the routes above
   app.get("/api/artist/:userId", async (req, res) => {
     try {
       const artist = await ArtistProfile.findOne({ userId: new mongoose.Types.ObjectId(req.params.userId) });
@@ -154,6 +149,35 @@ module.exports = function attachArtist(app, mongoose, requireLogin, cloudinary, 
       }
     );
     res.json({ success: true });
+  });
+
+  app.get("/api/artists/search", requireLogin, async (req, res) => {
+    try {
+      const q = (req.query.q || "").trim();
+      if (!q) return res.json([]);
+      const artists = await ArtistProfile.find({ isArtist: true }).lean();
+      const User = mongoose.model("User");
+      const users = await User.find({}).select("name _id").lean();
+      const nameMap = {};
+      users.forEach(u => { nameMap[String(u._id)] = u.name; });
+      const ql = q.toLowerCase();
+      const filtered = artists.filter(a => {
+        const name = (nameMap[String(a.userId)] || "").toLowerCase();
+        const genre = (a.genre || "").toLowerCase();
+        const bio = (a.bio || "").toLowerCase();
+        return name.includes(ql) || genre.includes(ql) || bio.includes(ql);
+      });
+      res.json(filtered.map(a => ({
+        userId: a.userId,
+        userName: nameMap[String(a.userId)] || "Artist",
+        genre: a.genre || "",
+        bio: a.bio || "",
+        isVerified: !!a.isVerified
+      })));
+    } catch (e) {
+      console.error("artist search error:", e);
+      res.json([]);
+    }
   });
 
 };
