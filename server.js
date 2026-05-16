@@ -571,14 +571,20 @@ app.get("/home", requireLogin, async (req, res) => {
   <canvas id="starfield"></canvas>
 
   <div class="navbar">
-    <div class="logo"><a href="/feed">Spacebook</a></div>
-    <div class="nav-links">
-      <a href="/home">Home</a><a href="/feed">Feed</a><a href="/profile">Profile</a>
-      <a href="/messages">Messages</a><a href="/gallery">Gallery</a><a href="/stories">Stories</a>
-      <a href="/listen-together">Listen Together</a><a href="/artist-dashboard">Artist</a>
-      <a href="/activity">Activity</a><a href="/logout">Log Out</a>
-    </div>
+  <div class="logo"><a href="/feed">Spacebook</a></div>
+  <div class="nav-links">
+    <a href="/home">Home</a>
+    <a href="/feed">Feed</a>
+    <a href="/profile">Profile</a>
+    <a href="https://www.spacebook.world/messenger">Messages</a>
+    <a href="/gallery">Gallery</a>
+    <a href="/stories">Stories</a>
+    <a href="/listen-together">Listen Together</a>
+    <a href="/artist-dashboard">Artist</a>
+    <a href="/activity">Activity</a>
+    <a href="/logout">Log Out</a>
   </div>
+</div>
 
   <div class="page">
     <aside class="sidebar">
@@ -2701,8 +2707,11 @@ try {
   attachMessaging(app, server, mongoose, requireLogin);
 } catch(e) {
   console.warn("Messaging module not loaded:", e.message);
-  app.get("/messages", requireLogin, (req, res) => res.redirect("/feed"));
+  app.get("/messages", requireLogin, (req, res) => res.redirect("https://www.spacebook.world/messenger"));
 }
+app.get("/messages", requireLogin, (req, res) => {
+  res.redirect("https://www.spacebook.world/messenger");
+});
 try {
   const attachArtist = require("./modules/artist");
   attachArtist(app, mongoose, requireLogin, cloudinary, upload);
