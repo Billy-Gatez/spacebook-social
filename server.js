@@ -593,10 +593,10 @@ app.get("/home", requireLogin, async (req, res) => {
     }
     draw();
 
-    // ====== POST REACTIONS ======
-  async function loadPostReactions(postId) {
-  const data = await fetch(`/api/posts/${postId}/reactions`, {credentials:"include"}).then(r=>r.json()).catch(()=>({counts:{},myReaction:null}));
-  document.querySelectorAll(`.react-pill[data-post-id="${postId}"]`).forEach(btn => {
+ // ====== POST REACTIONS ======
+async function loadPostReactions(postId) {
+  const data = await fetch(\`/api/posts/\${postId}/reactions\`, {credentials:"include"}).then(r=>r.json()).catch(()=>({counts:{},myReaction:null}));
+  document.querySelectorAll(\`.react-pill[data-post-id="\${postId}"]\`).forEach(btn => {
     const emoji = btn.dataset.emoji;
     const countEl = btn.querySelector('.rpill-count');
     if (countEl) countEl.textContent = data.counts[emoji] || 0;
