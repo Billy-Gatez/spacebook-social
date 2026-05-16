@@ -28,6 +28,18 @@ const fs = require("fs");
 
 const compileRouter = require("./compile-cpp");
 
+app.use(session({
+  secret: "spacebook-secret",
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: false, // true only if HTTPS
+    httpOnly: true,
+    sameSite: "lax"
+  }
+}));
+
+
 // ====== APP ======
 const app = express();
 
