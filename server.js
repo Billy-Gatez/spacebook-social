@@ -2693,7 +2693,7 @@ try {
 } catch(e) { console.warn("artist module not found, skipping"); }
 
 try {
-  const attachPlaylists = require('./modules/playlists');
+  const attachPlaylists = require('./playlists');
   attachPlaylists(app, server, mongoose, requireLogin);
 } catch(e) {
   console.warn('playlists module not loaded:', e.message);
