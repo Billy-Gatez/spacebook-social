@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Spacebook · Artist Dashboard</title>
 <link rel="stylesheet" href="/assets/css/styles.css">
+
 <style>
   .artist-page { max-width: 900px; margin: 30px auto; padding: 0 16px; }
   .artist-header { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; }
@@ -15,9 +16,8 @@
   .section-card { background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 18px; }
   .section-card h3 { color: #ff6a00; margin-bottom: 14px; font-size: 16px; }
   .show-item { background: #0d0d0d; border: 1px solid #222; border-radius: 6px; padding: 10px 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
-  .show-item .show-info .venue { font-weight: 700; color: #f2f2f2; }
-  .show-item .show-info .date { font-size: 12px; color: #888; margin-top: 2px; }
-  .show-item .show-info .city { font-size: 12px; color: #aaa; }
+  .show-item .venue { font-weight: 700; color: #f2f2f2; }
+  .show-item .city, .show-item .date { font-size: 12px; color: #aaa; }
   .track-item { background: #0d0d0d; border: 1px solid #222; border-radius: 6px; padding: 8px 12px; margin-bottom: 6px; display: flex; align-items: center; gap: 10px; }
   .track-item .t-title { flex: 1; font-size: 13px; color: #f2f2f2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .track-item .t-platform { font-size: 11px; color: #888; }
@@ -28,14 +28,15 @@
   .fan-msg-item .fm-time { color: #666; font-size: 11px; margin-top: 4px; }
   .stat-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 20px; }
   .stat-box { background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 14px; text-align: center; }
-  .stat-box .stat-num { font-size: 28px; font-weight: 700; color: #ff6a00; }
-  .stat-box .stat-label { font-size: 12px; color: #888; margin-top: 4px; }
+  .stat-num { font-size: 28px; font-weight: 700; color: #ff6a00; }
+  .stat-label { font-size: 12px; color: #888; margin-top: 4px; }
   .tip-link { display: inline-block; background: linear-gradient(135deg,#ff6a00,#ee0979); color: #fff; padding: 10px 20px; border-radius: 6px; font-weight: 700; margin-top: 8px; font-size: 14px; }
   .enable-panel { text-align: center; padding: 60px 20px; }
   .enable-panel h2 { color: #ff6a00; margin-bottom: 10px; }
   .enable-panel p { color: #888; margin-bottom: 24px; }
 </style>
 </head>
+
 <body>
 <nav class="navbar">
   <a class="logo" href="/feed">Spacebook</a>
@@ -50,21 +51,21 @@
 
 <div class="artist-page">
 
-  <!-- Not an artist yet -->
+  <!-- Enable Artist Mode -->
   <div id="enable-panel" class="enable-panel" style="display:none">
     <h2>🎤 Enable Artist Mode</h2>
     <p>Show your music, list your shows, and connect with fans.</p>
     <div class="section-card" style="max-width:440px;margin:0 auto;text-align:left">
-      <input type="text" id="en-genre" placeholder="Genre (e.g. Hip-Hop, House, R&B)"/>
+      <input type="text" id="en-genre" placeholder="Genre"/>
       <textarea id="en-bio" placeholder="Artist bio…" style="height:80px"></textarea>
       <input type="text" id="en-sc" placeholder="SoundCloud profile URL"/>
-      <input type="text" id="en-sp" placeholder="Spotify profile URL (optional)"/>
-      <input type="text" id="en-tip" placeholder="Tip/support link (Cash App, PayPal, etc.)"/>
+      <input type="text" id="en-sp" placeholder="Spotify profile URL"/>
+      <input type="text" id="en-tip" placeholder="Tip/support link"/>
       <button class="btn-primary" onclick="enableArtistMode()">Enable Artist Mode</button>
     </div>
   </div>
 
-  <!-- Artist dashboard -->
+  <!-- Artist Dashboard -->
   <div id="artist-dashboard" style="display:none">
     <div class="artist-header">
       <div>
@@ -109,7 +110,7 @@
           <input type="text" id="show-venue" placeholder="Venue name"/>
           <input type="text" id="show-city" placeholder="City"/>
           <input type="date" id="show-date"/>
-          <input type="text" id="show-ticket" placeholder="Ticket URL (optional)"/>
+          <input type="text" id="show-ticket" placeholder="Ticket URL"/>
           <button class="btn-primary" onclick="addShow()" style="margin-top:6px">Add Show</button>
         </div>
       </div>
@@ -120,7 +121,7 @@
         <div id="fan-msgs-list"></div>
       </div>
 
-      <!-- Profile & Tip -->
+      <!-- Settings -->
       <div class="section-card">
         <h3>⚙️ Settings</h3>
         <input type="text" id="edit-genre" placeholder="Genre"/>
@@ -129,6 +130,7 @@
         <input type="text" id="edit-sp" placeholder="Spotify profile URL"/>
         <input type="text" id="edit-tip" placeholder="Tip/support link"/>
         <button class="btn-primary" onclick="saveSettings()">Save Settings</button>
+
         <div id="tip-section" style="margin-top:14px;border-top:1px solid #222;padding-top:14px">
           <div style="font-size:13px;color:#888;margin-bottom:6px">Your tip link:</div>
           <a id="tip-link-display" class="tip-link" href="#" target="_blank">💸 Support Me</a>
@@ -139,6 +141,49 @@
   </div>
 </div>
 
+<!-- Load external JS -->
 <script src="/modules/artist-client.js"></script>
+
+<!-- Inline logic -->
+<script>
+async function loadArtistProfile() {
+  const res = await fetch("/api/artist/me", { credentials: "include" });
+  const artist = await res.json();
+
+  if (!artist || !artist.isArtist) {
+    document.querySelector("#enable-panel").style.display = "block";
+    return;
+  }
+
+  document.querySelector("#enable-panel").style.display = "none";
+  document.querySelector("#artist-dashboard").style.display = "block";
+
+  document.querySelector("#dash-name").textContent = "Artist Dashboard";
+  document.querySelector("#dash-genre").textContent = artist.genre || "";
+
+  document.querySelector("#edit-genre").value = artist.genre || "";
+  document.querySelector("#edit-bio").value = artist.bio || "";
+  document.querySelector("#edit-sc").value = artist.soundcloudProfile || "";
+  document.querySelector("#edit-sp").value = artist.spotifyProfile || "";
+  document.querySelector("#edit-tip").value = artist.tipUrl || "";
+
+  if (artist.tipUrl) {
+    const link = document.querySelector("#tip-link-display");
+    link.href = artist.tipUrl;
+    link.style.display = "inline-block";
+  }
+
+  document.querySelector("#stat-tracks").textContent = artist.importedTracks?.length || 0;
+  document.querySelector("#stat-shows").textContent = artist.upcomingShows?.length || 0;
+  document.querySelector("#stat-msgs").textContent = artist.fanMessages?.length || 0;
+
+  renderTracks(artist.importedTracks || []);
+  renderShows(artist.upcomingShows || []);
+  renderFanMessages(artist.fanMessages || []);
+}
+
+document.addEventListener("DOMContentLoaded", loadArtistProfile);
+</script>
+
 </body>
 </html>
