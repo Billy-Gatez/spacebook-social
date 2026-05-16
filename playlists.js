@@ -87,8 +87,14 @@ module.exports = function attachPlaylists(app, server, mongoose, requireLogin) {
       io.to(roomId).emit("roomchatmessage", entry);
     });
 
+    // broadcasts to ALL in room including sender
     socket.on("roomreact", ({ roomId, emoji }) => {
       io.to(roomId).emit("roomreaction", { userId, userName, emoji });
+    });
+
+    // broadcasts playlist update to everyone else in the room
+    socket.on("playlistupdated", ({ roomId }) => {
+      socket.to(roomId).emit("playlistupdated", { roomId });
     });
   });
 

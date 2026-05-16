@@ -61,22 +61,8 @@
   .add-track-form { margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.08); }
   .add-track-form h4 { color: #ff6a00; margin: 0 0 10px; font-size: 15px; }
   .section-label { font-weight: 700; color: #ff6a00; margin-bottom: 8px; font-size: 14px; }
-
-  /* ACTIVE ROOMS */
   .active-rooms-wrap { max-height: 220px; overflow-y: auto; }
-  .active-room-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 10px 14px;
-    border-radius: 8px;
-    border: 1px solid rgba(255,255,255,0.08);
-    margin-bottom: 8px;
-    background: rgba(255,106,0,0.04);
-    transition: background .15s;
-    flex-wrap: nowrap;
-  }
+  .active-room-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 8px; background: rgba(255,106,0,0.04); transition: background .15s; flex-wrap: nowrap; }
   .active-room-item:hover { background: rgba(255,106,0,0.1); border-color: #ff6a00; }
   .active-room-info { flex: 1; min-width: 0; overflow: hidden; }
   .active-room-name { font-size: 13px; font-weight: 700; color: #ff6a00; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -373,6 +359,7 @@ async function addTrack() {
   document.getElementById('track-title-input').value = '';
   renderTracks();
   loadPlaylists();
+  if (socket && currentRoomId) socket.emit('playlistupdated', {roomId: currentRoomId});
 }
 
 async function removeTrack(index) {
@@ -381,6 +368,7 @@ async function removeTrack(index) {
   currentPlaylist = playlists.find(p => p._id === currentPlaylist._id) || currentPlaylist;
   renderTracks();
   renderPlaylists();
+  if (socket && currentRoomId) socket.emit('playlistupdated', {roomId: currentRoomId});
 }
 
 function playTrack(index) {
@@ -468,13 +456,28 @@ function connectSocket() {
 
 function setupSocketListeners() {
   socket.on('userjoined', data => appendRoomChat(`<span class="rc-name">${data.userName}</span> joined`, true));
+
   socket.on('syncstate', data => {
     if (data.currentTrackIndex !== undefined && data.currentTrackIndex !== currentTrackIndex) playTrack(data.currentTrackIndex);
     if (data.isPlaying !== undefined) { isPlaying = data.isPlaying; document.getElementById('play-btn').textContent = isPlaying ? '⏸' : '▶'; }
   });
+
   socket.on('trackchanged', data => { if (data.trackIndex !== currentTrackIndex) playTrack(data.trackIndex); });
+
   socket.on('roomchatmessage', data => appendRoomChat(`<span class="rc-name">${data.userName}</span> ${data.message}`));
+
+  // reactions now come from server for everyone including sender
   socket.on('roomreaction', data => spawnReactionBurst(data.emoji));
+
+  // playlist updated by someone else — re-fetch and re-render
+  socket.on('playlistupdated', async () => {
+    const room = await fetch('/api/listen-rooms/' + currentRoomId, {credentials:'include'}).then(r=>r.json()).catch(()=>null);
+    if (room && room.playlistId) {
+      currentPlaylist = room.playlistId;
+      renderTracks();
+      renderPlaylists();
+    }
+  });
 }
 
 function appendRoomChat(html, system = false) {
@@ -497,8 +500,11 @@ function sendRoomChat() {
 }
 
 function sendRoomReaction(emoji) {
-  if (socket && currentRoomId) socket.emit('roomreact', {roomId: currentRoomId, emoji});
-  spawnReactionBurst(emoji);
+  if (socket && currentRoomId) {
+    socket.emit('roomreact', {roomId: currentRoomId, emoji});
+  } else {
+    spawnReactionBurst(emoji); // fallback if not in a room
+  }
 }
 
 function spawnReactionBurst(emoji) {
