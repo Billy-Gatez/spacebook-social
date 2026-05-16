@@ -1,104 +1,326 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Spacebook · Artist Dashboard</title>
-<link rel="stylesheet" href="/assets/css/styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Artist Dashboard – Spacebook</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #0f0f1a; color: #e0e0f0; min-height: 100vh; }
 
-<style>
-  .artist-page { max-width: 900px; margin: 30px auto; padding: 0 16px; }
-  .artist-header { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; }
-  .artist-header h1 { color: #ff6a00; font-size: 28px; }
-  .verified-badge { background: linear-gradient(135deg,#ff6a00,#ee0979); color: #fff; font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 20px; }
-  .artist-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    /* ── NAVBAR ── */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #1a1a2e;
+      padding: 12px 24px;
+      border-bottom: 1px solid #2e2e50;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-logo {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #a78bfa;
+      text-decoration: none;
+      letter-spacing: 1px;
+    }
+    .nav-links {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .nav-links a {
+      color: #c4b5fd;
+      text-decoration: none;
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: background 0.2s, color 0.2s;
+    }
+    .nav-links a:hover { background: #2e2e50; color: #fff; }
+    .nav-links a.active { background: #a78bfa; color: #0f0f1a; }
 
-  .panel { background: #111; padding: 20px; border-radius: 10px; border: 1px solid #333; }
-  .panel h2 { color: #ff6a00; margin-bottom: 10px; }
-  .panel input, .panel textarea { width: 100%; padding: 10px; margin: 6px 0; background: #222; border: 1px solid #444; color: #fff; border-radius: 6px; }
-  .panel button { background: #ff6a00; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-  .stats-box { display: flex; gap: 20px; margin-bottom: 20px; }
-  .stat { background: #222; padding: 16px; border-radius: 8px; flex: 1; text-align: center; }
-  .stat-number { font-size: 24px; color: #ff6a00; font-weight: bold; }
-  .list-box { margin-top: 20px; }
-  .track-item, .show-item, .fan-msg-item { background: #222; padding: 12px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-  .del-btn { background: none; border: none; color: #ff6a00; cursor: pointer; font-size: 16px; }
-</style>
+    /* Search bar in nav */
+    .nav-search {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .nav-search input {
+      background: #16213e;
+      border: 1px solid #2e2e50;
+      border-radius: 20px;
+      padding: 6px 14px;
+      color: #e0e0f0;
+      font-size: 0.85rem;
+      width: 200px;
+      outline: none;
+      transition: border 0.2s;
+    }
+    .nav-search input:focus { border-color: #a78bfa; }
+    #artist-search-results {
+      position: absolute;
+      top: 58px;
+      right: 24px;
+      background: #1a1a2e;
+      border: 1px solid #2e2e50;
+      border-radius: 10px;
+      min-width: 220px;
+      z-index: 200;
+      overflow: hidden;
+    }
+    #artist-search-results a {
+      display: block;
+      padding: 10px 16px;
+      color: #c4b5fd;
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: background 0.15s;
+    }
+    #artist-search-results a:hover { background: #2e2e50; }
+    #artist-search-results p { padding: 10px 16px; color: #888; font-size: 0.85rem; }
+
+    /* ── LAYOUT ── */
+    .page { max-width: 860px; margin: 30px auto; padding: 0 16px; }
+
+    /* ── CARDS ── */
+    .card {
+      background: #1a1a2e;
+      border: 1px solid #2e2e50;
+      border-radius: 14px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    .card h2 { font-size: 1.1rem; color: #a78bfa; margin-bottom: 16px; }
+
+    /* ── ENABLE PANEL ── */
+    #enable-panel input, #enable-panel textarea {
+      width: 100%;
+      background: #16213e;
+      border: 1px solid #2e2e50;
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: #e0e0f0;
+      font-size: 0.9rem;
+      margin-bottom: 10px;
+      outline: none;
+    }
+    #enable-panel input:focus, #enable-panel textarea:focus { border-color: #a78bfa; }
+
+    /* ── DASHBOARD HEADER ── */
+    .dash-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .dash-header h1 { font-size: 1.5rem; }
+    #dash-verified {
+      background: #a78bfa;
+      color: #0f0f1a;
+      border-radius: 20px;
+      padding: 3px 10px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    /* ── STATS ── */
+    .stats { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+    .stat-box {
+      background: #16213e;
+      border: 1px solid #2e2e50;
+      border-radius: 10px;
+      padding: 14px 22px;
+      text-align: center;
+      flex: 1;
+      min-width: 90px;
+    }
+    .stat-box .num { font-size: 1.8rem; font-weight: 700; color: #a78bfa; }
+    .stat-box .label { font-size: 0.75rem; color: #888; margin-top: 2px; }
+
+    /* ── BUTTONS ── */
+    .btn {
+      padding: 9px 20px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary { background: #a78bfa; color: #0f0f1a; }
+    .btn-danger { background: #ef4444; color: #fff; font-size: 0.8rem; padding: 5px 12px; }
+
+    /* ── ITEMS ── */
+    .track-item, .show-item, .msg-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid #2e2e50;
+    }
+    .track-item:last-child, .show-item:last-child, .msg-item:last-child { border-bottom: none; }
+    .track-item a, .show-item a { color: #a78bfa; text-decoration: none; font-size: 0.9rem; }
+    .track-item a:hover, .show-item a:hover { text-decoration: underline; }
+
+    /* ── FORM ROWS ── */
+    .form-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+    .form-row input, .form-row textarea, .settings-form input, .settings-form textarea {
+      flex: 1;
+      background: #16213e;
+      border: 1px solid #2e2e50;
+      border-radius: 8px;
+      padding: 9px 14px;
+      color: #e0e0f0;
+      font-size: 0.9rem;
+      outline: none;
+      min-width: 120px;
+    }
+    .form-row input:focus, .settings-form input:focus,
+    .form-row textarea:focus, .settings-form textarea:focus { border-color: #a78bfa; }
+
+    /* ── TIP LINK ── */
+    #tip-link-display {
+      display: inline-block;
+      margin-top: 10px;
+      background: #a78bfa;
+      color: #0f0f1a;
+      padding: 8px 18px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 700;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 600px) {
+      .nav-search input { width: 130px; }
+      .nav-links a { padding: 6px 9px; font-size: 0.8rem; }
+      .stats { gap: 8px; }
+    }
+  </style>
 </head>
-
 <body>
 
-<div class="artist-page">
+<!-- ✅ NAVBAR WITH ALL LINKS + SEARCH -->
+<nav>
+  <a href="/feed" class="nav-logo">🌌 Spacebook</a>
+  <div class="nav-links">
+    <a href="/feed">🏠 Feed</a>
+    <a href="/home">👤 Profile</a>
+    <a href="/notifications">🔔 Notifications</a>
+    <a href="/artist-dashboard" class="active">🎵 Artist</a>
+    <a href="/logout">🚪 Logout</a>
+  </div>
+  <div class="nav-search" style="position:relative;">
+    <input
+      id="artist-search"
+      type="text"
+      placeholder="🔍 Search users..."
+      oninput="searchArtists(this.value)"
+      autocomplete="off"
+    />
+    <div id="artist-search-results"></div>
+  </div>
+</nav>
 
-  <!-- ENABLE PANEL -->
-  <div id="enable-panel" class="panel" style="display:none;">
-    <h2>Become an Artist</h2>
-    <input id="en-genre" placeholder="Genre">
-    <textarea id="en-bio" placeholder="Artist Bio"></textarea>
-    <input id="en-sc" placeholder="SoundCloud Profile URL">
-    <input id="en-sp" placeholder="Spotify Profile URL">
-    <input id="en-tip" placeholder="Tip Jar URL">
-    <button onclick="enableArtistMode()">Enable Artist Mode</button>
+<div class="page">
+
+  <!-- ENABLE ARTIST MODE PANEL -->
+  <div id="enable-panel" class="card" style="display:none;">
+    <h2>🎤 Become an Artist</h2>
+    <p style="color:#888;margin-bottom:16px;font-size:0.9rem;">Set up your artist profile to unlock tracks, shows, and fan messages.</p>
+    <input id="en-genre" type="text" placeholder="Genre (e.g. Hip-Hop, Indie Rock)" />
+    <textarea id="en-bio" rows="3" placeholder="Short bio..."></textarea>
+    <input id="en-sc" type="text" placeholder="SoundCloud URL" />
+    <input id="en-sp" type="text" placeholder="Spotify URL" />
+    <input id="en-tip" type="text" placeholder="Tip/Support link (Cash App, PayPal...)" />
+    <button class="btn btn-primary" onclick="enableArtistMode()">Enable Artist Mode</button>
   </div>
 
-  <!-- DASHBOARD -->
+  <!-- MAIN ARTIST DASHBOARD -->
   <div id="artist-dashboard" style="display:none;">
 
-    <div class="artist-header">
-      <h1 id="dash-name">Artist Dashboard</h1>
-      <span id="dash-verified" class="verified-badge" style="display:none;">VERIFIED</span>
+    <!-- Header -->
+    <div class="dash-header">
+      <div>
+        <h1 id="dash-name">Artist Dashboard</h1>
+        <div id="dash-genre" style="color:#888;font-size:0.9rem;margin-top:2px;"></div>
+      </div>
+      <span id="dash-verified" style="display:none;">✅ Verified</span>
     </div>
 
-    <div class="stats-box">
-      <div class="stat"><div class="stat-number" id="stat-tracks">0</div>Tracks</div>
-      <div class="stat"><div class="stat-number" id="stat-shows">0</div>Shows</div>
-      <div class="stat"><div class="stat-number" id="stat-msgs">0</div>Messages</div>
+    <!-- Stats -->
+    <div class="stats">
+      <div class="stat-box">
+        <div class="num" id="stat-tracks">0</div>
+        <div class="label">Tracks</div>
+      </div>
+      <div class="stat-box">
+        <div class="num" id="stat-shows">0</div>
+        <div class="label">Shows</div>
+      </div>
+      <div class="stat-box">
+        <div class="num" id="stat-msgs">0</div>
+        <div class="label">Fan Msgs</div>
+      </div>
     </div>
 
-    <div class="panel">
-      <h2>Edit Profile</h2>
-      <input id="edit-genre" placeholder="Genre">
-      <textarea id="edit-bio" placeholder="Bio"></textarea>
-      <input id="edit-sc" placeholder="SoundCloud URL">
-      <input id="edit-sp" placeholder="Spotify URL">
-      <input id="edit-tip" placeholder="Tip URL">
-      <button onclick="saveSettings()">Save</button>
+    <!-- Tip Link -->
+    <div class="card">
+      <h2>💸 Support Link</h2>
+      <a id="tip-link-display" href="#" target="_blank" style="display:none;">Send a Tip ❤️</a>
+      <p id="tip-link-empty" style="color:#888;font-size:0.9rem;">No tip link set yet. Add one in Settings below.</p>
     </div>
 
-    <div class="panel">
-      <h2>Import Track</h2>
-      <input id="import-url" placeholder="SoundCloud Track URL">
-      <button onclick="importTrack()">Import</button>
+    <!-- Import Tracks -->
+    <div class="card">
+      <h2>🎵 Tracks</h2>
+      <div class="form-row">
+        <input id="import-url" type="text" placeholder="Paste SoundCloud track URL..." />
+        <button class="btn btn-primary" onclick="importTrack()">Add Track</button>
+      </div>
+      <div id="tracks-list"><p style="color:#888;font-size:0.9rem;">No tracks yet.</p></div>
     </div>
 
-    <div class="panel list-box">
-      <h2>Tracks</h2>
-      <div id="tracks-list"></div>
+    <!-- Upcoming Shows -->
+    <div class="card">
+      <h2>📅 Upcoming Shows</h2>
+      <div class="form-row">
+        <input id="show-venue" type="text" placeholder="Venue" />
+        <input id="show-city" type="text" placeholder="City" />
+        <input id="show-date" type="date" />
+        <input id="show-ticket" type="text" placeholder="Ticket URL (optional)" />
+      </div>
+      <button class="btn btn-primary" onclick="addShow()" style="margin-bottom:14px;">Add Show</button>
+      <div id="shows-list"><p style="color:#888;font-size:0.9rem;">No shows yet.</p></div>
     </div>
 
-    <div class="panel">
-      <h2>Add Show</h2>
-      <input id="show-venue" placeholder="Venue">
-      <input id="show-city" placeholder="City">
-      <input id="show-date" type="date">
-      <input id="show-ticket" placeholder="Ticket URL">
-      <button onclick="addShow()">Add Show</button>
+    <!-- Fan Messages -->
+    <div class="card">
+      <h2>💌 Fan Messages</h2>
+      <div id="fan-msgs-list"><p style="color:#888;font-size:0.9rem;">No messages yet.</p></div>
     </div>
 
-    <div class="panel list-box">
-      <h2>Upcoming Shows</h2>
-      <div id="shows-list"></div>
+    <!-- Settings -->
+    <div class="card settings-form">
+      <h2>⚙️ Settings</h2>
+      <input id="edit-genre" type="text" placeholder="Genre" style="width:100%;margin-bottom:10px;" />
+      <textarea id="edit-bio" rows="3" placeholder="Bio" style="width:100%;margin-bottom:10px;"></textarea>
+      <input id="edit-sc" type="text" placeholder="SoundCloud URL" style="width:100%;margin-bottom:10px;" />
+      <input id="edit-sp" type="text" placeholder="Spotify URL" style="width:100%;margin-bottom:10px;" />
+      <input id="edit-tip" type="text" placeholder="Tip/Support URL" style="width:100%;margin-bottom:14px;" />
+      <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
     </div>
 
-    <div class="panel list-box">
-      <h2>Fan Messages</h2>
-      <div id="fan-msgs-list"></div>
-    </div>
+  </div><!-- end #artist-dashboard -->
+</div><!-- end .page -->
 
-  </div>
-
-</div>
-
-<script src="/modules/artist-client.js"></script>
+<script src="/artist-client.js"></script>
 </body>
 </html>

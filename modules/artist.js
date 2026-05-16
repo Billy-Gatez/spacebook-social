@@ -40,10 +40,12 @@ module.exports = function attachArtist(app, mongoose, requireLogin, cloudinary, 
     return new mongoose.Types.ObjectId(req.session.userId);
   }
 
+  // ✅ Artist Dashboard page
   app.get("/artist-dashboard", requireLogin, (req, res) => {
     res.sendFile(path.join(__dirname, "../public", "artist-dashboard.html"));
   });
 
+  // ✅ FIXED: /me and /fan-messages/inbox MUST come before /:userId wildcard
   app.get("/api/artist/me", requireLogin, async (req, res) => {
     try {
       const artist = await ArtistProfile.findOne({ userId: uid(req) });
@@ -54,6 +56,14 @@ module.exports = function attachArtist(app, mongoose, requireLogin, cloudinary, 
     }
   });
 
+  // ✅ FIXED: moved above /:userId
+  app.get("/api/artist/fan-messages/inbox", requireLogin, async (req, res) => {
+    const artist = await ArtistProfile.findOne({ userId: uid(req) });
+    if (!artist) return res.status(404).json({ error: "Not found" });
+    res.json(artist.fanMessages || []);
+  });
+
+  // ✅ Wildcard now last — won't swallow the routes above
   app.get("/api/artist/:userId", async (req, res) => {
     try {
       const artist = await ArtistProfile.findOne({ userId: new mongoose.Types.ObjectId(req.params.userId) });
@@ -65,53 +75,44 @@ module.exports = function attachArtist(app, mongoose, requireLogin, cloudinary, 
 
   app.post("/api/artist/enable", requireLogin, async (req, res) => {
     const { genre, bio, soundcloudProfile, spotifyProfile, tipUrl } = req.body;
-
     const artist = await ArtistProfile.findOneAndUpdate(
       { userId: uid(req) },
       { isArtist: true, genre, bio, soundcloudProfile, spotifyProfile, tipUrl },
       { upsert: true, new: true }
     );
-
     res.json(artist);
   });
 
   app.put("/api/artist", requireLogin, async (req, res) => {
     const { genre, bio, soundcloudProfile, spotifyProfile, tipUrl } = req.body;
-
     const artist = await ArtistProfile.findOneAndUpdate(
       { userId: uid(req) },
       { genre, bio, soundcloudProfile, spotifyProfile, tipUrl },
       { new: true }
     );
-
     res.json(artist);
   });
 
   app.post("/api/artist/shows", requireLogin, async (req, res) => {
     const { venue, city, date, ticketUrl } = req.body;
-
     await ArtistProfile.updateOne(
       { userId: uid(req) },
       { $push: { upcomingShows: { venue, city, date, ticketUrl } } }
     );
-
     res.json({ success: true });
   });
 
   app.delete("/api/artist/shows/:index", requireLogin, async (req, res) => {
     const artist = await ArtistProfile.findOne({ userId: uid(req) });
     if (!artist) return res.status(404).json({ error: "Not found" });
-
     artist.upcomingShows.splice(Number(req.params.index), 1);
     await artist.save();
-
     res.json({ success: true });
   });
 
   app.post("/api/artist/import-tracks", requireLogin, async (req, res) => {
     const { urls, platform } = req.body;
     const tracks = [];
-
     for (const url of (urls || [])) {
       let title = url;
       try {
@@ -121,29 +122,24 @@ module.exports = function attachArtist(app, mongoose, requireLogin, cloudinary, 
       } catch {}
       tracks.push({ title, url, platform: platform || "soundcloud" });
     }
-
     await ArtistProfile.updateOne(
       { userId: uid(req) },
       { $push: { importedTracks: { $each: tracks } } }
     );
-
     res.json({ success: true, tracks });
   });
 
   app.delete("/api/artist/tracks/:index", requireLogin, async (req, res) => {
     const artist = await ArtistProfile.findOne({ userId: uid(req) });
     if (!artist) return res.status(404).json({ error: "Not found" });
-
     artist.importedTracks.splice(Number(req.params.index), 1);
     await artist.save();
-
     res.json({ success: true });
   });
 
   app.post("/api/artist/:userId/fan-message", requireLogin, async (req, res) => {
     const User = mongoose.model("User");
     const from = await User.findById(req.session.userId);
-
     await ArtistProfile.updateOne(
       { userId: new mongoose.Types.ObjectId(req.params.userId) },
       {
@@ -157,15 +153,7 @@ module.exports = function attachArtist(app, mongoose, requireLogin, cloudinary, 
         }
       }
     );
-
     res.json({ success: true });
-  });
-
-  app.get("/api/artist/fan-messages/inbox", requireLogin, async (req, res) => {
-    const artist = await ArtistProfile.findOne({ userId: uid(req) });
-    if (!artist) return res.status(404).json({ error: "Not found" });
-
-    res.json(artist.fanMessages || []);
   });
 
 };
