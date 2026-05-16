@@ -8,75 +8,57 @@
 <style>
   html, body { background: #000 !important; margin: 0; padding: 0; color: #fff; font-family: Arial, sans-serif; overflow-x: hidden; }
   #starfield { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: #000; }
-
   .navbar { width: 100%; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.65); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 100; box-sizing: border-box; }
   .navbar .logo { color: #ff6a00; text-decoration: none; font-size: 20px; font-weight: bold; }
   .nav-links { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
   .nav-links a { color: #ccc; text-decoration: none; font-size: 13px; }
   .nav-links a:hover { color: #ff6a00; }
-
   .btn-primary { display: inline-block; padding: 8px 16px; background: #ff6a00; color: #000; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; transition: 0.2s; font-size: 14px; width: auto; }
   .btn-primary:hover { background: #ff8c32; }
   .btn-secondary { padding: 6px 12px; background: rgba(255,255,255,0.08); border-radius: 6px; border: 1px solid #ff6a00; color: #ff6a00; cursor: pointer; font-weight: bold; transition: 0.2s; font-size: 13px; }
   .btn-secondary:hover { background: rgba(255,106,0,0.15); }
   .btn-danger { padding: 5px 10px; background: rgba(255,50,50,0.1); border-radius: 6px; border: 1px solid #ff4444; color: #ff4444; cursor: pointer; font-size: 12px; transition: 0.2s; }
   .btn-danger:hover { background: rgba(255,50,50,0.25); }
-
-  input[type=text], input[type=date], textarea {
-    width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.07);
-    border: 1px solid #444; border-radius: 8px; color: #fff; padding: 10px 14px;
-    font-size: 13px; outline: none; margin-bottom: 10px; font-family: Arial, sans-serif;
-  }
+  input[type=text], input[type=date], textarea { width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.07); border: 1px solid #444; border-radius: 8px; color: #fff; padding: 10px 14px; font-size: 13px; outline: none; margin-bottom: 10px; font-family: Arial, sans-serif; }
   input[type=text]:focus, input[type=date]:focus, textarea:focus { border-color: #ff6a00; }
   textarea { resize: vertical; min-height: 80px; }
-
   .artist-page { max-width: 860px; margin: 30px auto; padding: 0 16px; box-sizing: border-box; display: block; }
   .card { border-radius: 12px; background: rgba(0,0,0,0.45); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.15); padding: 20px; margin-bottom: 20px; }
-
   .section-label { font-weight: 700; color: #ff6a00; margin-bottom: 12px; font-size: 15px; }
-
   .stats-row { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 20px; }
   .stat-box { flex: 1; min-width: 90px; background: rgba(255,106,0,0.07); border: 1px solid rgba(255,106,0,0.2); border-radius: 10px; padding: 16px; text-align: center; }
   .stat-num { font-size: 26px; font-weight: 900; color: #ff6a00; }
   .stat-label { font-size: 12px; color: #888; margin-top: 4px; }
-
   .dash-header { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
   .dash-avatar { width: 64px; height: 64px; border-radius: 50%; border: 3px solid #ff6a00; object-fit: cover; background: #222; flex-shrink: 0; }
   .dash-name { font-size: 22px; font-weight: 900; color: #fff; }
   .dash-genre { font-size: 13px; color: #888; margin-top: 2px; }
   .verified-badge { display: inline-block; background: #ff6a00; color: #000; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; margin-left: 8px; vertical-align: middle; }
-
   .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
   .tab-btn { padding: 8px 16px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.04); color: #aaa; cursor: pointer; font-size: 13px; font-weight: 600; transition: .15s; }
   .tab-btn.active { background: rgba(255,106,0,0.15); border-color: #ff6a00; color: #ff6a00; }
   .tab-btn:hover { background: rgba(255,106,0,0.1); border-color: #ff6a00; color: #ff6a00; }
-
   .tab-panel { display: none; }
   .tab-panel.active { display: block; }
-
   .track-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 8px; background: rgba(255,255,255,0.02); }
   .show-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 8px; background: rgba(255,255,255,0.02); }
   .show-info { flex: 1; min-width: 0; }
   .show-venue { font-size: 13px; font-weight: 700; color: #ff6a00; }
   .show-meta { font-size: 12px; color: #888; margin-top: 2px; }
-
   .msg-item { padding: 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 12px; background: rgba(255,255,255,0.02); }
   .msg-from { font-size: 13px; font-weight: 700; color: #ff6a00; margin-bottom: 6px; }
   .msg-text { font-size: 13px; color: #ddd; margin-bottom: 10px; line-height: 1.5; }
   .msg-reply-box { font-size: 12px; color: #aaa; background: rgba(255,106,0,0.06); border-left: 3px solid #ff6a00; padding: 8px 12px; border-radius: 4px; margin-bottom: 10px; }
   .reply-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; margin-bottom: 8px; }
   .reply-row input { margin-bottom: 0; }
-
   .artist-result { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 8px; background: rgba(255,255,255,0.02); cursor: pointer; transition: background .15s; }
   .artist-result:hover { background: rgba(255,106,0,0.08); border-color: #ff6a00; }
   .artist-result-avatar { width: 42px; height: 42px; border-radius: 50%; border: 2px solid #ff6a00; object-fit: cover; background: #222; flex-shrink: 0; }
   .artist-result-name { font-size: 14px; font-weight: 700; color: #ff6a00; }
   .artist-result-meta { font-size: 12px; color: #888; margin-top: 2px; }
-
   .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 500; display: flex; align-items: center; justify-content: center; }
   .modal-box { background: #111; border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; padding: 24px; width: 90%; max-width: 440px; }
   .modal-box h3 { color: #ff6a00; margin: 0 0 12px; }
-
   .search-row { display: flex; gap: 8px; align-items: center; }
   .search-row input { margin-bottom: 0; flex: 1; }
 </style>
@@ -222,7 +204,7 @@
   </div>
 </div>
 
-<!-- FAN MESSAGE MODAL (search result → artist) -->
+<!-- FAN MESSAGE MODAL -->
 <div class="modal-overlay" id="fan-msg-modal" style="display:none;" onclick="if(event.target===this)closeFanMsgModal()">
   <div class="modal-box">
     <h3>✉️ Send Fan Message</h3>
@@ -270,8 +252,7 @@ async function loadDashboard() {
 
   renderTracks(artist.importedTracks || []);
   renderShows(artist.upcomingShows || []);
-  // inbox now loads via dedicated API
-  loadFanInbox();
+  renderMessages(artist.fanMessages || []);
 }
 
 function switchTab(tabId, btn) {
@@ -283,10 +264,7 @@ function switchTab(tabId, btn) {
 
 function renderTracks(tracks) {
   const el = document.getElementById('tracks-list');
-  if (!tracks.length) {
-    el.innerHTML = '<p style="color:#666;font-size:13px;">No tracks yet. Import a SoundCloud URL above.</p>';
-    return;
-  }
+  if (!tracks.length) { el.innerHTML = '<p style="color:#666;font-size:13px;">No tracks yet. Import a SoundCloud URL above.</p>'; return; }
   el.innerHTML = tracks.map((t,i) => `
     <div class="track-item">
       <div style="flex:1;min-width:0;">
@@ -302,10 +280,7 @@ function renderTracks(tracks) {
 
 function renderShows(shows) {
   const el = document.getElementById('shows-list');
-  if (!shows.length) {
-    el.innerHTML = '<p style="color:#666;font-size:13px;">No shows yet.</p>';
-    return;
-  }
+  if (!shows.length) { el.innerHTML = '<p style="color:#666;font-size:13px;">No shows yet.</p>'; return; }
   el.innerHTML = shows.map((s,i) => `
     <div class="show-item">
       <div class="show-info">
@@ -321,10 +296,7 @@ function renderShows(shows) {
 
 function renderMessages(msgs) {
   const el = document.getElementById('messages-list');
-  if (!msgs.length) {
-    el.innerHTML = '<p style="color:#666;font-size:13px;">No fan messages yet.</p>';
-    return;
-  }
+  if (!msgs.length) { el.innerHTML = '<p style="color:#666;font-size:13px;">No fan messages yet.</p>'; return; }
   el.innerHTML = msgs.map(m => `
     <div class="msg-item">
       <div class="msg-from">${m.fromName} <span style="color:#555;font-weight:400;font-size:11px;">${new Date(m.createdAt).toLocaleDateString()}</span></div>
@@ -338,19 +310,6 @@ function renderMessages(msgs) {
       <button class="btn-danger" onclick="deleteMessage('${m._id}')">Delete</button>
     </div>
   `).join('');
-}
-
-// NEW: load inbox from dedicated API
-async function loadFanInbox() {
-  const el = document.getElementById('messages-list');
-  if (!el) return;
-  el.innerHTML = '<p style="color:#666;font-size:13px;">Loading messages…</p>';
-
-  const msgs = await fetch('/api/artist/fan-messages/inbox', {
-    credentials:'include'
-  }).then(r => r.json()).catch(() => []);
-
-  renderMessages(msgs || []);
 }
 
 async function enableArtist() {
@@ -438,36 +397,25 @@ async function replyToMessage(msgId) {
   const input = document.getElementById('reply-'+msgId);
   const reply = input?.value.trim();
   if (!reply) return;
-  const res = await fetch('/api/artist/fan-messages/'+msgId+'/reply', {
+  await fetch('/api/artist/fan-messages/'+msgId+'/reply', {
     method:'POST', credentials:'include',
     headers:{'Content-Type':'application/json'},
     body: JSON.stringify({ reply })
   });
-  const data = await res.json().catch(() => null);
-  if (!data || !data.success) {
-    alert('Could not save reply.');
-    return;
-  }
-  await loadFanInbox();
+  await loadDashboard();
 }
 
 async function deleteMessage(msgId) {
   if (!confirm('Delete this message?')) return;
-  const res = await fetch('/api/artist/fan-messages/'+msgId, {
-    method:'DELETE', credentials:'include'
-  });
-  const data = await res.json().catch(() => null);
-  if (!data || !data.success) {
-    alert('Could not delete message.');
-    return;
-  }
-  await loadFanInbox();
+  await fetch('/api/artist/fan-messages/'+msgId, {method:'DELETE', credentials:'include'});
+  await loadDashboard();
 }
 
 async function searchArtists() {
   const q = document.getElementById('artist-search-input').value.trim();
   const el = document.getElementById('artist-search-results');
 
+  // Allow "search all": if empty, still call API to get everything
   el.innerHTML = '<p style="color:#666;font-size:13px;">Searching…</p>';
 
   const url = '/api/artists/search' + (q ? '?q=' + encodeURIComponent(q) : '');
@@ -503,7 +451,7 @@ async function searchArtists() {
       <button
         class="btn-secondary"
         style="flex-shrink:0;font-size:12px;padding:5px 12px;"
-        onclick="event.stopPropagation();openFanMsgModal('${a.userId}','${(a.artistName || a.userName).replace(/'/g, '\\\\\\'')}')"
+        onclick="event.stopPropagation();openFanMsgModal('${a.userId}','${(a.artistName || a.userName).replace(/'/g, '\\\'')}')"
       >
         ✉️ Message
       </button>
