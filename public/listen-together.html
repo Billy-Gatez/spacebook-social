@@ -34,7 +34,7 @@
   .track-item.playing { border-color: #ff6a00; background: rgba(255,106,0,0.07); }
   .track-num { color: #888; min-width: 20px; text-align: center; font-size: 12px; }
   .track-title { flex: 1; color: #f2f2f2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .track-by { font-size: 11px; color: #888; }
+  .track-by { font-size: 11px; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .player-area { border-radius: 12px; background: rgba(0,0,0,0.45); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.15); padding: 20px; }
   .player-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
   .player-header h3 { color: #ff6a00; margin: 0; }
@@ -61,14 +61,28 @@
   .add-track-form { margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.08); }
   .add-track-form h4 { color: #ff6a00; margin: 0 0 10px; font-size: 15px; }
   .section-label { font-weight: 700; color: #ff6a00; margin-bottom: 8px; font-size: 14px; }
-  .active-room-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 8px; background: rgba(255,106,0,0.04); transition: background .15s; }
-  .active-room-item:hover { background: rgba(255,106,0,0.12); border-color: #ff6a00; }
-  .active-room-info { flex: 1; min-width: 0; }
+
+  /* ACTIVE ROOMS */
+  .active-rooms-wrap { max-height: 220px; overflow-y: auto; }
+  .active-room-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.08);
+    margin-bottom: 8px;
+    background: rgba(255,106,0,0.04);
+    transition: background .15s;
+    flex-wrap: nowrap;
+  }
+  .active-room-item:hover { background: rgba(255,106,0,0.1); border-color: #ff6a00; }
+  .active-room-info { flex: 1; min-width: 0; overflow: hidden; }
   .active-room-name { font-size: 13px; font-weight: 700; color: #ff6a00; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .active-room-meta { font-size: 11px; color: #888; margin-top: 2px; }
-  .live-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #ff6a00; margin-right: 5px; animation: pulse 1.2s infinite; }
-  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
-  .active-rooms-wrap { max-height: 260px; overflow-y: auto; }
+  .active-room-meta { font-size: 11px; color: #888; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .live-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #ff6a00; margin-right: 5px; vertical-align: middle; animation: pulse 1.2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 </style>
 </head>
 <body>
@@ -128,14 +142,13 @@
   <h2 style="color:#ff6a00;margin-bottom:4px;">🎵 Listen Together</h2>
   <p style="color:#888;font-size:13px;margin-top:0;">Create playlists, add SoundCloud tracks, and vibe with friends in real-time.</p>
 
-  <!-- ACTIVE ROOMS BANNER -->
   <div class="card" style="margin-bottom:20px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
       <div class="section-label" style="margin:0;"><span class="live-dot"></span>Active Rooms</div>
       <button class="btn-secondary" style="font-size:12px;padding:4px 10px;" onclick="loadActiveRooms()">↻ Refresh</button>
     </div>
     <div class="active-rooms-wrap" id="active-rooms-list">
-      <p style="color:#666;font-size:13px;">Loading rooms...</p>
+      <p style="color:#666;font-size:13px;margin:0;">Loading rooms...</p>
     </div>
   </div>
 
@@ -174,14 +187,15 @@
           <div style="color:#888;text-align:center;padding:40px;font-size:13px;">Select a track to play 🎧</div>
         </div>
         <div class="player-controls">
-          <button class="ctrl-btn" onclick="prevTrack()" title="Previous">⏮</button>
+          <button class="ctrl-btn" onclick="prevTrack()">⏮</button>
           <button class="ctrl-btn play-btn" id="play-btn" onclick="togglePlay()">▶</button>
-          <button class="ctrl-btn" onclick="nextTrack()" title="Next">⏭</button>
+          <button class="ctrl-btn" onclick="nextTrack()">⏭</button>
         </div>
         <div id="room-panel" style="display:none;">
-          <div style="font-size:13px;color:#888;margin-bottom:8px;">
-            Room: <span id="room-id-display" style="color:#ff6a00;font-size:11px;word-break:break-all;"></span>
-            <button class="btn-secondary" style="padding:2px 8px;font-size:12px;margin-left:8px;" onclick="copyRoomLink()">Copy Link</button>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+            <span style="font-size:12px;color:#888;">Room ID:</span>
+            <span id="room-id-display" style="color:#ff6a00;font-size:11px;word-break:break-all;flex:1;"></span>
+            <button class="btn-secondary" style="padding:3px 10px;font-size:12px;flex-shrink:0;" onclick="copyRoomLink()">Copy Link</button>
           </div>
           <div style="font-size:12px;color:#888;margin-bottom:6px;">Listening together:</div>
           <div class="participants-row" id="participants-row"></div>
@@ -201,10 +215,10 @@
         <div class="add-track-form">
           <h4>+ Add Track</h4>
           <input type="text" id="track-url-input" placeholder="SoundCloud URL"/>
-          <input type="text" id="track-title-input" placeholder="Track title"/>
+          <input type="text" id="track-title-input" placeholder="Track title (optional)"/>
           <button class="btn-primary" onclick="addTrack()">Add</button>
         </div>
-        <div class="track-list" id="track-list" style="margin-top:14px;"></div>
+        <div id="track-list" style="margin-top:14px;display:flex;flex-direction:column;gap:6px;"></div>
       </div>
       <div id="no-pl-msg" style="color:#888;text-align:center;padding:60px;font-size:15px;">
         Create or select a playlist to get started 🎧
@@ -240,7 +254,7 @@ async function loadActiveRooms() {
   const rooms = await fetch('/api/listen-rooms/active', {credentials:'include'}).then(r=>r.json()).catch(()=>[]);
   const el = document.getElementById('active-rooms-list');
   if (!rooms.length) {
-    el.innerHTML = '<p style="color:#666;font-size:13px;">No active rooms right now. Start one!</p>';
+    el.innerHTML = '<p style="color:#666;font-size:13px;margin:0;">No active rooms right now — start one!</p>';
     return;
   }
   el.innerHTML = rooms.map(room => {
@@ -248,22 +262,20 @@ async function loadActiveRooms() {
     const host = room.hostId?.name || 'Someone';
     const count = room.participants?.length || 1;
     const track = room.playlistId?.tracks?.[room.currentTrackIndex];
-    const trackName = track ? (track.title || 'Track ' + (room.currentTrackIndex + 1)) : 'No track playing';
+    const trackName = track ? (track.title || 'Track ' + (room.currentTrackIndex + 1)) : 'No track yet';
     return `
       <div class="active-room-item">
         <div class="active-room-info">
           <div class="active-room-name">🎵 ${plName}</div>
-          <div class="active-room-meta">
-            <span class="live-dot"></span>Host: ${host} · ${count} listener${count !== 1 ? 's' : ''} · ${trackName}
-          </div>
+          <div class="active-room-meta"><span class="live-dot"></span>${host} · ${count} listener${count !== 1 ? 's' : ''} · ${trackName}</div>
         </div>
-        <button class="btn-primary" style="font-size:12px;padding:6px 12px;flex-shrink:0;" onclick="joinRoomById('${room._id}')">Join</button>
+        <button class="btn-primary" style="font-size:12px;padding:6px 16px;flex-shrink:0;width:auto;" onclick="joinRoomById('${room._id}')">Join</button>
       </div>
     `;
   }).join('');
 }
 
-async function joinRoomById(id) {
+function joinRoomById(id) {
   document.getElementById('join-room-input').value = id;
   joinExistingRoom();
 }
@@ -294,11 +306,11 @@ function renderPlaylists() {
   if (!playlists.length) { el.innerHTML = '<p style="color:#666;font-size:13px;">No playlists yet.</p>'; return; }
   el.innerHTML = playlists.map(pl => `
     <div class="pl-item ${currentPlaylist && currentPlaylist._id === pl._id ? 'active' : ''}" onclick="selectPlaylist('${pl._id}')">
-      <div style="flex:1;">
+      <div style="flex:1;min-width:0;">
         <div class="pl-name">${pl.name}</div>
         <div class="pl-meta">${pl.tracks ? pl.tracks.length : 0} track${pl.tracks && pl.tracks.length !== 1 ? 's' : ''}${pl.isCollaborative ? ' · Collab' : ''}</div>
       </div>
-      <button class="btn-secondary" style="padding:3px 8px;font-size:11px;" onclick="event.stopPropagation();deletePlaylist('${pl._id}')">✕</button>
+      <button class="btn-secondary" style="padding:3px 8px;font-size:11px;flex-shrink:0;" onclick="event.stopPropagation();deletePlaylist('${pl._id}')">✕</button>
     </div>
   `).join('');
 }
@@ -340,7 +352,7 @@ function renderTracks() {
         <div class="track-title">${t.title || t.soundcloudUrl}</div>
         <div class="track-by">${t.soundcloudUrl}</div>
       </div>
-      <button class="btn-secondary" style="padding:3px 8px;font-size:11px;" onclick="event.stopPropagation();removeTrack(${i})">✕</button>
+      <button class="btn-secondary" style="padding:3px 8px;font-size:11px;flex-shrink:0;" onclick="event.stopPropagation();removeTrack(${i})">✕</button>
     </div>
   `).join('');
 }
