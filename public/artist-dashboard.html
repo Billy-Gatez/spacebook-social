@@ -22,7 +22,7 @@
   input[type=text], input[type=date], textarea { width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.07); border: 1px solid #444; border-radius: 8px; color: #fff; padding: 10px 14px; font-size: 13px; outline: none; margin-bottom: 10px; font-family: Arial, sans-serif; }
   input[type=text]:focus, input[type=date]:focus, textarea:focus { border-color: #ff6a00; }
   textarea { resize: vertical; min-height: 80px; }
-  .page { max-width: 860px; margin: 30px auto; padding: 0 16px; box-sizing: border-box; }
+  .artist-page { max-width: 860px; margin: 30px auto; padding: 0 16px; box-sizing: border-box; display: block; }
   .card { border-radius: 12px; background: rgba(0,0,0,0.45); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.15); padding: 20px; margin-bottom: 20px; }
   .section-label { font-weight: 700; color: #ff6a00; margin-bottom: 12px; font-size: 15px; }
   .stats-row { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 20px; }
@@ -59,6 +59,8 @@
   .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 500; display: flex; align-items: center; justify-content: center; }
   .modal-box { background: #111; border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; padding: 24px; width: 90%; max-width: 440px; }
   .modal-box h3 { color: #ff6a00; margin: 0 0 12px; }
+  .search-row { display: flex; gap: 8px; align-items: center; }
+  .search-row input { margin-bottom: 0; flex: 1; }
 </style>
 </head>
 <body>
@@ -97,13 +99,13 @@
   </div>
 </nav>
 
-<div class="page">
+<div class="artist-page">
 
   <!-- FIND ARTISTS -->
   <div class="card">
     <div class="section-label">🔍 Find Artists</div>
-    <div style="display:flex;gap:8px;align-items:center;">
-      <input type="text" id="artist-search-input" placeholder="Search by name, genre, or bio…" style="margin-bottom:0;flex:1;" onkeydown="if(event.key==='Enter')searchArtists()"/>
+    <div class="search-row">
+      <input type="text" id="artist-search-input" placeholder="Search by name, genre, or bio…" onkeydown="if(event.key==='Enter')searchArtists()"/>
       <button class="btn-primary" onclick="searchArtists()">Search</button>
     </div>
     <div id="artist-search-results" style="margin-top:12px;"></div>
@@ -126,7 +128,7 @@
   <div id="artist-dashboard" style="display:none;">
 
     <div class="dash-header">
-      <img id="dash-avatar" class="dash-avatar" src="/assets/images/default-avatar.png" onerror="this.src='/assets/images/default-avatar.png'"/>
+      <img id="dash-avatar" class="dash-avatar" src="/assets/images/default-avatar.png" onerror="this.src='https://ui-avatars.com/api/?name=Artist&background=ff6a00&color=000'"/>
       <div>
         <div class="dash-name" id="dash-name">Artist</div>
         <div class="dash-genre" id="dash-genre"></div>
@@ -418,7 +420,7 @@ async function searchArtists() {
   if (!results.length) { el.innerHTML=`<p style="color:#666;font-size:13px;">No artists found for "${q}".</p>`; return; }
   el.innerHTML = results.map(a => `
     <div class="artist-result" onclick="window.location='/artist/${a.userId}'">
-      <img class="artist-result-avatar" src="${a.profilePic||'/assets/images/default-avatar.png'}" onerror="this.src='/assets/images/default-avatar.png'"/>
+      <img class="artist-result-avatar" src="${a.profilePic||''}" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(a.artistName||a.userName)}&background=ff6a00&color=000'"/>
       <div style="flex:1;min-width:0;">
         <div class="artist-result-name">${a.artistName||a.userName}${a.isVerified?'<span style="background:#ff6a00;color:#000;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:6px;">✓</span>':''}</div>
         <div class="artist-result-meta">${a.genre||'Artist'} · ${a.trackCount} track${a.trackCount!==1?'s':''} · ${a.showCount} show${a.showCount!==1?'s':''}</div>
