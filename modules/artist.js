@@ -243,19 +243,19 @@ module.exports = function attachArtist(app, mongoose, requireLogin, cloudinary, 
         return name.includes(q) || artistName.includes(q) || genre.includes(q) || bio.includes(q);
       });
       res.json(filtered.map(a => {
-        const user = userMap[String(a.userId)];
-        return {
-          userId: a.userId,
-          artistName: a.artistName || user?.name || "Artist",
-          userName: user?.name || "Artist",
-          profilePic: user?.profilePic || null,
-          genre: a.genre || "",
-          bio: a.bio || "",
-          isVerified: !!a.isVerified,
-          trackCount: (a.importedTracks || []).length,
-          showCount: (a.upcomingShows || []).length
-        };
-      }));
+  const user = userMap[String(a.userId)];
+  return {
+    userId: a.userId,
+    artistName: a.artistName || user?.name || 'Artist',
+    userName: user?.name || 'Artist',
+    profilePic: user?.profilePic || null,
+    genre: a.genre || '',
+    bio: a.bio || '',
+    isVerified: !!a.isVerified,
+    trackCount: (a.importedTracks || []).length,
+    showCount: (a.upcomingShows || []).length
+  };
+}));
     } catch(e) {
       console.error("artist search error:", e);
       res.json([]);
