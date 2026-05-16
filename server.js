@@ -2702,16 +2702,10 @@ attachChessServer(server);
 const attachGallery = require("./modules/gallery");
 attachGallery(app, mongoose, requireLogin, cloudinary, upload);
 
-try {
-  const attachMessaging = require("./modules/messaging");
-  attachMessaging(app, server, mongoose, requireLogin);
-} catch(e) {
-  console.warn("Messaging module not loaded:", e.message);
-  app.get("/messages", requireLogin, (req, res) => res.redirect("https://www.spacebook.world/messenger"));
-}
 app.get("/messages", requireLogin, (req, res) => {
   res.redirect("https://www.spacebook.world/messenger");
 });
+
 try {
   const attachArtist = require("./modules/artist");
   attachArtist(app, mongoose, requireLogin, cloudinary, upload);
