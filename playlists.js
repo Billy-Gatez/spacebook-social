@@ -202,9 +202,11 @@ module.exports = function attachPlaylists(app, server, mongoose, requireLogin) {
       res.json(user.friends || []);
     } catch (e) { res.json([]); }
   });
-};
-
 app.delete("/api/playlists/:id", requireLogin, async (req, res) => {
   await Playlist.deleteOne({ _id: req.params.id, ownerId: req.session.userId });
   res.json({ success: true });
 });
+
+};
+
+
