@@ -170,7 +170,28 @@ const playerSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now }
 });
 
+// ====== PLAYLIST SCHEMA ======
+const playlistSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  name: { type: String, required: true },
+  collaborative: { type: Boolean, default: false },
+  tracks: [{
+    soundcloudUrl: String,
+    title: String,
+    addedAt: { type: Date, default: Date.now }
+  }],
+  createdAt: { type: Date, default: Date.now }
+});
+const Playlist = mongoose.model('Playlist', playlistSchema);
 
+const listenRoomSchema = new mongoose.Schema({
+  playlistId: { type: mongoose.Schema.Types.ObjectId, ref: 'Playlist' },
+  hostId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  currentTrackIndex: { type: Number, default: 0 },
+  isPlaying: { type: Boolean, default: false },
+  createdAt: { type: Date, default: Date.now }
+});
+const ListenRoom = mongoose.model('ListenRoom', listenRoomSchema);
 
 // ====== MODELS ======
 const User = mongoose.model("User", userSchema);
@@ -288,6 +309,67 @@ app.post("/login", async (req, res) => {
   res.redirect("/feed");
 });
 
+
+// ====== PLAYLIST ROUTES ======
+app.get('/api/playlists', requireLogin, async (req, res) => {
+  const playlists = await Playlist.find({ userId: req.session.userId }).sort({ createdAt: -1 });
+  res.json(playlists);
+});
+
+app.post('/api/playlists', requireLogin, async (req, res) => {
+  const { name, collaborative } = req.body;
+  if (!name) return res.status(400).json({ error: 'Name required' });
+  const pl = await Playlist.create({
+    userId: req.session.userId,
+    name,
+    collaborative: !!collaborative,
+    tracks: []
+  });
+  res.json(pl);
+});
+
+app.post('/api/playlists/:id/tracks', requireLogin, async (req, res) => {
+  const { soundcloudUrl, title } = req.body;
+  if (!soundcloudUrl) return res.status(400).json({ error: 'soundcloudUrl required' });
+  const pl = await Playlist.findOneAndUpdate(
+    { _id: req.params.id, userId: req.session.userId },
+    { $push: { tracks: { soundcloudUrl, title: title || soundcloudUrl } } },
+    { new: true }
+  );
+  if (!pl) return res.status(404).json({ error: 'Playlist not found' });
+  res.json(pl);
+});
+
+app.delete('/api/playlists/:id/tracks/:index', requireLogin, async (req, res) => {
+  const pl = await Playlist.findOne({ _id: req.params.id, userId: req.session.userId });
+  if (!pl) return res.status(404).json({ error: 'Not found' });
+  pl.tracks.splice(Number(req.params.index), 1);
+  await pl.save();
+  res.json(pl);
+});
+
+app.delete('/api/playlists/:id', requireLogin, async (req, res) => {
+  await Playlist.deleteOne({ _id: req.params.id, userId: req.session.userId });
+  res.json({ success: true });
+});
+
+app.post('/api/listen-rooms', requireLogin, async (req, res) => {
+  const { playlistId } = req.body;
+  const room = await ListenRoom.create({ playlistId, hostId: req.session.userId });
+  res.json(room);
+});
+
+app.get('/api/listen-rooms/:id', requireLogin, async (req, res) => {
+  const room = await ListenRoom.findById(req.params.id);
+  if (!room) return res.status(404).json({ error: 'Not found' });
+  res.json(room);
+});
+
+// ====== SESSION USER (used by soundcloud-client.js) ======
+app.get('/api/session-user', requireLogin, async (req, res) => {
+  const user = await User.findById(req.session.userId).select('name email profilePic');
+  res.json(user);
+});
 
 // ====== SAVE PAGE TO GITHUB (PERMANENT) ======
 app.post("/createPage", async (req, res) => {
