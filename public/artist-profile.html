@@ -413,15 +413,29 @@ async function sendFanMessage(userId) {
 
 async function loadFanMessageHistory() {
   const userId = getUserIdFromPath();
-  if (!userId) return;
   const container = document.getElementById("fan-msg-history");
-  if (!container) return;
+  if (!userId || !container) return;
 
-  const msgs = await fetch("/api/artist/" + encodeURIComponent(userId) + "/fan-messages/me", {
-    credentials: "include"
-  }).then(r => r.json()).catch(() => []);
+  // Show explicit loading state
+  container.innerHTML = `<p style="color:#666;font-size:13px;">Loading your messages…</p>`;
 
-  if (!msgs.length) {
+  let msgs = [];
+  try {
+    const res = await fetch("/api/artist/" + encodeURIComponent(userId) + "/fan-messages/me", {
+      credentials: "include"
+    });
+    if (res.ok) {
+      msgs = await res.json();
+    } else {
+      console.warn("fan-messages/me HTTP error", res.status);
+      msgs = [];
+    }
+  } catch (e) {
+    console.error("fan-messages/me fetch error", e);
+    msgs = [];
+  }
+
+  if (!msgs || !msgs.length) {
     container.innerHTML = `<p style="color:#666;font-size:13px;">You haven't sent any messages to this artist yet.</p>`;
     return;
   }
@@ -445,7 +459,6 @@ async function loadFanMessageHistory() {
     </div>
   `).join("");
 }
-
 loadArtistProfile();
 loadFanMessageHistory();
 </script>
