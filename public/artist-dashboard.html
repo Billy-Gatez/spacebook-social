@@ -30,6 +30,24 @@
   .list-box { margin-top: 0; }
   .track-item, .show-item, .fan-msg-item { background: #222; padding: 12px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
   .del-btn { background: none; border: none; color: #ff6a00; cursor: pointer; font-size: 16px; }
+
+  .search-row { display: flex; gap: 8px; margin-bottom: 0; }
+  .search-row input { margin: 0; flex: 1; }
+  .search-row button { margin: 0; white-space: nowrap; }
+  .artist-result { background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 14px 16px; margin-top: 10px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .artist-result-info .ar-name { font-weight: 700; color: #ff6a00; font-size: 15px; }
+  .artist-result-info .ar-genre { font-size: 12px; color: #888; margin-top: 2px; }
+  .artist-result-info .ar-bio { font-size: 13px; color: #bbb; margin-top: 4px; }
+  .artist-result-btns { display: flex; gap: 8px; flex-shrink: 0; }
+  .btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; }
+  .btn-sm-orange { background: #ff6a00; color: #000; }
+  .btn-sm-ghost { background: none; border: 1px solid #ff6a00; color: #ff6a00; }
+  .msg-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 999; align-items: center; justify-content: center; }
+  .msg-modal.open { display: flex; }
+  .msg-modal-box { background: #111; border: 1px solid #444; border-radius: 10px; padding: 24px; width: 90%; max-width: 400px; }
+  .msg-modal-box h3 { color: #ff6a00; margin: 0 0 12px; }
+  .msg-modal-box textarea { width: 100%; background: #222; border: 1px solid #444; color: #fff; border-radius: 6px; padding: 10px; font-size: 14px; height: 100px; box-sizing: border-box; resize: vertical; }
+  .msg-modal-btns { display: flex; gap: 8px; margin-top: 10px; justify-content: flex-end; }
 </style>
 </head>
 <body>
@@ -86,7 +104,29 @@
   </div>
 </nav>
 
+<!-- Fan Message Modal -->
+<div class="msg-modal" id="msg-modal">
+  <div class="msg-modal-box">
+    <h3>Send Fan Message</h3>
+    <textarea id="msg-modal-text" placeholder="Write your message..."></textarea>
+    <div class="msg-modal-btns">
+      <button class="btn-sm btn-sm-ghost" onclick="closeMsgModal()">Cancel</button>
+      <button class="btn-sm btn-sm-orange" onclick="submitFanMessage()">Send</button>
+    </div>
+  </div>
+</div>
+
 <div class="artist-page">
+
+  <!-- SEARCH ARTISTS (always visible) -->
+  <div class="panel">
+    <h2>&#127908; Find Artists</h2>
+    <div class="search-row">
+      <input type="text" id="artist-search-input" placeholder="Search by name or genre..." onkeydown="if(event.key==='Enter') searchArtists()"/>
+      <button onclick="searchArtists()">Search</button>
+    </div>
+    <div id="artist-search-results"></div>
+  </div>
 
   <!-- ENABLE PANEL -->
   <div id="enable-panel" class="panel" style="display:none;">
