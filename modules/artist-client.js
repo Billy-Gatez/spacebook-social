@@ -52,6 +52,7 @@ async function loadDashboard() {
 // =========================
 
 function renderTracks(tracks) {
+  tracks = tracks || [];
   const el = document.getElementById('tracks-list');
   el.innerHTML = tracks.length ? tracks.map((t, i) => `
     <div class="track-item">
@@ -63,6 +64,7 @@ function renderTracks(tracks) {
 }
 
 function renderShows(shows) {
+  shows = shows || [];
   const el = document.getElementById('shows-list');
   el.innerHTML = shows.length ? shows.map((s, i) => `
     <div class="show-item">
@@ -76,6 +78,7 @@ function renderShows(shows) {
 }
 
 function renderMessages(msgs) {
+  msgs = msgs || [];
   const el = document.getElementById('fan-msgs-list');
   el.innerHTML = msgs.length ? msgs.map(m => `
     <div class="fan-msg-item">
