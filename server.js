@@ -220,7 +220,12 @@ const upload = multer({ storage });
 const uploadMedia = multer();
 
 // ====== ATTACH STORIES (early, before routes) ======
-attachStories(app, null, mongoose, requireLogin, cloudinary, upload);
+try {
+  attachStories(app, null, mongoose, requireLogin, cloudinary, upload);
+} catch(e) {
+  console.warn("Stories module not loaded:", e.message);
+  app.get("/stories", requireLogin, (req, res) => res.redirect("/feed"));
+}
 
 // ====== ROUTES ======
 
@@ -589,15 +594,15 @@ app.get("/home", requireLogin, async (req, res) => {
     draw();
 
     // ====== POST REACTIONS ======
-    async function loadPostReactions(postId) {
-      const data = await fetch("/api/posts/" + postId + "/reactions", {credentials:"include"}).then(r=>r.json()).catch(()=>({counts:{},myReaction:null}));
-      ["❤️","🔥","😂","🤝","🚀"].forEach(function(e) {
-        const el = document.getElementById("rp-" + postId + "-" + e.codePointAt(0));
-        if (el) el.textContent = data.counts[e] || 0;
-        const btn = document.querySelector(".react-pill[data-post-id='" + postId + "'][data-emoji='" + e + "']");
-        if (btn) btn.classList.toggle("mine", data.myReaction === e);
-      });
-    }
+  async function loadPostReactions(postId) {
+  const data = await fetch(`/api/posts/${postId}/reactions`, {credentials:"include"}).then(r=>r.json()).catch(()=>({counts:{},myReaction:null}));
+  document.querySelectorAll(`.react-pill[data-post-id="${postId}"]`).forEach(btn => {
+    const emoji = btn.dataset.emoji;
+    const countEl = btn.querySelector('.rpill-count');
+    if (countEl) countEl.textContent = data.counts[emoji] || 0;
+    btn.classList.toggle('mine', data.myReaction === emoji);
+  });
+}
 
     // ====== POST COMMENTS ======
     async function loadPostComments(postId) {
@@ -668,8 +673,9 @@ app.get("/home", requireLogin, async (req, res) => {
 
 // ====== FEED ======
 app.get("/feed", requireLogin, async (req, res) => {
-  const user = await User.findById(req.session.userId).populate("friends");
-  const friendIds = user.friends.map(f => f._id);
+ const user = await User.findById(req.session.userId).populate("friends");
+if (!user) return res.redirect("/");   // ← ADD THIS
+const friendIds = user.friends.map(f => f.id);
   friendIds.push(user._id);
   const posts = await Post.find({ userId: { $in: friendIds } }).sort({ createdAt: -1 });
 
@@ -845,15 +851,15 @@ app.get("/feed", requireLogin, async (req, res) => {
     draw();
 
     // ====== REACTIONS ======
-    async function loadPostReactions(postId) {
-      const data = await fetch("/api/posts/" + postId + "/reactions", {credentials:"include"}).then(r=>r.json()).catch(()=>({counts:{},myReaction:null}));
-      ["❤️","🔥","😂","🤝","🚀"].forEach(function(e) {
-        const el = document.getElementById("rp-" + postId + "-" + e.codePointAt(0));
-        if (el) el.textContent = data.counts[e] || 0;
-        const btn = document.querySelector(".react-pill[data-post-id='" + postId + "'][data-emoji='" + e + "']");
-        if (btn) btn.classList.toggle("mine", data.myReaction === e);
-      });
-    }
+   async function loadPostReactions(postId) {
+  const data = await fetch(`/api/posts/${postId}/reactions`, {credentials:"include"}).then(r=>r.json()).catch(()=>({counts:{},myReaction:null}));
+  document.querySelectorAll(`.react-pill[data-post-id="${postId}"]`).forEach(btn => {
+    const emoji = btn.dataset.emoji;
+    const countEl = btn.querySelector('.rpill-count');
+    if (countEl) countEl.textContent = data.counts[emoji] || 0;
+    btn.classList.toggle('mine', data.myReaction === emoji);
+  });
+}
 
     // ====== COMMENTS ======
     async function loadPostComments(postId) {
@@ -1600,16 +1606,15 @@ app.get("/profile", requireLogin, async (req, res) => {
           await loadProfileComments();
         }
 
-        async function loadPostReactions(postId) {
-          const data = await fetch("/api/posts/" + postId + "/reactions", { credentials: "include" }).then(r => r.json()).catch(() => ({ counts: {}, myReaction: null }));
-          ["❤️","🔥","😂","🤝","🚀"].forEach(function(e) {
-            const el = document.getElementById("rp-" + postId + "-" + e.codePointAt(0));
-            if (el) el.textContent = data.counts[e] || 0;
-            const btn = document.querySelector(".react-pill[data-post-id='" + postId + "'][data-emoji='" + e + "']");
-            if (btn) btn.classList.toggle("mine", data.myReaction === e);
-          });
-        }
-
+async function loadPostReactions(postId) {
+  const data = await fetch(`/api/posts/${postId}/reactions`, {credentials:"include"}).then(r=>r.json()).catch(()=>({counts:{},myReaction:null}));
+  document.querySelectorAll(`.react-pill[data-post-id="${postId}"]`).forEach(btn => {
+    const emoji = btn.dataset.emoji;
+    const countEl = btn.querySelector('.rpill-count');
+    if (countEl) countEl.textContent = data.counts[emoji] || 0;
+    btn.classList.toggle('mine', data.myReaction === emoji);
+  });
+}
         async function loadPostComments(postId) {
           const comments = await fetch("/api/posts/" + postId + "/comments", { credentials: "include" }).then(r => r.json()).catch(() => []);
           const list = document.getElementById("cl-" + postId);
@@ -2056,14 +2061,14 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
         }
 
         async function loadPostReactions(postId) {
-          const data = await fetch("/api/posts/" + postId + "/reactions", { credentials: "include" }).then(r => r.json()).catch(() => ({ counts: {}, myReaction: null }));
-          ["❤️","🔥","😂","🤝","🚀"].forEach(function(e) {
-            const el = document.getElementById("rp-" + postId + "-" + e.codePointAt(0));
-            if (el) el.textContent = data.counts[e] || 0;
-            const btn = document.querySelector(".react-pill[data-post-id='" + postId + "'][data-emoji='" + e + "']");
-            if (btn) btn.classList.toggle("mine", data.myReaction === e);
-          });
-        }
+  const data = await fetch(`/api/posts/${postId}/reactions`, {credentials:"include"}).then(r=>r.json()).catch(()=>({counts:{},myReaction:null}));
+  document.querySelectorAll(`.react-pill[data-post-id="${postId}"]`).forEach(btn => {
+    const emoji = btn.dataset.emoji;
+    const countEl = btn.querySelector('.rpill-count');
+    if (countEl) countEl.textContent = data.counts[emoji] || 0;
+    btn.classList.toggle('mine', data.myReaction === emoji);
+  });
+}
 
         async function loadPostComments(postId) {
           const comments = await fetch("/api/posts/" + postId + "/comments", { credentials: "include" }).then(r => r.json()).catch(() => []);
@@ -2597,10 +2602,12 @@ const attachGallery = require("./modules/gallery");
 attachGallery(app, mongoose, requireLogin, cloudinary, upload);
 
 try {
-  const attachMessages = require("./modules/messaging");
-  attachMessages(app, server, mongoose, requireLogin, cloudinary);
-} catch(e) { console.warn("messaging module not found, skipping"); }
-
+  const attachMessaging = require("./modules/messaging");
+  attachMessaging(app, server, mongoose, requireLogin);
+} catch(e) {
+  console.warn("Messaging module not loaded:", e.message);
+  app.get("/messages", requireLogin, (req, res) => res.redirect("/feed"));
+}
 try {
   const attachArtist = require("./modules/artist");
   attachArtist(app, mongoose, requireLogin, cloudinary, upload);
