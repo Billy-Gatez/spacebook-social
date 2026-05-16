@@ -322,11 +322,11 @@ async function loadArtistProfile() {
     ${statsHtml}
     ${linksHtml}
 
-    <div style="margin-top:20px;">
-      <button class="btn-primary" onclick="openFanMessage('${userId}', '${name.replace(/'/g, "\\'")}')">
-        ✉️ Send Fan Message
-      </button>
-    </div>
+   <div style="margin-top:20px;">
+  <button class="btn-primary" onclick="openFanMessage()">
+    ✉️ Send A Fan Message Below…
+  </button>
+</div>
 
     <div class="section-label">Tracks</div>
     <div>${tracksHtml}</div>
