@@ -170,29 +170,6 @@ const playerSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now }
 });
 
-// ====== PLAYLIST SCHEMA ======
-const playlistSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  name: { type: String, required: true },
-  collaborative: { type: Boolean, default: false },
-  tracks: [{
-    soundcloudUrl: String,
-    title: String,
-    addedAt: { type: Date, default: Date.now }
-  }],
-  createdAt: { type: Date, default: Date.now }
-});
-const Playlist = mongoose.model('Playlist', playlistSchema);
-
-const listenRoomSchema = new mongoose.Schema({
-  playlistId: { type: mongoose.Schema.Types.ObjectId, ref: 'Playlist' },
-  hostId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  currentTrackIndex: { type: Number, default: 0 },
-  isPlaying: { type: Boolean, default: false },
-  createdAt: { type: Date, default: Date.now }
-});
-const ListenRoom = mongoose.model('ListenRoom', listenRoomSchema);
-
 // ====== MODELS ======
 const User = mongoose.model("User", userSchema);
 const Post = mongoose.model("Post", postSchema);
@@ -2518,9 +2495,7 @@ app.get("/activity", requireLogin, (req, res) => {
 });
 
 // ====== LISTEN TOGETHER ======
-app.get("/listen-together", requireLogin, (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "listen-together.html"));
-});
+
 
 // ====== ARTIST DASHBOARD ======
 app.get("/artist-dashboard", requireLogin, (req, res) => {
@@ -2712,12 +2687,16 @@ try {
 } catch(e) { console.warn("artist module not found, skipping"); }
 
 try {
-  const attachListenTogether = require("./modules/listen-together");
-  attachListenTogether(app, mongoose, requireLogin);
-} catch(e) { console.warn("listen-together module not found, skipping"); }
+  const attachPlaylists = require('./modules/playlists');
+  attachPlaylists(app, server, mongoose, requireLogin);
+} catch(e) {
+  console.warn('playlists module not loaded:', e.message);
+}
 
 try {
-  const attachSoundCloud = require("./modules/soundcloud");
+  const attachSoundCloud = require('./modules/soundcloud');
   attachSoundCloud(app, mongoose, requireLogin);
-} catch(e) { console.warn("soundcloud module not loaded:", e.message); }
+} catch(e) {
+  console.warn('soundcloud module not loaded:', e.message);
+}
 
