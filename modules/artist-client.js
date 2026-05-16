@@ -1,95 +1,14 @@
+// /public/modules/artist-client.js
+
+let _msgTargetUserId = null;
+
 async function loadDashboard() {
   const res = await fetch('/api/artist/me', { credentials: 'include' });
-  const artist = await res.json();
-
-  // Not an artist yet
-  if (!artist || !artist.isArtist) {
+  if (!res.ok) {
     document.getElementById('enable-panel').style.display = 'block';
     document.getElementById('artist-dashboard').style.display = 'none';
     return;
   }
-
-  // Show dashboard
-  document.getElementById('enable-panel').style.display = 'none';
-  document.getElementById('artist-dashboard').style.display = 'block';
-
-  // Header
-  document.getElementById('dash-name').textContent = artist.bio?.split(" ")[0] || "Artist Dashboard";
-  document.getElementById('dash-genre').textContent = artist.genre || "";
-
-  // Verified badge
-  document.getElementById('dash-verified').style.display = artist.isVerified ? "inline-block" : "none";
-
-  // Stats
-  document.getElementById('stat-tracks').textContent = (artist.importedTracks || []).length;
-  document.getElementById('stat-shows').textContent = (artist.upcomingShows || []).length;
-  document.getElementById('stat-msgs').textContent = (artist.fanMessages || []).length;
-
-  // Settings fields
-  document.getElementById('edit-genre').value = artist.genre || '';
-  document.getElementById('edit-bio').value = artist.bio || '';
-  document.getElementById('edit-sc').value = artist.soundcloudProfile || '';
-  document.getElementById('edit-sp').value = artist.spotifyProfile || '';
-  document.getElementById('edit-tip').value = artist.tipUrl || '';
-
-  // Tip link
-  if (artist.tipUrl) {
-    const link = document.getElementById('tip-link-display');
-    link.href = artist.tipUrl;
-    link.style.display = "inline-block";
-  } else {
-    document.getElementById('tip-link-display').style.display = "none";
-  }
-
-  // Render lists
-  renderTracks(artist.importedTracks || []);
-  renderShows(artist.upcomingShows || []);
-  renderMessages(artist.fanMessages || []);
-}
-
-// =========================
-// RENDER FUNCTIONS
-// =========================
-
-function renderTracks(tracks) {
-  tracks = tracks || [];
-  const el = document.getElementById('tracks-list');
-  el.innerHTML = tracks.length ? tracks.map((t, i) => `
-    <div class="track-item">
-      <span class="t-title">${t.title}</span>
-      <span class="t-platform">${t.platform || ''}</span>
-      <a href="${t.url}" target="_blank" style="color:#ff6a00;font-size:12px;">▶ Play</a>
-      <button class="del-btn" onclick="deleteTrack(${i})">🗑</button>
-    </div>`).join('') : '<p style="color:#666;font-size:13px;">No tracks yet.</p>';
-}
-
-function renderShows(shows) {
-  shows = shows || [];
-  const el = document.getElementById('shows-list');
-  el.innerHTML = shows.length ? shows.map((s, i) => `
-    <div class="show-item">
-      <div class="show-info">
-        <div class="venue">${s.venue}</div>
-        <div class="city">${s.city}</div>
-        <div class="date">${new Date(s.date).toLocaleDateString()}</div>
-      </div>
-      <button class="del-btn" onclick="deleteShow(${i})">🗑</button>
-    </div>`).join('') : '<p style="color:#666;font-size:13px;">No shows yet.</p>';
-}
-
-function renderMessages(msgs) {
-  msgs = msgs || [];
-  const el = document.getElementById('fan-msgs-list');
-  el.innerHTML = msgs.length ? msgs.map(m => `
-    <div class="fan-msg-item">
-      <div class="fm-from">${m.fromName}</div>
-      <div class="fm-text">${m.message}</div>
-      <div class="fm-time">${new Date(m.createdAt).toLocaleDateString()}</div>
-    </div>`).join('') : '<p style="color:#666;font-size:13px;">No messages yet.</p>';
-}
-
-async function loadDashboard() {
-  const res = await fetch('/api/artist/me', { credentials: 'include' });
   const artist = await res.json();
 
   if (!artist || !artist.isArtist) {
@@ -101,27 +20,27 @@ async function loadDashboard() {
   document.getElementById('enable-panel').style.display = 'none';
   document.getElementById('artist-dashboard').style.display = 'block';
 
-  document.getElementById('dash-name').textContent = artist.bio?.split(" ")[0] || "Artist Dashboard";
-  document.getElementById('dash-genre').textContent = artist.genre || "";
-  document.getElementById('dash-verified').style.display = artist.isVerified ? "inline-block" : "none";
+  var dashName = document.getElementById('dash-name');
+  var dashVerified = document.getElementById('dash-verified');
+  var statTracks = document.getElementById('stat-tracks');
+  var statShows = document.getElementById('stat-shows');
+  var statMsgs = document.getElementById('stat-msgs');
+  var editGenre = document.getElementById('edit-genre');
+  var editBio = document.getElementById('edit-bio');
+  var editSc = document.getElementById('edit-sc');
+  var editSp = document.getElementById('edit-sp');
+  var editTip = document.getElementById('edit-tip');
 
-  document.getElementById('stat-tracks').textContent = (artist.importedTracks || []).length;
-  document.getElementById('stat-shows').textContent = (artist.upcomingShows || []).length;
-  document.getElementById('stat-msgs').textContent = (artist.fanMessages || []).length;
-
-  document.getElementById('edit-genre').value = artist.genre || '';
-  document.getElementById('edit-bio').value = artist.bio || '';
-  document.getElementById('edit-sc').value = artist.soundcloudProfile || '';
-  document.getElementById('edit-sp').value = artist.spotifyProfile || '';
-  document.getElementById('edit-tip').value = artist.tipUrl || '';
-
-  if (artist.tipUrl) {
-    const link = document.getElementById('tip-link-display');
-    link.href = artist.tipUrl;
-    link.style.display = "inline-block";
-  } else {
-    document.getElementById('tip-link-display').style.display = "none";
-  }
+  if (dashName) dashName.textContent = artist.genre ? artist.genre + ' Artist' : 'Artist Dashboard';
+  if (dashVerified && artist.isVerified) dashVerified.style.display = 'inline-block';
+  if (statTracks) statTracks.textContent = (artist.importedTracks || []).length;
+  if (statShows) statShows.textContent = (artist.upcomingShows || []).length;
+  if (statMsgs) statMsgs.textContent = (artist.fanMessages || []).length;
+  if (editGenre) editGenre.value = artist.genre || '';
+  if (editBio) editBio.value = artist.bio || '';
+  if (editSc) editSc.value = artist.soundcloudProfile || '';
+  if (editSp) editSp.value = artist.spotifyProfile || '';
+  if (editTip) editTip.value = artist.tipUrl || '';
 
   renderTracks(artist.importedTracks || []);
   renderShows(artist.upcomingShows || []);
@@ -129,58 +48,80 @@ async function loadDashboard() {
 }
 
 function renderTracks(tracks) {
-  const el = document.getElementById('tracks-list');
-  el.innerHTML = tracks.length
-    ? tracks.map((t, i) => `
-        <div class="track-item">
-          <a href="${t.url}" target="_blank">${t.title}</a>
-          <button onclick="deleteTrack(${i})">Remove</button>
-        </div>`).join('')
-    : '<p>No tracks yet.</p>';
+  var el = document.getElementById('tracks-list');
+  if (!el) return;
+  if (!tracks.length) {
+    el.innerHTML = '<p style="color:#666;font-size:13px;">No tracks yet. Import a SoundCloud URL above.</p>';
+    return;
+  }
+  el.innerHTML = tracks.map(function(t, i) {
+    return '<div class="track-item">' +
+      '<span style="flex:1;font-size:13px;">' + (t.title || t.url || 'Untitled') + '</span>' +
+      '<a href="' + (t.url || '#') + '" target="_blank" style="color:#ff6a00;font-size:12px;margin-right:10px;">&#9654; Play</a>' +
+      '<button class="del-btn" onclick="deleteTrack(' + i + ')">&#128465;</button>' +
+      '</div>';
+  }).join('');
 }
 
 function renderShows(shows) {
-  const el = document.getElementById('shows-list');
-  el.innerHTML = shows.length
-    ? shows.map((s, i) => `
-        <div class="show-item">
-          <strong>${s.venue}</strong> — ${s.city} on ${new Date(s.date).toLocaleDateString()}
-          ${s.ticketUrl ? `<a href="${s.ticketUrl}" target="_blank">Tickets</a>` : ''}
-          <button onclick="deleteShow(${i})">Remove</button>
-        </div>`).join('')
-    : '<p>No shows yet.</p>';
+  var el = document.getElementById('shows-list');
+  if (!el) return;
+  if (!shows.length) {
+    el.innerHTML = '<p style="color:#666;font-size:13px;">No shows yet.</p>';
+    return;
+  }
+  el.innerHTML = shows.map(function(s, i) {
+    return '<div class="show-item">' +
+      '<div>' +
+      '<div style="font-weight:700;">' + (s.venue || '') + '</div>' +
+      '<div style="font-size:12px;color:#888;">' + (s.city || '') + ' &mdash; ' + (s.date ? new Date(s.date).toLocaleDateString() : '') + '</div>' +
+      '</div>' +
+      '<button class="del-btn" onclick="deleteShow(' + i + ')">&#128465;</button>' +
+      '</div>';
+  }).join('');
 }
 
 function renderMessages(msgs) {
-  const el = document.getElementById('fan-msgs-list');
-  el.innerHTML = msgs.length
-    ? msgs.map(m => `
-        <div class="msg-item">
-          <strong>${m.fromName}</strong>: ${m.message}
-        </div>`).join('')
-    : '<p>No messages yet.</p>';
+  var el = document.getElementById('fan-msgs-list');
+  if (!el) return;
+  if (!msgs.length) {
+    el.innerHTML = '<p style="color:#666;font-size:13px;">No fan messages yet.</p>';
+    return;
+  }
+  el.innerHTML = msgs.map(function(m) {
+    return '<div class="fan-msg-item">' +
+      '<div>' +
+      '<div style="color:#ff6a00;font-weight:700;font-size:13px;">' + (m.fromName || 'Fan') + '</div>' +
+      '<div style="font-size:13px;color:#ccc;margin-top:4px;">' + (m.message || '') + '</div>' +
+      '<div style="font-size:11px;color:#666;margin-top:4px;">' + (m.createdAt ? new Date(m.createdAt).toLocaleDateString() : '') + '</div>' +
+      '</div>' +
+      '</div>';
+  }).join('');
 }
 
-// ✅ FIXED: added await before loadDashboard()
 async function enableArtistMode() {
-  const body = {
+  var body = {
     genre: document.getElementById('en-genre').value,
     bio: document.getElementById('en-bio').value,
     soundcloudProfile: document.getElementById('en-sc').value,
     spotifyProfile: document.getElementById('en-sp').value,
     tipUrl: document.getElementById('en-tip').value
   };
-  await fetch('/api/artist/enable', {
+  var res = await fetch('/api/artist/enable', {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
   });
-  await loadDashboard(); // ✅ was missing await
+  if (res.ok) {
+    loadDashboard();
+  } else {
+    alert('Could not enable artist mode. Make sure you are logged in.');
+  }
 }
 
 async function saveSettings() {
-  const body = {
+  var body = {
     genre: document.getElementById('edit-genre').value,
     bio: document.getElementById('edit-bio').value,
     soundcloudProfile: document.getElementById('edit-sc').value,
@@ -193,64 +134,125 @@ async function saveSettings() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
   });
-  await loadDashboard();
+  loadDashboard();
 }
 
 async function importTrack() {
-  const url = document.getElementById('import-url').value.trim();
-  if (!url) return;
-  await fetch('/api/artist/import-tracks', {
+  var urlInput = document.getElementById('import-url');
+  var url = urlInput ? urlInput.value.trim() : '';
+  if (!url) return alert('Paste a SoundCloud track URL first.');
+  var res = await fetch('/api/artist/import-tracks', {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ urls: [url], platform: 'soundcloud' })
   });
-  document.getElementById('import-url').value = '';
-  await loadDashboard();
+  if (res.ok) {
+    if (urlInput) urlInput.value = '';
+    loadDashboard();
+  } else {
+    alert('Could not import track.');
+  }
 }
 
 async function deleteTrack(index) {
   await fetch('/api/artist/tracks/' + index, { method: 'DELETE', credentials: 'include' });
-  await loadDashboard();
+  loadDashboard();
 }
 
 async function addShow() {
-  const body = {
+  var body = {
     venue: document.getElementById('show-venue').value,
     city: document.getElementById('show-city').value,
     date: document.getElementById('show-date').value,
     ticketUrl: document.getElementById('show-ticket').value
   };
+  if (!body.venue || !body.date) return alert('Venue and date are required.');
   await fetch('/api/artist/shows', {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
   });
-  await loadDashboard();
+  document.getElementById('show-venue').value = '';
+  document.getElementById('show-city').value = '';
+  document.getElementById('show-date').value = '';
+  document.getElementById('show-ticket').value = '';
+  loadDashboard();
 }
 
 async function deleteShow(index) {
   await fetch('/api/artist/shows/' + index, { method: 'DELETE', credentials: 'include' });
-  await loadDashboard();
+  loadDashboard();
 }
 
-// ✅ NEW: Search artists by name
-async function searchArtists(query) {
-  const resultsEl = document.getElementById('artist-search-results');
-  if (!query.trim()) {
-    resultsEl.innerHTML = '';
+// ============================
+// ARTIST SEARCH
+// ============================
+async function searchArtists() {
+  var input = document.getElementById('artist-search-input');
+  var el = document.getElementById('artist-search-results');
+  if (!input || !el) return;
+  var q = input.value.trim();
+  if (!q) { el.innerHTML = ''; return; }
+  el.innerHTML = '<p style="color:#888;font-size:13px;margin-top:10px;">Searching...</p>';
+  var results = await fetch('/api/artists/search?q=' + encodeURIComponent(q), { credentials: 'include' })
+    .then(function(r) { return r.json(); })
+    .catch(function() { return []; });
+  if (!results.length) {
+    el.innerHTML = '<p style="color:#666;font-size:13px;margin-top:10px;">No artists found for "' + q + '".</p>';
     return;
   }
-  const res = await fetch(`/api/users/search?q=${encodeURIComponent(query)}`, { credentials: 'include' });
-  const users = await res.json();
-  if (!users.length) {
-    resultsEl.innerHTML = '<p>No users found.</p>';
-    return;
-  }
-  resultsEl.innerHTML = users.map(u =>
-    `<div><a href="/profile/${u._id}">${u.name}</a></div>`
-  ).join('');
+  el.innerHTML = results.map(function(a) {
+    return '<div class="artist-result">' +
+      '<div class="artist-result-info">' +
+      '<div class="ar-name">' + (a.userName || 'Artist') +
+      (a.isVerified ? ' <span style="background:linear-gradient(135deg,#ff6a00,#ee0979);color:#fff;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700;">VERIFIED</span>' : '') +
+      '</div>' +
+      '<div class="ar-genre">' + (a.genre || 'No genre listed') + '</div>' +
+      '<div class="ar-bio">' + (a.bio ? a.bio.substring(0, 100) + (a.bio.length > 100 ? '...' : '') : '') + '</div>' +
+      '</div>' +
+      '<div class="artist-result-btns">' +
+      '<button class="btn-sm btn-sm-ghost" onclick="openMsgModal(\'' + a.userId + '\')">&#9993; Message</button>' +
+      '<a href="/profile/' + a.userId + '" class="btn-sm btn-sm-orange" style="text-decoration:none;display:inline-block;">View Profile</a>' +
+      '</div>' +
+      '</div>';
+  }).join('');
 }
 
+function openMsgModal(userId) {
+  _msgTargetUserId = userId;
+  var text = document.getElementById('msg-modal-text');
+  var modal = document.getElementById('msg-modal');
+  if (text) text.value = '';
+  if (modal) modal.classList.add('open');
+}
+
+function closeMsgModal() {
+  _msgTargetUserId = null;
+  var modal = document.getElementById('msg-modal');
+  if (modal) modal.classList.remove('open');
+}
+
+async function submitFanMessage() {
+  var textEl = document.getElementById('msg-modal-text');
+  var message = textEl ? textEl.value.trim() : '';
+  if (!message || !_msgTargetUserId) return;
+  var res = await fetch('/api/artist/' + _msgTargetUserId + '/fan-message', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message: message })
+  });
+  closeMsgModal();
+  if (res.ok) {
+    alert('Message sent!');
+  } else {
+    alert('Could not send message.');
+  }
+}
+
+// ============================
+// BOOT
+// ============================
 loadDashboard();
