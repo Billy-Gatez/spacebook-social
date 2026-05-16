@@ -225,7 +225,7 @@ module.exports = function attachArtist(app, mongoose, requireLogin, cloudinary, 
     }
   });
 
-  // GET FAN MESSAGE INBOX
+  // GET FAN MESSAGE INBOX (for artist)
   app.get("/api/artist/fan-messages/inbox", requireLogin, async (req, res) => {
     try {
       const artist = await ArtistProfile.findOne({ userId: uid(req) });
@@ -236,7 +236,7 @@ module.exports = function attachArtist(app, mongoose, requireLogin, cloudinary, 
     }
   });
 
-  // REPLY TO FAN MESSAGE
+  // REPLY TO FAN MESSAGE (artist)
   app.post("/api/artist/fan-messages/:msgId/reply", requireLogin, async (req, res) => {
     try {
       const artist = await ArtistProfile.findOne({ userId: uid(req) });
@@ -252,7 +252,7 @@ module.exports = function attachArtist(app, mongoose, requireLogin, cloudinary, 
     }
   });
 
-  // DELETE FAN MESSAGE
+  // DELETE FAN MESSAGE (artist)
   app.delete("/api/artist/fan-messages/:msgId", requireLogin, async (req, res) => {
     try {
       const artist = await ArtistProfile.findOne({ userId: uid(req) });
@@ -264,6 +264,25 @@ module.exports = function attachArtist(app, mongoose, requireLogin, cloudinary, 
       res.json({ success: true });
     } catch (e) {
       res.status(500).json({ error: e.message });
+    }
+  });
+
+  // GET current user's fan messages with this artist (for fans)
+  app.get("/api/artist/:userId/fan-messages/me", requireLogin, async (req, res) => {
+    try {
+      const artist = await ArtistProfile.findOne({
+        userId: new mongoose.Types.ObjectId(req.params.userId)
+      }).lean();
+      if (!artist) return res.status(404).json([]);
+
+      const me = String(req.session.userId);
+      const mine = (artist.fanMessages || [])
+        .filter(m => String(m.fromUserId) === me)
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+      res.json(mine);
+    } catch (e) {
+      res.status(500).json([]);
     }
   });
 

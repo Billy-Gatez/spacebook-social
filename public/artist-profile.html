@@ -343,6 +343,11 @@ async function loadArtistProfile() {
         <button class="btn-primary" onclick="sendFanMessage('${userId}')">Send</button>
       </div>
     </div>
+
+    <div class="section-label" style="margin-top:28px;">Your messages with this artist</div>
+    <div id="fan-msg-history">
+      <p style="color:#666;font-size:13px;">Loading your messages…</p>
+    </div>
   `;
 }
 
@@ -350,7 +355,6 @@ let _playRegistered = {};
 
 async function registerTrackPlay(userId, index) {
   const key = userId + ":" + index;
-  // Avoid spamming endpoint every time iframe reloads
   if (_playRegistered[key]) return;
   _playRegistered[key] = true;
 
@@ -391,17 +395,59 @@ async function sendFanMessage(userId) {
     alert("Write a message first.");
     return;
   }
-  await fetch("/api/artist/" + encodeURIComponent(userId) + "/fan-message", {
+  const res = await fetch("/api/artist/" + encodeURIComponent(userId) + "/fan-message", {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ message })
   });
+  const data = await res.json().catch(() => null);
+  if (!data || !data.success) {
+    alert("Could not send message.");
+    return;
+  }
   alert("Message sent!");
   closeFanMessage();
+  await loadFanMessageHistory(); // refresh history
+}
+
+async function loadFanMessageHistory() {
+  const userId = getUserIdFromPath();
+  if (!userId) return;
+  const container = document.getElementById("fan-msg-history");
+  if (!container) return;
+
+  const msgs = await fetch("/api/artist/" + encodeURIComponent(userId) + "/fan-messages/me", {
+    credentials: "include"
+  }).then(r => r.json()).catch(() => []);
+
+  if (!msgs.length) {
+    container.innerHTML = `<p style="color:#666;font-size:13px;">You haven't sent any messages to this artist yet.</p>`;
+    return;
+  }
+
+  container.innerHTML = msgs.map(m => `
+    <div style="border-radius:8px;border:1px solid rgba(255,255,255,0.08);padding:10px 12px;margin-bottom:8px;background:rgba(255,255,255,0.02);">
+      <div style="font-size:11px;color:#888;margin-bottom:4px;">
+        You · ${new Date(m.createdAt).toLocaleDateString()}
+      </div>
+      <div style="font-size:13px;color:#ddd;margin-bottom:6px;">${m.message}</div>
+      ${
+        m.reply
+          ? `<div style="font-size:12px;color:#ff6a00;border-left:3px solid #ff6a00;padding-left:8px;">
+               ${m.reply}
+               <div style="font-size:10px;color:#888;margin-top:2px;">
+                 Artist reply · ${m.repliedAt ? new Date(m.repliedAt).toLocaleDateString() : ""}
+               </div>
+             </div>`
+          : `<div style="font-size:12px;color:#666;">No reply yet.</div>`
+      }
+    </div>
+  `).join("");
 }
 
 loadArtistProfile();
+loadFanMessageHistory();
 </script>
 </body>
 </html>
