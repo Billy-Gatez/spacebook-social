@@ -92,10 +92,12 @@ module.exports = function attachPlaylists(app, server, mongoose, requireLogin) {
     });
   });
 
+  // PAGE ROUTE
   app.get("/listen-together", requireLogin, (req, res) => {
     res.sendFile(path.join(__dirname, "public", "listen-together.html"));
   });
 
+  // PLAYLIST ROUTES
   app.get("/api/playlists", requireLogin, async (req, res) => {
     try {
       const playlists = await Playlist.find({
@@ -172,6 +174,7 @@ module.exports = function attachPlaylists(app, server, mongoose, requireLogin) {
     } catch(e) { res.status(500).json({ error: e.message }); }
   });
 
+  // LISTEN ROOM ROUTES — active MUST come before /:id
   app.post("/api/listen-rooms", requireLogin, async (req, res) => {
     try {
       const room = await ListenRoom.create({
@@ -183,6 +186,18 @@ module.exports = function attachPlaylists(app, server, mongoose, requireLogin) {
     } catch(e) { res.status(500).json({ error: e.message }); }
   });
 
+  app.get("/api/listen-rooms/active", requireLogin, async (req, res) => {
+    try {
+      const cutoff = new Date(Date.now() - 2 * 60 * 60 * 1000);
+      const rooms = await ListenRoom.find({ createdAt: { $gte: cutoff } })
+        .populate("playlistId", "name tracks")
+        .populate("hostId", "name")
+        .sort({ createdAt: -1 })
+        .limit(20);
+      res.json(rooms);
+    } catch(e) { res.json([]); }
+  });
+
   app.get("/api/listen-rooms/:id", requireLogin, async (req, res) => {
     try {
       const room = await ListenRoom.findById(req.params.id).populate("playlistId");
@@ -191,6 +206,7 @@ module.exports = function attachPlaylists(app, server, mongoose, requireLogin) {
     } catch(e) { res.status(500).json({ error: e.message }); }
   });
 
+  // MISC ROUTES
   app.get("/api/feed-posts", requireLogin, async (req, res) => {
     try {
       const User = mongoose.model("User");
