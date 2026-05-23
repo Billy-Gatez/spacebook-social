@@ -249,6 +249,10 @@ try {
 
 // ====== ROUTES ======
 
+app.get('/sitemap.xml', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'sitemap.xml'));
+});
+
 // Landing
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
