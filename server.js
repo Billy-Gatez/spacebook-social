@@ -178,6 +178,16 @@ const PostReaction = mongoose.model("PostReaction", postReactionSchema);
 const Notification = mongoose.model("Notification", notificationSchema);
 const Player = mongoose.model("Player", playerSchema);
 
+// MUSIC HUB COMMENTS SCHEMA
+const musicCommentSchema = new mongoose.Schema({
+  rank:      { type: Number, required: true },
+  videoId:   { type: String },
+  name:      { type: String, default: 'Guest' },
+  text:      { type: String, required: true },
+  createdAt: { type: Date, default: Date.now }
+});
+const MusicComment = mongoose.model('MusicComment', musicCommentSchema);
+
 // ====== ELO ======
 function updateElo(rA, rB, scoreA, k = 32) {
   const expectedA = 1 / (1 + Math.pow(10, (rB - rA) / 400));
@@ -1194,6 +1204,34 @@ app.post("/api/posts/:postId/comments", requireLogin, async (req, res) => {
     res.json(comment);
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// MUSIC HUB COMMENTS API
+app.get('/api/music-comments/:rank', async (req, res) => {
+  try {
+    const comments = await MusicComment.find({ rank: Number(req.params.rank) })
+      .sort({ createdAt: -1 })
+      .limit(50);
+    res.json(comments);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load comments' });
+  }
+});
+
+app.post('/api/music-comments/:rank', async (req, res) => {
+  try {
+    const { name, text, videoId } = req.body;
+    if (!text || !text.trim()) return res.status(400).json({ error: 'Text required' });
+    const comment = await MusicComment.create({
+      rank:    Number(req.params.rank),
+      videoId: videoId || '',
+      name:    (name || 'Guest').trim().slice(0, 40),
+      text:    text.trim().slice(0, 500)
+    });
+    res.status(201).json(comment);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to post comment' });
   }
 });
 
