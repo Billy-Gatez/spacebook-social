@@ -1,919 +1,1160 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Top 250 Most-Viewed Official Music Videos</title>
-<meta name="description" content="A futuristic orange-and-black ranking of the top 250 most-viewed official music videos with search, filters, comments, and embedded playback.">
-
-<style>
-  :root{
-    --bg:#050507;
-    --panel:#0e0e12;
-    --panel2:#14141b;
-    --line:rgba(255,140,0,.18);
-    --text:#f5f5f7;
-    --muted:#a8a8b3;
-    --orange:#ff7a18;
-    --orange2:#ffb347;
-    --glow:0 0 18px rgba(255,122,24,.35), 0 0 44px rgba(255,122,24,.12);
-    --radius:18px;
-  }
-
-  *{box-sizing:border-box}
-  html,body{margin:0;padding:0}
-  body{
-    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-    background:
-      radial-gradient(circle at 20% 10%, rgba(255,122,24,.18), transparent 28%),
-      radial-gradient(circle at 80% 20%, rgba(255,179,71,.12), transparent 22%),
-      radial-gradient(circle at 50% 0%, rgba(255,122,24,.06), transparent 30%),
-      linear-gradient(180deg, #040406 0%, #08080c 100%);
-    color:var(--text);
-    min-height:100vh;
-    overflow-x:hidden;
-  }
-
-  body::before{
-    content:"";
-    position:fixed;
-    inset:0;
-    pointer-events:none;
-    background-image:
-      linear-gradient(rgba(255,122,24,.05) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,122,24,.05) 1px, transparent 1px);
-    background-size: 70px 70px;
-    mask-image: radial-gradient(circle at center, black 30%, transparent 88%);
-    opacity:.18;
-  }
-
-  .topbar{
-    position:sticky;
-    top:0;
-    z-index:50;
-    backdrop-filter: blur(18px);
-    background: rgba(5,5,7,.72);
-    border-bottom:1px solid rgba(255,122,24,.18);
-  }
-
-  .topbar-inner{
-    max-width:1400px;
-    margin:0 auto;
-    padding:18px 20px;
-    display:flex;
-    gap:16px;
-    align-items:center;
-    justify-content:space-between;
-  }
-
-  .brand{
-    display:flex;
-    flex-direction:column;
-    gap:2px;
-  }
-
-  .brand h1{
-    margin:0;
-    font-size:20px;
-    letter-spacing:.06em;
-    text-transform:uppercase;
-    color:#fff;
-    text-shadow: var(--glow);
-  }
-
-  .brand p{
-    margin:0;
-    color:var(--muted);
-    font-size:13px;
-  }
-
-  .hero{
-    max-width:1400px;
-    margin:24px auto 0;
-    padding:0 20px;
-  }
-
-  .hero-card{
-    border:1px solid rgba(255,122,24,.18);
-    background: linear-gradient(180deg, rgba(20,20,27,.92), rgba(12,12,16,.92));
-    border-radius:24px;
-    padding:22px;
-    box-shadow: 0 20px 60px rgba(0,0,0,.35);
-  }
-
-  .hero-grid{
-    display:grid;
-    grid-template-columns: 1.2fr .8fr;
-    gap:18px;
-    align-items:stretch;
-  }
-
-  .hero h2{
-    margin:0 0 10px;
-    font-size:34px;
-    line-height:1.05;
-    letter-spacing:-.03em;
-  }
-
-  .hero h2 span{
-    color:var(--orange2);
-    text-shadow: var(--glow);
-  }
-
-  .hero .lead{
-    color:#d0d0da;
-    margin:0 0 16px;
-    max-width:760px;
-  }
-
-  .pill-row{
-    display:flex;
-    flex-wrap:wrap;
-    gap:10px;
-    margin-top:14px;
-  }
-
-  .pill{
-    padding:10px 12px;
-    border-radius:999px;
-    background: rgba(255,122,24,.09);
-    border:1px solid rgba(255,122,24,.18);
-    color:#ffd7b0;
-    font-size:13px;
-  }
-
-  .stats{
-    display:grid;
-    grid-template-columns: repeat(2, minmax(0,1fr));
-    gap:12px;
-  }
-
-  .stat{
-    background: linear-gradient(180deg, rgba(255,122,24,.11), rgba(255,122,24,.04));
-    border:1px solid rgba(255,122,24,.15);
-    border-radius:18px;
-    padding:16px;
-  }
-
-  .stat .num{
-    font-size:24px;
-    font-weight:800;
-    color:#fff;
-  }
-
-  .stat .label{
-    color:var(--muted);
-    font-size:13px;
-    margin-top:4px;
-  }
-
-  .controls{
-    max-width:1400px;
-    margin:18px auto 0;
-    padding:0 20px;
-  }
-
-  .control-bar{
-    display:grid;
-    grid-template-columns: 1.3fr .7fr .7fr .5fr;
-    gap:12px;
-    background: rgba(14,14,18,.88);
-    border:1px solid rgba(255,122,24,.16);
-    border-radius:20px;
-    padding:14px;
-  }
-
-  input, select, button, textarea{
-    font:inherit;
-  }
-
-  input, select, textarea{
-    width:100%;
-    background:#0b0b10;
-    color:var(--text);
-    border:1px solid rgba(255,255,255,.08);
-    border-radius:14px;
-    padding:14px 14px;
-    outline:none;
-  }
-
-  input:focus, select:focus, textarea:focus{
-    border-color:rgba(255,122,24,.6);
-    box-shadow:0 0 0 3px rgba(255,122,24,.14);
-  }
-
-  .main{
-    max-width:1400px;
-    margin:18px auto 0;
-    padding:0 20px 40px;
-  }
-
-  .grid{
-    display:grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap:14px;
-  }
-
-  .song{
-    border-radius:22px;
-    background: linear-gradient(180deg, rgba(20,20,27,.95), rgba(10,10,14,.95));
-    border:1px solid rgba(255,122,24,.14);
-    padding:16px;
-    box-shadow: 0 10px 36px rgba(0,0,0,.25);
-    transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
-  }
-
-  .song:hover{
-    transform: translateY(-2px);
-    border-color: rgba(255,122,24,.38);
-    box-shadow: 0 16px 42px rgba(0,0,0,.32), var(--glow);
-  }
-
-  .song-top{
-    display:flex;
-    gap:14px;
-    align-items:flex-start;
-  }
-
-  .rank{
-    min-width:56px;
-    height:56px;
-    border-radius:16px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-weight:800;
-    color:#fff;
-    background: linear-gradient(180deg, rgba(255,122,24,.25), rgba(255,122,24,.06));
-    border:1px solid rgba(255,122,24,.2);
-    box-shadow: var(--glow);
-  }
-
-  .song-info{
-    flex:1;
-    min-width:0;
-  }
-
-  .title{
-    margin:0;
-    font-size:17px;
-    line-height:1.3;
-    letter-spacing:-.01em;
-  }
-
-  .title a{
-    color:#fff;
-    text-decoration:none;
-  }
-
-  .title a:hover{color:var(--orange2)}
-  .meta{
-    margin-top:8px;
-    display:flex;
-    flex-wrap:wrap;
-    gap:10px;
-    color:var(--muted);
-    font-size:13px;
-  }
-
-  .badge{
-    display:inline-flex;
-    align-items:center;
-    gap:6px;
-    padding:7px 10px;
-    border-radius:999px;
-    background:rgba(255,122,24,.08);
-    border:1px solid rgba(255,122,24,.15);
-    color:#ffd9b8;
-  }
-
-  .song-actions{
-    display:flex;
-    flex-wrap:wrap;
-    gap:10px;
-    margin-top:14px;
-  }
-
-  .btn{
-    border:none;
-    cursor:pointer;
-    border-radius:12px;
-    padding:11px 13px;
-    color:#fff;
-    background: linear-gradient(180deg, rgba(255,122,24,.95), rgba(255,90,0,.92));
-    box-shadow: 0 10px 20px rgba(255,122,24,.18);
-    transition: transform .15s ease, opacity .15s ease;
-  }
-
-  .btn:hover{transform: translateY(-1px)}
-  .btn.secondary{
-    background:#121219;
-    border:1px solid rgba(255,255,255,.08);
-    box-shadow:none;
-    color:#fff;
-  }
-
-  .btn.ghost{
-    background: transparent;
-    border:1px solid rgba(255,122,24,.22);
-    color:#ffcf9d;
-    box-shadow:none;
-  }
-
-  .empty{
-    margin-top:16px;
-    padding:18px;
-    border-radius:18px;
-    border:1px dashed rgba(255,122,24,.25);
-    color:var(--muted);
-    text-align:center;
-  }
-
-  .drawer-overlay{
-    position:fixed;
-    inset:0;
-    background:rgba(0,0,0,.72);
-    backdrop-filter: blur(10px);
-    display:none;
-    z-index:100;
-  }
-
-  .drawer{
-    position:fixed;
-    top:0;
-    right:0;
-    width:min(560px, 100%);
-    height:100%;
-    background: linear-gradient(180deg, #0c0c11, #060608);
-    border-left:1px solid rgba(255,122,24,.18);
-    box-shadow:-20px 0 60px rgba(0,0,0,.45);
-    transform: translateX(100%);
-    transition: transform .22s ease;
-    z-index:101;
-    display:flex;
-    flex-direction:column;
-  }
-
-  .drawer.open{transform: translateX(0)}
-  .drawer-overlay.open{display:block}
-
-  .drawer-head{
-    padding:18px;
-    border-bottom:1px solid rgba(255,122,24,.16);
-    display:flex;
-    justify-content:space-between;
-    align-items:flex-start;
-    gap:12px;
-  }
-
-  .drawer-head h3{
-    margin:0;
-    font-size:20px;
-  }
-
-  .drawer-body{
-    padding:18px;
-    overflow:auto;
-  }
-
-  .video{
-    width:100%;
-    aspect-ratio:16/9;
-    border:0;
-    border-radius:18px;
-    background:#000;
-    box-shadow: var(--glow);
-  }
-
-  .comment-box{
-    margin-top:18px;
-    padding:16px;
-    border-radius:18px;
-    border:1px solid rgba(255,122,24,.14);
-    background: rgba(255,255,255,.02);
-  }
-
-  .comment-list{
-    display:flex;
-    flex-direction:column;
-    gap:10px;
-    margin-top:14px;
-  }
-
-  .comment{
-    border-radius:14px;
-    padding:12px;
-    background:#111119;
-    border:1px solid rgba(255,255,255,.07);
-  }
-
-  .comment .who{
-    color:#ffcf9d;
-    font-weight:700;
-    font-size:13px;
-  }
-
-  .comment .when{
-    color:var(--muted);
-    font-size:12px;
-    margin-left:8px;
-  }
-
-  .footer{
-    max-width:1400px;
-    margin:30px auto 0;
-    padding:0 20px 30px;
-    color:var(--muted);
-    font-size:13px;
-  }
-
-  @media (max-width: 980px){
-    .hero-grid,
-    .control-bar,
-    .grid{
-      grid-template-columns:1fr;
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Top 250 Most-Viewed Official Music Videos | Spacebook</title>
+  <meta
+    name="description"
+    content="Top 250 most-viewed official music videos with YouTube thumbnails, search, embedded playback, and guest comments."
+  />
+  <style>
+    :root{
+      --bg:#050507;
+      --bg2:#09090d;
+      --panel:#111117;
+      --panel2:#181821;
+      --line:rgba(255,140,0,.18);
+      --text:#f5f5f7;
+      --muted:#a8a8b3;
+      --orange:#ff7a18;
+      --orange2:#ffb347;
+      --orange3:#ffd9b0;
+      --glow:0 0 18px rgba(255,122,24,.35), 0 0 44px rgba(255,122,24,.12);
+      --radius:18px;
+      --shadow:0 14px 40px rgba(0,0,0,.32);
     }
-    .hero h2{font-size:28px}
-  }
-</style>
+
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background:#000;
+      color:var(--text);
+      min-height:100vh;
+      overflow-x:hidden;
+    }
+
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      background-image:
+        linear-gradient(rgba(255,122,24,.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,122,24,.05) 1px, transparent 1px);
+      background-size:70px 70px;
+      mask-image:radial-gradient(circle at center, black 30%, transparent 88%);
+      opacity:.05;
+      z-index:-1;
+    }
+
+    a{color:inherit}
+    img{display:block;max-width:100%}
+
+    #starfield-canvas{
+      position:fixed;
+      inset:0;
+      z-index:-2;
+      pointer-events:none;
+      width:100%;
+      height:100%;
+    }
+
+    .topbar{
+      position:sticky;
+      top:0;
+      z-index:50;
+      backdrop-filter:blur(18px);
+      background:rgba(5,5,7,.72);
+      border-bottom:1px solid rgba(255,122,24,.18);
+    }
+
+    .topbar-inner{
+      max-width:1440px;
+      margin:0 auto;
+      padding:16px 20px;
+      display:flex;
+      gap:18px;
+      align-items:center;
+      justify-content:space-between;
+    }
+
+    .brand-wrap{
+      display:flex;
+      align-items:center;
+      gap:16px;
+      min-width:0;
+    }
+
+    .logo-link{
+      display:flex;
+      align-items:center;
+      flex-shrink:0;
+      text-decoration:none;
+    }
+
+    .logo-img{
+      width:154px;
+      height:auto;
+      object-fit:contain;
+      filter:drop-shadow(0 0 16px rgba(255,122,24,.18));
+    }
+
+    .brand{
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+      min-width:0;
+    }
+
+    .brand h1{
+      margin:0;
+      font-size:20px;
+      letter-spacing:.06em;
+      text-transform:uppercase;
+      color:#fff;
+      text-shadow:var(--glow);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .brand p{
+      margin:0;
+      color:var(--muted);
+      font-size:13px;
+    }
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:9px 12px;
+      border-radius:999px;
+      background:rgba(255,122,24,.08);
+      border:1px solid rgba(255,122,24,.15);
+      color:var(--orange3);
+      font-size:13px;
+      white-space:nowrap;
+    }
+
+    .hero{
+      max-width:1440px;
+      margin:24px auto 0;
+      padding:0 20px;
+    }
+
+    .hero-card{
+      border:1px solid rgba(255,122,24,.18);
+      background:linear-gradient(180deg, rgba(20,20,27,.94), rgba(12,12,16,.94));
+      border-radius:26px;
+      padding:24px;
+      box-shadow:0 20px 60px rgba(0,0,0,.35);
+    }
+
+    .hero-grid{
+      display:grid;
+      grid-template-columns:1.2fr .8fr;
+      gap:18px;
+      align-items:stretch;
+    }
+
+    .hero h2{
+      margin:0 0 10px;
+      font-size:36px;
+      line-height:1.04;
+      letter-spacing:-.03em;
+    }
+
+    .hero h2 span{
+      color:var(--orange2);
+      text-shadow:var(--glow);
+    }
+
+    .hero .lead{
+      color:#d0d0da;
+      margin:0 0 14px;
+      max-width:760px;
+      line-height:1.65;
+    }
+
+    .pill-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:14px;
+    }
+
+    .pill{
+      padding:10px 12px;
+      border-radius:999px;
+      background:rgba(255,122,24,.09);
+      border:1px solid rgba(255,122,24,.18);
+      color:#ffd7b0;
+      font-size:13px;
+    }
+
+    .stats{
+      display:grid;
+      grid-template-columns:repeat(2, minmax(0,1fr));
+      gap:12px;
+    }
+
+    .stat{
+      background:linear-gradient(180deg, rgba(255,122,24,.11), rgba(255,122,24,.04));
+      border:1px solid rgba(255,122,24,.15);
+      border-radius:18px;
+      padding:16px;
+    }
+
+    .stat .num{
+      font-size:24px;
+      font-weight:800;
+      color:#fff;
+    }
+
+    .stat .label{
+      color:var(--muted);
+      font-size:13px;
+      margin-top:4px;
+    }
+
+    .controls{
+      max-width:1440px;
+      margin:18px auto 0;
+      padding:0 20px;
+    }
+
+    .control-bar{
+      display:grid;
+      grid-template-columns:1.3fr .7fr .7fr .5fr;
+      gap:12px;
+      background:rgba(14,14,18,.88);
+      border:1px solid rgba(255,122,24,.16);
+      border-radius:20px;
+      padding:14px;
+      box-shadow:var(--shadow);
+    }
+
+    input, select, button, textarea{
+      font:inherit;
+    }
+
+    input, select, textarea{
+      width:100%;
+      background:#0b0b10;
+      color:var(--text);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:14px;
+      padding:14px;
+      outline:none;
+    }
+
+    input:focus, select:focus, textarea:focus{
+      border-color:rgba(255,122,24,.6);
+      box-shadow:0 0 0 3px rgba(255,122,24,.14);
+    }
+
+    .btn{
+      border:none;
+      cursor:pointer;
+      border-radius:12px;
+      padding:11px 13px;
+      color:#fff;
+      background:linear-gradient(180deg, rgba(255,122,24,.95), rgba(255,90,0,.92));
+      box-shadow:0 10px 20px rgba(255,122,24,.18);
+      transition:transform .15s ease, opacity .15s ease, border-color .15s ease;
+    }
+
+    .btn:hover{transform:translateY(-1px)}
+    .btn:disabled{opacity:.55;cursor:not-allowed;transform:none}
+
+    .btn.secondary{
+      background:#121219;
+      border:1px solid rgba(255,255,255,.08);
+      box-shadow:none;
+      color:#fff;
+    }
+
+    .btn.ghost{
+      background:transparent;
+      border:1px solid rgba(255,122,24,.22);
+      color:#ffcf9d;
+      box-shadow:none;
+    }
+
+    .main{
+      max-width:1440px;
+      margin:18px auto 0;
+      padding:0 20px 40px;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(2, minmax(0, 1fr));
+      gap:14px;
+    }
+
+    .song{
+      border-radius:22px;
+      background:linear-gradient(180deg, rgba(20,20,27,.96), rgba(10,10,14,.96));
+      border:1px solid rgba(255,122,24,.14);
+      padding:16px;
+      box-shadow:0 10px 36px rgba(0,0,0,.25);
+      transition:transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+      overflow:hidden;
+    }
+
+    .song:hover{
+      transform:translateY(-2px);
+      border-color:rgba(255,122,24,.38);
+      box-shadow:0 16px 42px rgba(0,0,0,.32), var(--glow);
+    }
+
+    .song-top{
+      display:flex;
+      gap:14px;
+      align-items:flex-start;
+    }
+
+    .rank{
+      min-width:56px;
+      width:56px;
+      height:56px;
+      border-radius:16px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:800;
+      color:#fff;
+      background:linear-gradient(180deg, rgba(255,122,24,.25), rgba(255,122,24,.06));
+      border:1px solid rgba(255,122,24,.2);
+      box-shadow:var(--glow);
+      flex-shrink:0;
+    }
+
+    .song-main{
+      display:flex;
+      gap:14px;
+      flex:1;
+      min-width:0;
+    }
+
+    .song-thumb-wrap{
+      width:172px;
+      min-width:172px;
+      aspect-ratio:16 / 9;
+      border-radius:16px;
+      overflow:hidden;
+      border:1px solid rgba(255,122,24,.18);
+      background:#09090c;
+      box-shadow:0 10px 22px rgba(0,0,0,.28);
+      position:relative;
+    }
+
+    .song-thumb{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+      background:#0c0c10;
+    }
+
+    .song-info{
+      flex:1;
+      min-width:0;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+    }
+
+    .title{
+      margin:0;
+      font-size:18px;
+      line-height:1.3;
+      letter-spacing:-.01em;
+    }
+
+    .title a{
+      color:#fff;
+      text-decoration:none;
+    }
+
+    .title a:hover{color:var(--orange2)}
+
+    .meta{
+      margin-top:8px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      color:var(--muted);
+      font-size:13px;
+    }
+
+    .song-actions{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:14px;
+    }
+
+    .empty{
+      margin-top:16px;
+      padding:18px;
+      border-radius:18px;
+      border:1px dashed rgba(255,122,24,.25);
+      color:var(--muted);
+      text-align:center;
+      display:none;
+    }
+
+    .drawer-overlay{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.72);
+      backdrop-filter:blur(10px);
+      display:none;
+      z-index:100;
+    }
+
+    .drawer{
+      position:fixed;
+      top:0;
+      right:0;
+      width:min(560px, 100%);
+      height:100%;
+      background:linear-gradient(180deg, #0c0c11, #060608);
+      border-left:1px solid rgba(255,122,24,.18);
+      box-shadow:-20px 0 60px rgba(0,0,0,.45);
+      transform:translateX(100%);
+      transition:transform .22s ease;
+      z-index:101;
+      display:flex;
+      flex-direction:column;
+    }
+
+    .drawer.open{transform:translateX(0)}
+    .drawer-overlay.open{display:block}
+
+    .drawer-head{
+      padding:18px;
+      border-bottom:1px solid rgba(255,122,24,.16);
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:12px;
+    }
+
+    .drawer-head h3{
+      margin:0;
+      font-size:20px;
+      line-height:1.25;
+    }
+
+    .drawer-body{
+      padding:18px;
+      overflow:auto;
+    }
+
+    .video{
+      width:100%;
+      aspect-ratio:16/9;
+      border:0;
+      border-radius:18px;
+      background:#000;
+      box-shadow:var(--glow);
+    }
+
+    .comment-box{
+      margin-top:18px;
+      padding:16px;
+      border-radius:18px;
+      border:1px solid rgba(255,122,24,.14);
+      background:rgba(255,255,255,.02);
+    }
+
+    .comment-list{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      margin-top:14px;
+    }
+
+    .comment{
+      border-radius:14px;
+      padding:12px;
+      background:#111119;
+      border:1px solid rgba(255,255,255,.07);
+    }
+
+    .comment .who{
+      color:#ffcf9d;
+      font-weight:700;
+      font-size:13px;
+    }
+
+    .comment .when{
+      color:var(--muted);
+      font-size:12px;
+      margin-left:8px;
+    }
+
+    .footer{
+      max-width:1440px;
+      margin:30px auto 0;
+      padding:0 20px 30px;
+      color:var(--muted);
+      font-size:13px;
+    }
+
+    @media (max-width:1100px){
+      .grid{grid-template-columns:1fr}
+      .hero-grid,.control-bar{grid-template-columns:1fr}
+    }
+
+    @media (max-width:760px){
+      .topbar-inner{
+        flex-direction:column;
+        align-items:flex-start;
+      }
+
+      .brand-wrap{
+        width:100%;
+        flex-direction:column;
+        align-items:flex-start;
+      }
+
+      .logo-img{
+        width:132px;
+      }
+
+      .song-main{
+        flex-direction:column;
+      }
+
+      .song-thumb-wrap{
+        width:100%;
+        min-width:0;
+      }
+
+      .hero h2{
+        font-size:29px;
+      }
+
+      .stats{
+        grid-template-columns:1fr 1fr;
+      }
+    }
+
+    @media (max-width:520px){
+      .stats{grid-template-columns:1fr}
+      .song-top{flex-direction:column}
+      .rank{min-width:48px;width:48px;height:48px}
+    }
+  </style>
 </head>
-
 <body>
-<div class="topbar">
-  <div class="topbar-inner">
-    <div class="brand">
-      <h1>Spacebook Music Hub</h1>
-      <p>Music chart with interactive songs, comments, and video playback</p>
-    </div>
-    <div class="badge">Top 250 Official Music Videos</div>
-  </div>
-</div>
+  <canvas id="starfield-canvas"></canvas>
 
-<section class="hero">
-  <div class="hero-card">
-    <div class="hero-grid">
-      <div>
-        <h2>Explore the <span>Top 250</span> with a cleaner, more cinematic look.</h2>
-        <p class="lead">
-          Search fast, open any song, play the embedded video, and jump straight into song-specific comments.
-          The layout is designed to feel more like a sleek futuristic social app than a plain list.
-        </p>
-        
-         
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand-wrap">
+        <a class="logo-link" href="https://spacebook.world/" target="_blank" rel="noopener noreferrer">
+          <img
+            class="logo-img"
+            src="https://spacebook.world/SPACEBOOK-WORLD-LOGO.png"
+            alt="Spacebook logo"
+            loading="eager"
+          />
+        </a>
+
+        <div class="brand">
+          <h1>Top 250 Official Music Videos</h1>
+          <p>Search, thumbnails, embedded playback, and guest comments</p>
         </div>
       </div>
-      <div class="stats">
-        <div class="stat"><div class="num">250</div><div class="label">Songs in the chart</div></div>
-        <div class="stat"><div class="num" id="shownCount">0</div><div class="label">Currently shown</div></div>
-        <div class="stat"><div class="num">1</div><div class="label">Click to open details</div></div>
-        <div class="stat"><div class="num">∞</div><div class="label">Local comments per song</div></div>
-      </div>
+
+      <div class="badge">Spacebook Music Hub</div>
     </div>
   </div>
-</section>
 
-<section class="controls">
-  <div class="control-bar">
-    <input id="search" placeholder="Search by song or artist">
-    <select id="sort">
-      <option value="rank">Sort by rank</option>
-      <option value="views">Sort by views</option>
-      <option value="title">Sort by title</option>
-    </select>
-    <select id="filter">
-      <option value="all">All songs</option>
-      <option value="withVideo">Has video id</option>
-      <option value="withoutVideo">No video id</option>
-    </select>
-    <button class="btn" id="reset">Reset</button>
-  </div>
-</section>
+  <section class="hero">
+    <div class="hero-card">
+      <div class="hero-grid">
+        <div>
+          <h2>Explore the <span>Top 250</span> with search, thumbnails, video playback, and comments.</h2>
+          <p class="lead">
+            Browse the filtered list of official music videos, open any song in a side panel, watch the embedded YouTube video, and leave a guest comment without clutter like that fake clear-comments button.
+          </p>
+          <div class="pill-row">
+            <div class="pill">YouTube thumbnails on every song</div>
+            <div class="pill">Embedded playback drawer</div>
+            <div class="pill">Guest comments per song</div>
+            <div class="pill">Spacebook branding + link</div>
+          </div>
+        </div>
 
-<main class="main">
-  <div class="grid" id="songGrid"></div>
-  <div class="empty" id="emptyState" style="display:none;">No songs match your search.</div>
-</main>
-
-<div class="drawer-overlay" id="overlay"></div>
-<aside class="drawer" id="drawer" aria-hidden="true">
-  <div class="drawer-head">
-    <div>
-      <h3 id="drawerTitle">Song</h3>
-      <div class="meta" id="drawerMeta"></div>
+        <div class="stats">
+          <div class="stat">
+            <div class="num">250</div>
+            <div class="label">Songs in the chart</div>
+          </div>
+          <div class="stat">
+            <div class="num" id="shownCount">0</div>
+            <div class="label">Currently shown</div>
+          </div>
+          <div class="stat">
+            <div class="num">16:9</div>
+            <div class="label">Thumbnail preview format</div>
+          </div>
+          <div class="stat">
+            <div class="num">Live</div>
+            <div class="label">Search and sort controls</div>
+          </div>
+        </div>
+      </div>
     </div>
-    <button class="btn secondary" id="closeDrawer">Close</button>
-  </div>
-  <div class="drawer-body">
-    <iframe class="video" id="videoFrame" src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+  </section>
 
-    <div class="comment-box">
-      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;">
-        <strong>Comments</strong>
-        <span style="color:var(--muted);font-size:13px;">Stored locally in this browser</span>
-      </div>
-
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;">
-        <input id="commentName" placeholder="Name">
-        <button class="btn ghost" id="clearSongComments">Clear comments</button>
-      </div>
-
-      <textarea id="commentText" placeholder="Write a comment about this song" style="margin-top:10px;height:110px;"></textarea>
-      <div style="display:flex;gap:10px;margin-top:10px;align-items:center;">
-        <button class="btn" id="postComment">Post comment</button>
-        <button class="btn secondary" id="openYoutube">Open YouTube</button>
-      </div>
-
-      <div class="comment-list" id="commentList"></div>
+  <section class="controls">
+    <div class="control-bar">
+      <input id="search" placeholder="Search by song, artist, or rank" />
+      <select id="sort">
+        <option value="rank">Sort by rank</option>
+        <option value="views">Sort by views</option>
+        <option value="title">Sort by title</option>
+      </select>
+      <select id="filter">
+        <option value="all">All songs</option>
+        <option value="withVideo">Has video id</option>
+        <option value="withoutVideo">No video id</option>
+      </select>
+      <button class="btn" id="reset">Reset</button>
     </div>
+  </section>
+
+  <main class="main">
+    <div class="grid" id="songGrid"></div>
+    <div class="empty" id="emptyState">No songs match your search.</div>
+  </main>
+
+  <div class="drawer-overlay" id="overlay"></div>
+
+  <aside class="drawer" id="drawer" aria-hidden="true">
+    <div class="drawer-head">
+      <div>
+        <h3 id="drawerTitle">Song</h3>
+        <div class="meta" id="drawerMeta"></div>
+      </div>
+      <button class="btn secondary" id="closeDrawer">Close</button>
+    </div>
+
+    <div class="drawer-body">
+      <iframe
+        class="video"
+        id="videoFrame"
+        src=""
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen
+      ></iframe>
+
+      <div class="comment-box">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;">
+          <strong>Comments</strong>
+          <span style="color:var(--muted);font-size:13px;">Guest comments stored on the Spacebook backend</span>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr;gap:10px;margin-top:12px;">
+          <input id="commentName" placeholder="Name" />
+        </div>
+
+        <textarea id="commentText" placeholder="Write a comment about this song" style="margin-top:10px;height:110px;"></textarea>
+
+        <div style="display:flex;gap:10px;margin-top:10px;align-items:center;flex-wrap:wrap;">
+          <button class="btn" id="postComment">Post comment</button>
+          <button class="btn secondary" id="openYoutube">Open YouTube</button>
+        </div>
+
+        <div class="comment-list" id="commentList"></div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="footer">
+    <div>Tip: click any song card to open the video drawer and comment thread.</div>
   </div>
-</aside>
 
-<div class="footer">
-  <div>Tip: click any song to open the video and its dedicated comment section.</div>
-</div>
+  <script>
+    const songs = [
+      {rank:1,title:"Despacito",artist:"Luis Fonsi ft. Daddy Yankee",views:"9.0B",video:"ktvTqknDobU"},
+      {rank:2,title:"See You Again",artist:"Wiz Khalifa ft. Charlie Puth",views:"7.0B",video:"RgKAFK5djSk"},
+      {rank:3,title:"Shape of You",artist:"Ed Sheeran",views:"6.7B",video:"JGwWNGJdvx8"},
+      {rank:4,title:"GANGNAM STYLE",artist:"PSY",views:"5.9B",video:"9bZkp7q19f0"},
+      {rank:5,title:"Axel F",artist:"Crazy Frog",views:"5.9B",video:"k85mRPqvMbE"},
+      {rank:6,title:"Uptown Funk",artist:"Mark Ronson ft. Bruno Mars",views:"5.8B",video:"OPf0YbXqDm0"},
+      {rank:7,title:"Dame Tu Cosita",artist:"El Chombo ft. Cutty Ranks",views:"5.5B",video:"El_jCKqz5-k"},
+      {rank:8,title:"Waka Waka",artist:"Shakira",views:"4.5B",video:"pRpeEdMmmQ0"},
+      {rank:9,title:"Counting Stars",artist:"OneRepublic",views:"4.4B",video:"hT_nvWreIhg"},
+      {rank:10,title:"Sugar",artist:"Maroon 5",views:"4.4B",video:"09R8_2nJtjg"},
+      {rank:11,title:"Roar",artist:"Katy Perry",views:"4.3B",video:"CevxZvSJLk8"},
+      {rank:12,title:"Dark Horse",artist:"Katy Perry ft. Juicy J",views:"4.2B",video:"0KSOMA3QBU0"},
+      {rank:13,title:"Perfect",artist:"Ed Sheeran",views:"4.2B",video:"2Vv-BfVoq4g"},
+      {rank:14,title:"Sorry",artist:"Justin Bieber",views:"4.1B",video:"fRh_vgS2dFE"},
+      {rank:15,title:"Let Her Go",artist:"Passenger",views:"4.1B",video:"RBumgq5yVrA"},
+      {rank:16,title:"Girls Like You",artist:"Maroon 5 ft. Cardi B",views:"4.0B",video:"aJOTlE1K90k"},
+      {rank:17,title:"Thinking Out Loud",artist:"Ed Sheeran",views:"4.0B",video:"lp-EO5I60KA"},
+      {rank:18,title:"Faded",artist:"Alan Walker",views:"4.0B",video:"60ItHLz5WEA"},
+      {rank:19,title:"Lean On",artist:"Major Lazer, DJ Snake ft. MØ",views:"3.9B",video:"YqeW9_5kURI"},
+      {rank:20,title:"Bailando",artist:"Enrique Iglesias ft. Descemer Bueno, Gente De Zona",views:"3.8B",video:"NUsoVlDFqZg"},
+      {rank:21,title:"Blank Space",artist:"Taylor Swift",views:"3.8B",video:"e-ORhEE9VVg"},
+      {rank:22,title:"Shake It Off",artist:"Taylor Swift",views:"3.7B",video:"nfWlot6h_JM"},
+      {rank:23,title:"Let It Go",artist:"Idina Menzel",views:"3.7B",video:"moSFlvxnbgk"},
+      {rank:24,title:"Mi Gente",artist:"J Balvin, Willy William",views:"3.6B",video:"wnJ6LuUFpMo"},
+      {rank:25,title:"Baby",artist:"Justin Bieber ft. Ludacris",views:"3.6B",video:"kffacxfA7G4"},
+      {rank:26,title:"We Don't Talk Anymore",artist:"Charlie Puth ft. Selena Gomez",views:"3.5B",video:"GCFnKpPuXFQ"},
+      {rank:27,title:"New Rules",artist:"Dua Lipa",views:"3.3B",video:"k2qgadSvNyU"},
+      {rank:28,title:"Hello",artist:"Adele",views:"3.3B",video:"YQHsXMglC9A"},
+      {rank:29,title:"The Lazy Song",artist:"Bruno Mars",views:"3.2B",video:"fLexgOxsZu0"},
+      {rank:30,title:"Stressed Out",artist:"twenty one pilots",views:"3.2B",video:"pXRviuL6vMY"},
+      {rank:31,title:"Rockabye",artist:"Clean Bandit ft. Sean Paul, Anne-Marie",views:"3.2B",video:"KRaWnd3LJfs"},
+      {rank:32,title:"Chantaje",artist:"Shakira ft. Maluma",views:"3.2B",video:"e3-5YC_oHjE"},
+      {rank:33,title:"Con Calma",artist:"Daddy Yankee, Snow",views:"3.2B",video:"I2n3lGJCjcQ"},
+      {rank:34,title:"Calma Remix",artist:"Pedro Capó, Farruko",views:"3.1B",video:"lqkEsIqcXQ4"},
+      {rank:35,title:"Love The Way You Lie",artist:"Eminem ft. Rihanna",views:"3.1B",video:"uelHwf8o7_U"},
+      {rank:36,title:"Work from Home",artist:"Fifth Harmony ft. Ty Dolla $ign",views:"3.1B",video:"5GL9JoH4Sws"},
+      {rank:37,title:"Believer",artist:"Imagine Dragons",views:"3.0B",video:"7wtfhZwyrcc"},
+      {rank:38,title:"Sunflower",artist:"Post Malone, Swae Lee",views:"3.0B",video:"ApXoWvfEYVU"},
+      {rank:39,title:"This Is What You Came For",artist:"Calvin Harris ft. Rihanna",views:"2.9B",video:"kOkQ4T5WO9E"},
+      {rank:40,title:"Chandelier",artist:"Sia",views:"2.9B",video:"2vjPBrBU-TM"},
+      {rank:41,title:"Rolling in the Deep",artist:"Adele",views:"2.9B",video:"rYEDA3JcQqw"},
+      {rank:42,title:"Criminal",artist:"Natti Natasha, Ozuna",views:"2.8B",video:"gBKOAJCLPiU"},
+      {rank:43,title:"On The Floor",artist:"Jennifer Lopez ft. Pitbull",views:"2.8B",video:"t4H_Zoh7G5A"},
+      {rank:44,title:"A Thousand Years",artist:"Christina Perri",views:"2.8B",video:"rtOvBOTyX00"},
+      {rank:45,title:"Taki Taki",artist:"DJ Snake ft. Selena Gomez, Ozuna, Cardi B",views:"2.8B",video:"ixkoVwKQaJg"},
+      {rank:46,title:"Starboy",artist:"The Weeknd ft. Daft Punk",views:"2.7B",video:"34Na4j8AVgA"},
+      {rank:47,title:"Treat You Better",artist:"Shawn Mendes",views:"2.7B",video:"lY2yjAdbvdQ"},
+      {rank:48,title:"Alone",artist:"Marshmello",views:"2.7B",video:"1-xGerv5FOk"},
+      {rank:49,title:"Numb",artist:"Linkin Park",views:"2.7B",video:"kXYiU_JCYtU"},
+      {rank:50,title:"All About That Bass",artist:"Meghan Trainor",views:"2.7B",video:"7PCkvCPvDXk"},
+      {rank:51,title:"All of Me",artist:"John Legend",views:"2.7B",video:"450p7goxZqg"},
+      {rank:52,title:"In Da Club",artist:"50 Cent",views:"2.7B",video:"5qm8PH4xAss"},
+      {rank:53,title:"Rude",artist:"MAGIC!",views:"2.7B",video:"GnlS0hGgEuA"},
+      {rank:54,title:"Mayores",artist:"Becky G ft. Bad Bunny",views:"2.7B",video:"b7tVGQS7x3Q"},
+      {rank:55,title:"Somebody That I Used To Know",artist:"Gotye ft. Kimbra",views:"2.6B",video:"8UVNT4wvIGY"},
+      {rank:56,title:"No Me Conoce Remix",artist:"Jhay Cortez, J. Balvin, Bad Bunny",views:"2.6B",video:"6rR4SkBxK-M"},
+      {rank:57,title:"Te Bote Remix",artist:"Casper, Nio García, Darell, Nicky Jam, Bad Bunny, Ozuna",views:"2.6B",video:"4V0EZWP7vCo"},
+      {rank:58,title:"Diamonds",artist:"Rihanna",views:"2.6B",video:"lWA2pjMjpBs"},
+      {rank:59,title:"Party Rock Anthem",artist:"LMFAO ft. Lauren Bennett, GoonRock",views:"2.6B",video:"KQ6zr6kCPj8"},
+      {rank:60,title:"That's What I Like",artist:"Bruno Mars",views:"2.5B",video:"PMivT7MJ41M"},
+      {rank:61,title:"Wake Me Up",artist:"Avicii",views:"2.5B",video:"IcrbM1l_BoI"},
+      {rank:62,title:"Échame La Culpa",artist:"Luis Fonsi, Demi Lovato",views:"2.5B",video:"mMN_GBPsRt4"},
+      {rank:63,title:"Someone Like You",artist:"Adele",views:"2.5B",video:"hLQl3WQQoQ0"},
+      {rank:64,title:"APT.",artist:"ROSÉ, Bruno Mars",views:"2.5B",video:"ekr2nIex040"},
+      {rank:65,title:"Worth It",artist:"Fifth Harmony ft. Kid Ink",views:"2.4B",video:"i44nEOGEMcY"},
+      {rank:66,title:"November Rain",artist:"Guns N' Roses",views:"2.4B",video:"8SbUC-UaAxE"},
+      {rank:67,title:"Side To Side",artist:"Ariana Grande ft. Nicki Minaj",views:"2.4B",video:"SXiSVQZLje8"},
+      {rank:68,title:"lovely",artist:"Billie Eilish, Khalid",views:"2.4B",video:"V1Pl8CzNzCw"},
+      {rank:69,title:"Take On Me",artist:"a-ha",views:"2.4B",video:"djV11Xbc914"},
+      {rank:70,title:"Love Me Like You Do",artist:"Ellie Goulding",views:"2.4B",video:"AJtDXIazrMo"},
+      {rank:71,title:"Without Me",artist:"Eminem",views:"2.4B",video:"YVkUvmDQ3HY"},
+      {rank:72,title:"Thunder",artist:"Imagine Dragons",views:"2.4B",video:"fKopy74weus"},
+      {rank:73,title:"Dusk Till Dawn",artist:"ZAYN ft. Sia",views:"2.4B",video:"tt2k8PNm-8o"},
+      {rank:74,title:"Propuesta Indecente",artist:"Romeo Santos",views:"2.4B",video:"_4Wj_KnVqFk"},
+      {rank:75,title:"DDU-DU DDU-DU",artist:"BLACKPINK",views:"2.4B",video:"IHNzOHi8sJs"},
+      {rank:76,title:"Heathens",artist:"twenty one pilots",views:"2.4B",video:"HelZx9EKlMY"},
+      {rank:77,title:"X (EQUIS)",artist:"Nicky Jam, J. Balvin",views:"2.3B",video:"3GnDYDFdCOM"},
+      {rank:78,title:"China",artist:"Anuel AA, Daddy Yankee, Karol G, Ozuna, J Balvin",views:"2.3B",video:"7S3sB2AnAoE"},
+      {rank:79,title:"Sin Pijama",artist:"Becky G, NATTI NATASHA",views:"2.3B",video:"C9pF2oKYXBQ"},
+      {rank:80,title:"What Do You Mean?",artist:"Justin Bieber",views:"2.3B",video:"DK_0jXPuIr0"},
+      {rank:81,title:"Don't Let Me Down",artist:"The Chainsmokers ft. Daya",views:"2.3B",video:"Io0fBr1XBUA"},
+      {rank:82,title:"The Hills",artist:"The Weeknd",views:"2.3B",video:"yzTuBuRdAyA"},
+      {rank:83,title:"DANCE MONKEY",artist:"TONES AND I",views:"2.3B",video:"q0hyYWKXF0Q"},
+      {rank:84,title:"Con Altura",artist:"ROSALÍA, J Balvin ft. El Guincho",views:"2.3B",video:"aqsNhJFjOvo"},
+      {rank:85,title:"Déjala Que Vuelva",artist:"Piso 21, Manuel Turizo",views:"2.3B",video:"2DGlFNzm7ZM"},
+      {rank:86,title:"Life Is Good",artist:"Future ft. Drake",views:"2.3B",video:"7The6dMBNEE"},
+      {rank:87,title:"In The End",artist:"Linkin Park",views:"2.3B",video:"eVTXPUF4Oz4"},
+      {rank:88,title:"Human",artist:"Rag'n'Bone Man",views:"2.2B",video:"L3wKzyIN1yk"},
+      {rank:89,title:"Ay Vamos",artist:"J. Balvin",views:"2.2B",video:"Tq4BErTQvPo"},
+      {rank:90,title:"Kill This Love",artist:"BLACKPINK",views:"2.2B",video:"2S24-y0Ij3Y"},
+      {rank:91,title:"Smells Like Teen Spirit",artist:"Nirvana",views:"2.2B",video:"hTWKbfoikeg"},
+      {rank:92,title:"What's Up",artist:"4 Non Blondes",views:"2.2B",video:"6NXnxTNIWkc"},
+      {rank:93,title:"Just The Way You Are",artist:"Bruno Mars",views:"2.2B",video:"LjhCEhWiKXk"},
+      {rank:94,title:"Titanium",artist:"David Guetta ft. Sia",views:"2.1B",video:"JRfuAukYTKg"},
+      {rank:95,title:"Save Your Tears",artist:"The Weeknd",views:"2.1B",video:"LIIDh-qI9oI"},
+      {rank:96,title:"Hotline Bling",artist:"Drake",views:"2.1B",video:"uxpDa-c-4Mc"},
+      {rank:97,title:"Billie Jean",artist:"Michael Jackson",views:"2.1B",video:"Zi_XLOBDo_Y"},
+      {rank:98,title:"Bang Bang",artist:"Jessie J, Ariana Grande, Nicki Minaj",views:"2.1B",video:"0HDdjwpPM3Y"},
+      {rank:99,title:"Dura",artist:"Daddy Yankee",views:"2.1B",video:"PXdh0wSMFSM"},
+      {rank:100,title:"Dynamite",artist:"BTS",views:"2.1B",video:"gdZLi9oWNZg"},
+      {rank:101,title:"Una Lady Como Tú",artist:"Manuel Turizo",views:"2.1B",video:"7_VYFrjVhHA"},
+      {rank:102,title:"Not Afraid",artist:"Eminem",views:"2.1B",video:"j5-yKhDd64s"},
+      {rank:103,title:"El Farsante Remix",artist:"Ozuna, Romeo Santos",views:"2.1B",video:"V5P3OlANDgQ"},
+      {rank:104,title:"Paradise",artist:"Coldplay",views:"2.1B",video:"e9XDh2DzrOE"},
+      {rank:105,title:"Bohemian Rhapsody",artist:"Queen",views:"2.1B",video:"fJ9rUzIMcZQ"},
+      {rank:106,title:"Bad Romance",artist:"Lady Gaga",views:"2.0B",video:"qrO4YZeyl0I"},
+      {rank:107,title:"Just Give Me A Reason",artist:"P!nk ft. Nate Ruess",views:"2.0B",video:"OpQFFLBMEPI"},
+      {rank:108,title:"Gangsta's Paradise",artist:"Coolio ft. L.V.",views:"2.0B",video:"fPO76Jlnz6c"},
+      {rank:109,title:"Let Me Love You",artist:"DJ Snake ft. Justin Bieber",views:"2.0B",video:"FG1NrQYXjLU"},
+      {rank:110,title:"Señorita",artist:"Shawn Mendes, Camila Cabello",views:"2.0B",video:"Pkh8UtuejGw"},
+      {rank:111,title:"CAN'T STOP THE FEELING!",artist:"Justin Timberlake",views:"2.0B",video:"ru0K8uYEZWw"},
+      {rank:112,title:"Andas En Mi Cabeza",artist:"Chino y Nacho ft. Daddy Yankee",views:"2.0B",video:"jZOywn1qArI"},
+      {rank:113,title:"Sweet Child O' Mine",artist:"Guns N' Roses",views:"1.9B",video:"1w7OgIMMRc4"},
+      {rank:114,title:"Boy With Luv",artist:"BTS ft. Halsey",views:"1.9B",video:"XsX3ATc3FbA"},
+      {rank:115,title:"Unforgettable",artist:"French Montana ft. Swae Lee",views:"1.9B",video:"OVjOICTH54I"},
+      {rank:116,title:"Se Preparó",artist:"Ozuna",views:"1.9B",video:"TODHCRTeLVM"},
+      {rank:117,title:"I'm The One",artist:"DJ Khaled ft. Justin Bieber, Quavo, Chance the Rapper, Lil Wayne",views:"1.9B",video:"weeI1G46q0o"},
+      {rank:118,title:"I Will Always Love You",artist:"Whitney Houston",views:"1.9B",video:"3JWTaaS7LdU"},
+      {rank:119,title:"BOOMBAYAH",artist:"BLACKPINK",views:"1.9B",video:"bwmSjveL3Lc"},
+      {rank:120,title:"Do I Wanna Know?",artist:"Arctic Monkeys",views:"1.9B",video:"bpOSxM0rNPM"},
+      {rank:121,title:"Swalla",artist:"Jason Derulo ft. Nicki Minaj, Ty Dolla $ign",views:"1.9B",video:"TYMMOjBUPMM"},
+      {rank:122,title:"Animals",artist:"Martin Garrix",views:"1.9B",video:"gCYcHz2k5x0"},
+      {rank:123,title:"Say You Won't Let Go",artist:"James Arthur",views:"1.9B",video:"0yW7w8F2TVA"},
+      {rank:124,title:"Shallow",artist:"Lady Gaga, Bradley Cooper",views:"1.9B",video:"bo_efYhYU2A"},
+      {rank:125,title:"Call Me Maybe",artist:"Carly Rae Jepsen",views:"1.8B",video:"fWNaR-rxAic"},
+      {rank:126,title:"Zombie",artist:"The Cranberries",views:"1.8B",video:"6Ejga4kJUts"},
+      {rank:127,title:"Love Yourself",artist:"Justin Bieber",views:"1.8B",video:"oyEuk8j8imI"},
+      {rank:128,title:"Dilemma",artist:"Nelly ft. Kelly Rowland",views:"1.8B",video:"QV5_MFWJMEM"},
+      {rank:129,title:"Hips Don't Lie",artist:"Shakira ft. Wyclef Jean",views:"1.8B",video:"DUT5rEU6pqM"},
+      {rank:130,title:"Halo",artist:"Beyoncé",views:"1.8B",video:"bnVUHWCynig"},
+      {rank:131,title:"La Bicicleta",artist:"Carlos Vives, Shakira",views:"1.8B",video:"kDHhlLV6sGM"},
+      {rank:132,title:"24K Magic",artist:"Bruno Mars",views:"1.8B",video:"UqyT8IEBkvY"},
+      {rank:133,title:"Escápate Conmigo",artist:"Wisin ft. Ozuna",views:"1.8B",video:"7UCiNgaVbKc"},
+      {rank:134,title:"Attention",artist:"Charlie Puth",views:"1.8B",video:"nfs8NYg7yQM"},
+      {rank:135,title:"Taste",artist:"Tyga ft. Offset",views:"1.8B",video:"wgkna3pSoZo"},
+      {rank:136,title:"Shaky Shaky",artist:"Daddy Yankee",views:"1.8B",video:"l1OHkqH1cKI"},
+      {rank:137,title:"Summer",artist:"Calvin Harris",views:"1.8B",video:"ebXbLfLACGM"},
+      {rank:138,title:"I'm Not The Only One",artist:"Sam Smith",views:"1.8B",video:"nCkpzqqog4k"},
+      {rank:139,title:"Never Gonna Give You Up",artist:"Rick Astley",views:"1.8B",video:"dQw4w9WgXcQ"},
+      {rank:140,title:"7 Years",artist:"Lukas Graham",views:"1.8B",video:"LHCob76kigA"},
+      {rank:141,title:"Corazón",artist:"Maluma ft. Nego do Borel",views:"1.8B",video:"gJubXxJCiCk"},
+      {rank:142,title:"Si Se Da Remix",artist:"Myke Towers, Farruko, Arcangel, Sech, Zion",views:"1.8B",video:"k-mFkNFJ2BM"},
+      {rank:143,title:"DÁKITI",artist:"Bad Bunny, Jhay Cortez",views:"1.7B",video:"cVnggZajovI"},
+      {rank:144,title:"I Want It That Way",artist:"Backstreet Boys",views:"1.7B",video:"4fndeDfaWCg"},
+      {rank:145,title:"You Belong With Me",artist:"Taylor Swift",views:"1.7B",video:"VuNIsY6JdUw"},
+      {rank:146,title:"La Gozadera",artist:"Gente de Zona ft. Marc Anthony",views:"1.7B",video:"0-EF60neguk"},
+      {rank:147,title:"GENTLEMAN",artist:"PSY",views:"1.7B",video:"ASO_zypdnsQ"},
+      {rank:148,title:"I Like It",artist:"Cardi B, Bad Bunny, J Balvin",views:"1.7B",video:"HoAJ3MZbWZg"},
+      {rank:149,title:"Adventure Of A Lifetime",artist:"Coldplay",views:"1.7B",video:"QtDmMFBiDaI"},
+      {rank:150,title:"Poker Face",artist:"Lady Gaga",views:"1.7B",video:"bESGLojNYSo"},
+      {rank:151,title:"Hey Mama",artist:"David Guetta ft. Nicki Minaj, Bebe Rexha, Afrojack",views:"1.7B",video:"3OnnDqH6Wj8"},
+      {rank:152,title:"Thunderstruck",artist:"AC/DC",views:"1.7B",video:"v2AC41dglnM"},
+      {rank:153,title:"Bring Me To Life",artist:"Evanescence ft. Paul McCoy",views:"1.7B",video:"3YxaaGgTQYM"},
+      {rank:154,title:"Congratulations",artist:"Post Malone ft. Quavo",views:"1.7B",video:"SC4xMk98Pdc"},
+      {rank:155,title:"Stitches",artist:"Shawn Mendes",views:"1.7B",video:"VbfpW0pbvaU"},
+      {rank:156,title:"Still D.R.E.",artist:"Dr. Dre ft. Snoop Dogg",views:"1.7B",video:"QZG3cxCy3E4"},
+      {rank:157,title:"Barbie Girl",artist:"Aqua",views:"1.7B",video:"ZyhrYis509A"},
+      {rank:158,title:"How Deep Is Your Love",artist:"Calvin Harris, Disciples",views:"1.7B",video:"VsB5TYBCkZI"},
+      {rank:159,title:"What Makes You Beautiful",artist:"One Direction",views:"1.7B",video:"QJO3ROT-A4E"},
+      {rank:160,title:"Danza Kuduro",artist:"Don Omar ft. Lucenzo",views:"1.7B",video:"7zij6ZdOHKQ"},
+      {rank:161,title:"God's Plan",artist:"Drake",views:"1.7B",video:"xpVfcZ0ZcFM"},
+      {rank:162,title:"Secreto",artist:"Anuel AA, KAROL G",views:"1.7B",video:"TnhAHWKBFKc"},
+      {rank:163,title:"Girls Just Want To Have Fun",artist:"Cyndi Lauper",views:"1.7B",video:"PIb6AZdTr-A"},
+      {rank:164,title:"MIA",artist:"Bad Bunny, Drake",views:"1.7B",video:"Nt4A8S6bS5s"},
+      {rank:165,title:"Hasta el Amanecer",artist:"Nicky Jam",views:"1.7B",video:"CkMNzRpuPuM"},
+      {rank:166,title:"Bad Blood",artist:"Taylor Swift ft. Kendrick Lamar",views:"1.7B",video:"QcIy9NiNbmo"},
+      {rank:167,title:"Die With A Smile",artist:"Lady Gaga, Bruno Mars",views:"1.7B",video:"kPa7bsKwL-c"},
+      {rank:168,title:"Adiós Amor",artist:"Christian Nodal",views:"1.7B",video:"rFjGFPHNqQk"},
+      {rank:169,title:"Every Breath You Take",artist:"The Police",views:"1.7B",video:"OMOGaugKpzs"},
+      {rank:170,title:"Burn",artist:"Ellie Goulding",views:"1.7B",video:"CGyEd0aKWZE"},
+      {rank:171,title:"Ride",artist:"twenty one pilots",views:"1.7B",video:"Pw-0pbY9JeU"},
+      {rank:172,title:"DNA",artist:"BTS",views:"1.7B",video:"MBdVXkSdhwU"},
+      {rank:173,title:"BEBE",artist:"6ix9ine ft. Anuel AA",views:"1.6B",video:"yJg-Y5byMMw"},
+      {rank:174,title:"TUSA",artist:"KAROL G, Nicki Minaj",views:"1.6B",video:"E7dJBGjd7C8"},
+      {rank:175,title:"Nothing Else Matters",artist:"Metallica",views:"1.6B",video:"tAGnKpE4NCI"},
+      {rank:176,title:"No Me Acuerdo",artist:"Thalía, NATTI NATASHA",views:"1.6B",video:"hgqGi3Nm4BE"},
+      {rank:177,title:"Smack That",artist:"Akon ft. Eminem",views:"1.6B",video:"C6QInSEBCGs"},
+      {rank:178,title:"Darte un Beso",artist:"Prince Royce",views:"1.6B",video:"kfYvvzGEWJ4"},
+      {rank:179,title:"SUBEME LA RADIO",artist:"Enrique Iglesias ft. Descemer Bueno, Zion & Lennox",views:"1.6B",video:"9801DgM4Qo4"},
+      {rank:180,title:"It's My Life",artist:"Bon Jovi",views:"1.6B",video:"vx2u5uUu3DE"},
+      {rank:181,title:"Timber",artist:"Pitbull ft. Ke$ha",views:"1.6B",video:"hHUbLv4ThOo"},
+      {rank:182,title:"7 rings",artist:"Ariana Grande",views:"1.6B",video:"QYh6mYIJG2Y"},
+      {rank:183,title:"Last Friday Night (T.G.I.F.)",artist:"Katy Perry",views:"1.6B",video:"KlyXNRrsk4A"},
+      {rank:184,title:"Too Good At Goodbyes",artist:"Sam Smith",views:"1.6B",video:"J_ub7Etch2A"},
+      {rank:185,title:"Look What You Made Me Do",artist:"Taylor Swift",views:"1.6B",video:"3tmd-ClpJxA"},
+      {rank:186,title:"Firework",artist:"Katy Perry",views:"1.6B",video:"QGJuMBdaqIw"},
+      {rank:187,title:"Rap God",artist:"Eminem",views:"1.6B",video:"XbGs_qK2PQA"},
+      {rank:188,title:"Radioactive",artist:"Imagine Dragons",views:"1.6B",video:"ktvTqknDobU"},
+      {rank:189,title:"Chop Suey!",artist:"System Of A Down",views:"1.6B",video:"CSvFpBOe8eY"},
+      {rank:190,title:"Loyal",artist:"Chris Brown ft. Lil Wayne, Tyga",views:"1.6B",video:"no_Ra8GnxoE"},
+      {rank:191,title:"Careless Whisper",artist:"George Michael",views:"1.6B",video:"izGwDsrQ1eQ"},
+      {rank:192,title:"When I Was Your Man",artist:"Bruno Mars",views:"1.5B",video:"ekzHIouo8Q4"},
+      {rank:193,title:"Sign of the Times",artist:"Harry Styles",views:"1.5B",video:"qN4ooNx77u0"},
+      {rank:194,title:"Beautiful Girls",artist:"Sean Kingston",views:"1.5B",video:"LKnKIGvK-kk"},
+      {rank:195,title:"Happy",artist:"Pharrell Williams",views:"1.5B",video:"ZbZSe6N_BXs"},
+      {rank:196,title:"Can't Feel My Face",artist:"The Weeknd",views:"1.5B",video:"KEI4qSrkPAs"},
+      {rank:197,title:"El Perdedor Pop",artist:"Enrique Iglesias ft. Marco Antonio Solís",views:"1.5B",video:"1yRHMrGMkms"},
+      {rank:198,title:"AS IF IT'S YOUR LAST",artist:"BLACKPINK",views:"1.5B",video:"Amq-qlqbjYA"},
+      {rank:199,title:"Like a Stone",artist:"Audioslave",views:"1.5B",video:"jsH0yBBBnEc"},
+      {rank:200,title:"El Perdón",artist:"Nicky Jam, Enrique Iglesias",views:"1.5B",video:"TfdVZXqMdEU"},
+      {rank:201,title:"Adan y Eva",artist:"Paulo Londra",views:"1.5B",video:"pEeJVqBrxC8"},
+      {rank:202,title:"TQG",artist:"KAROL G, Shakira",views:"1.5B",video:"_ne2XKDR8AY"},
+      {rank:203,title:"Tu No Vive Así",artist:"Arcangel, Bad Bunny ft. DJ Luian, Mambo Kingz",views:"1.5B",video:"B7LHPxJwRww"},
+      {rank:204,title:"Mockingbird",artist:"Eminem",views:"1.5B",video:"S9bCLPwzSC0"},
+      {rank:205,title:"Photograph",artist:"Ed Sheeran",views:"1.5B",video:"mt-0oIBEHn8"},
+      {rank:206,title:"Work",artist:"Rihanna ft. Drake",views:"1.5B",video:"HL1UzIK-flA"},
+      {rank:207,title:"El Amante",artist:"Nicky Jam",views:"1.5B",video:"MhBv_nf1CfA"},
+      {rank:208,title:"Alone",artist:"Alan Walker",views:"1.5B",video:"8jLOx1hD3_o"},
+      {rank:209,title:"Ahora Dice",artist:"Chris Jedi ft. J. Balvin, Ozuna, Arcángel",views:"1.5B",video:"TXiWN1yfXL0"},
+      {rank:210,title:"Old Town Road",artist:"Lil Nas X ft. Billy Ray Cyrus",views:"1.5B",video:"w2Ov5jzm3j8"},
+      {rank:211,title:"Fuiste Tú",artist:"Ricardo Arjona ft. Gaby Moreno",views:"1.5B",video:"5oV-9IxGMVQ"},
+      {rank:212,title:"Otra Vez",artist:"Zion & Lennox ft. J Balvin",views:"1.5B",video:"C31dK6Ld4l4"},
+      {rank:213,title:"Limbo",artist:"Daddy Yankee",views:"1.5B",video:"Ynumslvs5XY"},
+      {rank:214,title:"Problem",artist:"Ariana Grande ft. Iggy Azalea",views:"1.5B",video:"iS1g8G_NkI0"},
+      {rank:215,title:"No Lie",artist:"Sean Paul ft. Dua Lipa",views:"1.5B",video:"DCoKLXiohus"},
+      {rank:216,title:"BICHOTA",artist:"KAROL G",views:"1.5B",video:"L_IlMUg5tUk"},
+      {rank:217,title:"Creep",artist:"Radiohead",views:"1.5B",video:"XFkzRNyygfk"},
+      {rank:218,title:"Rain Over Me",artist:"Pitbull ft. Marc Anthony",views:"1.5B",video:"r_0JKZN-KOY"},
+      {rank:219,title:"Symphony",artist:"Clean Bandit ft. Zara Larsson",views:"1.5B",video:"e-x9nHQ64NQ"},
+      {rank:220,title:"Back To Black",artist:"Amy Winehouse",views:"1.5B",video:"TJAfLE39ZZ8"},
+      {rank:221,title:"Livin' On A Prayer",artist:"Bon Jovi",views:"1.4B",video:"lDK9QqIzhwk"},
+      {rank:222,title:"Cheerleader",artist:"OMI",views:"1.4B",video:"jlMnGaC9mCk"},
+      {rank:223,title:"Mirrors",artist:"Justin Timberlake",views:"1.4B",video:"uuZE9ioULRQ"},
+      {rank:224,title:"There's Nothing Holdin' Me Back",artist:"Shawn Mendes",views:"1.4B",video:"bpZa_zkqGVk"},
+      {rank:225,title:"Losing My Religion",artist:"R.E.M.",views:"1.4B",video:"xwtdhWltSIg"},
+      {rank:226,title:"I Feel It Coming",artist:"The Weeknd ft. Daft Punk",views:"1.4B",video:"qFLhGq0060w"},
+      {rank:227,title:"Dernière Danse",artist:"Indila",views:"1.4B",video:"gkDS4PsKST8"},
+      {rank:228,title:"The Final Countdown",artist:"Europe",views:"1.4B",video:"9jK-NcRmVcw"},
+      {rank:229,title:"Bon Appétit",artist:"Katy Perry ft. Migos",views:"1.4B",video:"dkHqPFbxmOU"},
+      {rank:230,title:"Can't Remember to Forget You",artist:"Shakira ft. Rihanna",views:"1.4B",video:"EhG6T0IpfK4"},
+      {rank:231,title:"La La La",artist:"Naughty Boy ft. Sam Smith",views:"1.4B",video:"LnUJLkoJpnA"},
+      {rank:232,title:"Elastic Heart",artist:"Sia ft. Shia LaBeouf, Maddie Ziegler",views:"1.4B",video:"KRvv0QdruMQ"},
+      {rank:233,title:"MOONLIGHT",artist:"XXXTENTACION",views:"1.4B",video:"gYsC6WXYORY"},
+      {rank:234,title:"Never Say Never",artist:"Justin Bieber ft. Jaden",views:"1.4B",video:"wSFzgS_zJXU"},
+      {rank:235,title:"IDOL",artist:"BTS",views:"1.4B",video:"pSudEWBAYRE"},
+      {rank:236,title:"SICKO MODE",artist:"Travis Scott ft. Drake",views:"1.4B",video:"6ONRf7h3Mdk"},
+      {rank:237,title:"Happier",artist:"Marshmello ft. Bastille",views:"1.4B",video:"m7Bc3pLyij0"},
+      {rank:238,title:"FAKE LOVE",artist:"BTS",views:"1.4B",video:"7C2z4GqqS5E"},
+      {rank:239,title:"Californication",artist:"Red Hot Chili Peppers",views:"1.4B",video:"-4QWCnf9-zU"},
+      {rank:240,title:"Calm Down",artist:"Rema, Selena Gomez",views:"1.4B",video:"NMZjkRVOD3c"},
+      {rank:241,title:"Bad and Boujee",artist:"Migos ft. Lil Uzi Vert",views:"1.4B",video:"YnwfTHpnGLY"},
+      {rank:242,title:"How You Like That",artist:"BLACKPINK",views:"1.4B",video:"ioNng23DkIM"},
+      {rank:243,title:"Safari",artist:"J Balvin ft. Pharrell Williams, BIA, Sky",views:"1.4B",video:"wgkna3pSoZo"},
+      {rank:244,title:"You Are The Reason",artist:"Calum Scott",views:"1.4B",video:"RO8BHLG9Uxo"},
+      {rank:245,title:"La La La Brazil 2014",artist:"Shakira ft. Carlinhos Brown",views:"1.4B",video:"ic0hAjf0GUQ"},
+      {rank:246,title:"Provenza",artist:"KAROL G",views:"1.4B",video:"91oc4K4-gMs"},
+      {rank:247,title:"La Bebe Remix",artist:"Yng Lvcas, Peso Pluma",views:"1.4B",video:"qbhJ2nYsL_8"},
+      {rank:248,title:"Hot N Cold",artist:"Katy Perry",views:"1.4B",video:"kTHNpusq654"},
+      {rank:249,title:"The Scientist",artist:"Coldplay",views:"1.3B",video:"RB-RcX5DS5A"},
+      {rank:250,title:"Give Me Everything",artist:"Pitbull ft. Ne-Yo, Afrojack, Nayer",views:"1.3B",video:"Bm5iA4Zupek"}
+    ];
 
-<script>
-const songs = [
-  {rank:1,title:"Despacito",artist:"Luis Fonsi ft. Daddy Yankee",views:"9.0B",video:"ktvTqknDobU"},
-  {rank:2,title:"See You Again",artist:"Wiz Khalifa ft. Charlie Puth",views:"7.0B",video:"RgKAFK5djSk"},
-  {rank:3,title:"Shape of You",artist:"Ed Sheeran",views:"6.7B",video:"JGwWNGJdvx8"},
-  {rank:4,title:"GANGNAM STYLE",artist:"PSY",views:"5.9B",video:"9bZkp7q19f0"},
-  {rank:5,title:"Axel F",artist:"Crazy Frog",views:"5.9B",video:"k85mRPqvMbE"},
-  {rank:6,title:"Uptown Funk",artist:"Mark Ronson ft. Bruno Mars",views:"5.8B",video:"OPf0YbXqDm0"},
-  {rank:7,title:"Dame Tu Cosita",artist:"El Chombo ft. Cutty Ranks",views:"5.5B",video:"El_jCKqz5-k"},
-  {rank:8,title:"Waka Waka",artist:"Shakira",views:"4.5B",video:"pRpeEdMmmQ0"},
-  {rank:9,title:"Counting Stars",artist:"OneRepublic",views:"4.4B",video:"hT_nvWreIhg"},
-  {rank:10,title:"Sugar",artist:"Maroon 5",views:"4.4B",video:"09R8_2nJtjg"},
+    const els = {
+      grid: document.getElementById('songGrid'),
+      search: document.getElementById('search'),
+      sort: document.getElementById('sort'),
+      filter: document.getElementById('filter'),
+      reset: document.getElementById('reset'),
+      empty: document.getElementById('emptyState'),
+      shownCount: document.getElementById('shownCount'),
+      drawer: document.getElementById('drawer'),
+      overlay: document.getElementById('overlay'),
+      drawerTitle: document.getElementById('drawerTitle'),
+      drawerMeta: document.getElementById('drawerMeta'),
+      videoFrame: document.getElementById('videoFrame'),
+      commentName: document.getElementById('commentName'),
+      commentText: document.getElementById('commentText'),
+      commentList: document.getElementById('commentList'),
+      postComment: document.getElementById('postComment'),
+      openYoutube: document.getElementById('openYoutube'),
+      closeDrawer: document.getElementById('closeDrawer')
+    };
 
-  {rank:11,title:"Roar",artist:"Katy Perry",views:"4.3B",video:"CevxZvSJLk8"},
-  {rank:12,title:"Dark Horse",artist:"Katy Perry ft. Juicy J",views:"4.2B",video:"0KSOMA3QBU0"},
-  {rank:13,title:"Perfect",artist:"Ed Sheeran",views:"4.2B",video:"2Vv-BfVoq4g"},
-  {rank:14,title:"Sorry",artist:"Justin Bieber",views:"4.1B",video:"fRh_vgS2dFE"},
-  {rank:15,title:"Let Her Go",artist:"Passenger",views:"4.1B",video:"RBumgq5yVrA"},
-  {rank:16,title:"Girls Like You",artist:"Maroon 5 ft. Cardi B",views:"4.0B",video:"aJOTlE1K90k"},
-  {rank:17,title:"Thinking Out Loud",artist:"Ed Sheeran",views:"4.0B",video:"lp-EO5I60KA"},
-  {rank:18,title:"Faded",artist:"Alan Walker",views:"4.0B",video:"60ItHLz5WEA"},
-  {rank:19,title:"Lean On",artist:"Major Lazer, DJ Snake ft. MØ",views:"3.9B",video:"YqeW9_5kURI"},
-  {rank:20,title:"Bailando",artist:"Enrique Iglesias ft. Descemer Bueno, Gente De Zona",views:"3.8B",video:"NUsoVlDFqZg"},
+    let activeSong = null;
 
-  {rank:21,title:"Blank Space",artist:"Taylor Swift",views:"3.8B",video:"e-ORhEE9VVg"},
-  {rank:22,title:"Shake It Off",artist:"Taylor Swift",views:"3.7B",video:"nfWlot6h_JM"},
-  {rank:23,title:"Let It Go",artist:"Idina Menzel",views:"3.7B",video:"moSFlvxnbgk"},
-  {rank:24,title:"Mi Gente",artist:"J Balvin, Willy William",views:"3.6B",video:"wnJ6LuUFpMo"},
-  {rank:25,title:"Baby",artist:"Justin Bieber ft. Ludacris",views:"3.6B",video:"kffacxfA7G4"},
+    function parseViews(v){
+      if(!v) return 0;
+      const n = parseFloat(v);
+      return v.includes('B') ? n * 1e9 : n;
+    }
 
-  {rank:26,title:"We Don't Talk Anymore",artist:"Charlie Puth ft. Selena Gomez",views:"3.5B",video:"GCFnKpPuXFQ"},
-  {rank:27,title:"New Rules",artist:"Dua Lipa",views:"3.3B",video:"k2qgadSvNyU"},
-  {rank:28,title:"Hello",artist:"Adele",views:"3.3B",video:"YQHsXMglC9A"},
-  {rank:29,title:"The Lazy Song",artist:"Bruno Mars",views:"3.2B",video:"fLexgOxsZu0"},
-  {rank:30,title:"Stressed Out",artist:"twenty one pilots",views:"3.2B",video:"pXRviuL6vMY"},
+    function escapeHtml(str){
+      return String(str).replace(/[&<>"']/g, m => ({
+        '&':'&amp;',
+        '<':'&lt;',
+        '>':'&gt;',
+        '"':'&quot;',
+        "'":'&#39;'
+      }[m]));
+    }
 
-  {rank:31,title:"Rockabye",artist:"Clean Bandit ft. Sean Paul, Anne-Marie",views:"3.2B",video:"KRaWnd3LJfs"},
-  {rank:32,title:"Chantaje",artist:"Shakira ft. Maluma",views:"3.2B",video:"e3-5YCoHjE"},
-  {rank:33,title:"Con Calma",artist:"Daddy Yankee, Snow",views:"3.2B",video:"I2n3lGJCjcQ"},
-  {rank:34,title:"Calma Remix",artist:"Pedro Capó, Farruko",views:"3.1B",video:"lqkEsIqcXQ4"},
-  {rank:35,title:"Love The Way You Lie",artist:"Eminem ft. Rihanna",views:"3.1B",video:"uelHwf8o7U"},
+    
 
-  {rank:36,title:"Work from Home",artist:"Fifth Harmony ft. Ty Dolla $ign",views:"3.1B",video:"5GL9JoH4Sws"},
-  {rank:37,title:"Believer",artist:"Imagine Dragons",views:"3.0B",video:"7wtfhZwyrcc"},
-  {rank:38,title:"Sunflower",artist:"Post Malone, Swae Lee",views:"3.0B",video:"ApXoWvfEYVU"},
-  {rank:39,title:"This Is What You Came For",artist:"Calvin Harris ft. Rihanna",views:"2.9B",video:"kOkQ4T5WO9E"},
-  {rank:40,title:"Chandelier",artist:"Sia",views:"2.9B",video:"2vjPBrBU-TM"},
-
-  {rank:41,title:"Rolling in the Deep",artist:"Adele",views:"2.9B",video:"rYEDA3JcQqw"},
-  {rank:42,title:"Criminal",artist:"Natti Natasha, Ozuna",views:"2.8B",video:"gBKOAJCLPiU"},
-  {rank:43,title:"On The Floor",artist:"Jennifer Lopez ft. Pitbull",views:"2.8B",video:"t4HZoh7G5A"},
-  {rank:44,title:"A Thousand Years",artist:"Christina Perri",views:"2.8B",video:"rtOvBOTyX00"},
-  {rank:45,title:"Taki Taki",artist:"DJ Snake ft. Selena Gomez, Ozuna, Cardi B",views:"2.8B",video:"ixkoVwKQaJg"},
-
-  {rank:46,title:"Starboy",artist:"The Weeknd ft. Daft Punk",views:"2.7B",video:"34Na4j8AVgA"},
-  {rank:47,title:"Treat You Better",artist:"Shawn Mendes",views:"2.7B",video:"lY2yjAdbvdQ"},
-  {rank:48,title:"Alone",artist:"Marshmello",views:"2.7B",video:"1-xGerv5FOk"},
-  {rank:49,title:"Numb",artist:"Linkin Park",views:"2.7B",video:"kXYiU_JCYtU"},
-  {rank:50,title:"All About That Bass",artist:"Meghan Trainor",views:"2.7B",video:"7PCkvCPvDXk"},
-
-  {rank:51,title:"All of Me",artist:"John Legend",views:"2.7B",video:"450p7goxZqg"},
-  {rank:52,title:"In Da Club",artist:"50 Cent",views:"2.7B",video:"5qm8PH4xAss"},
-  {rank:53,title:"Rude",artist:"MAGIC!",views:"2.7B",video:"GnlS0hGgEuA"},
-  {rank:54,title:"Mayores",artist:"Becky G ft. Bad Bunny",views:"2.7B",video:"b7tVGQS7x3Q"},
-  {rank:55,title:"Somebody That I Used To Know",artist:"Gotye ft. Kimbra",views:"2.6B",video:"8UVNT4wvIGY"},
-  {rank:56,title:"No Me Conoce Remix",artist:"Jhay Cortez, J. Balvin, Bad Bunny",views:"2.6B",video:"6rR4SkBxK-M"},
-  {rank:57,title:"Te Bote Remix",artist:"Casper, Nio García, Darell, Nicky Jam, Bad Bunny, Ozuna",views:"2.6B",video:"4V0EZWP7vCo"},
-  {rank:58,title:"Diamonds",artist:"Rihanna",views:"2.6B",video:"lWA2pjMjpBs"},
-  {rank:59,title:"Party Rock Anthem",artist:"LMFAO ft. Lauren Bennett, GoonRock",views:"2.6B",video:"KQ6zr6kCPj8"},
-  {rank:60,title:"That's What I Like",artist:"Bruno Mars",views:"2.5B",video:"PMivT7MJ41M"},
-
-  {rank:61,title:"Wake Me Up",artist:"Avicii",views:"2.5B",video:"IcrbM1lBoI"},
-  {rank:62,title:"Échame La Culpa",artist:"Luis Fonsi, Demi Lovato",views:"2.5B",video:"mMNGBPsRt4"},
-  {rank:63,title:"Someone Like You",artist:"Adele",views:"2.5B",video:"hLQl3WQQoQ0"},
-  {rank:64,title:"APT.",artist:"ROSÉ, Bruno Mars",views:"2.5B",video:"ekr2nIex040"},
-  {rank:65,title:"Worth It",artist:"Fifth Harmony ft. Kid Ink",views:"2.4B",video:"i44nEOGEMcY"},
-
-  {rank:66,title:"November Rain",artist:"Guns N' Roses",views:"2.4B",video:"8SbUC-UaAxE"},
-  {rank:67,title:"Side To Side",artist:"Ariana Grande ft. Nicki Minaj",views:"2.4B",video:"SXiSVQZLje8"},
-  {rank:68,title:"lovely",artist:"Billie Eilish, Khalid",views:"2.4B",video:"V1Pl8CzNzCw"},
-  {rank:69,title:"Take On Me",artist:"a-ha",views:"2.4B",video:"djV11Xbc914"},
-  {rank:70,title:"Love Me Like You Do",artist:"Ellie Goulding",views:"2.4B",video:"AJtDXIazrMo"},
-
-  {rank:71,title:"Without Me",artist:"Eminem",views:"2.4B",video:"YVkUvmDQ3HY"},
-  {rank:72,title:"Thunder",artist:"Imagine Dragons",views:"2.4B",video:"fKopy74weus"},
-  {rank:73,title:"Dusk Till Dawn",artist:"ZAYN ft. Sia",views:"2.4B",video:"tt2k8PNm-8o"},
-  {rank:74,title:"Propuesta Indecente",artist:"Romeo Santos",views:"2.4B",video:"4WjKnVqFk"},
-  {rank:75,title:"DDU-DU DDU-DU",artist:"BLACKPINK",views:"2.4B",video:"IHNzOHi8sJs"},
-
-  {rank:76,title:"Heathens",artist:"twenty one pilots",views:"2.4B",video:"HelZx9EKlMY"},
-  {rank:77,title:"X (EQUIS)",artist:"Nicky Jam, J. Balvin",views:"2.3B",video:"3GnDYDFdCOM"},
-  {rank:78,title:"China",artist:"Anuel AA, Daddy Yankee, Karol G, Ozuna, J Balvin",views:"2.3B",video:"7S3sB2AnAoE"},
-  {rank:79,title:"Sin Pijama",artist:"Becky G, NATTI NATASHA",views:"2.3B",video:"C9pF2oKYXBQ"},
-  {rank:80,title:"What Do You Mean?",artist:"Justin Bieber",views:"2.3B",video:"DK_0jXPuIr0"},
-
-  {rank:81,title:"Don't Let Me Down",artist:"The Chainsmokers ft. Daya",views:"2.3B",video:"Io0fBr1XBUA"},
-  {rank:82,title:"The Hills",artist:"The Weeknd",views:"2.3B",video:"yzTuBuRdAyA"},
-  {rank:83,title:"DANCE MONKEY",artist:"TONES AND I",views:"2.3B",video:"q0hyYWKXF0Q"},
-  {rank:84,title:"Con Altura",artist:"ROSALÍA, J Balvin ft. El Guincho",views:"2.3B",video:"aqsNhJFjOvo"},
-  {rank:85,title:"Déjala Que Vuelva",artist:"Piso 21, Manuel Turizo",views:"2.3B",video:"2DGlFNzm7ZM"},
-  {rank:86,title:"Life Is Good",artist:"Future ft. Drake",views:"2.3B",video:"7The6dMBNEE"},
-  {rank:87,title:"In The End",artist:"Linkin Park",views:"2.3B",video:"eVTXPUF4Oz4"},
-  {rank:88,title:"Human",artist:"Rag'n'Bone Man",views:"2.2B",video:"L3wKzyIN1yk"},
-  {rank:89,title:"Ay Vamos",artist:"J. Balvin",views:"2.2B",video:"Tq4BErTQvPo"},
-  {rank:90,title:"Kill This Love",artist:"BLACKPINK",views:"2.2B",video:"2S24-y0Ij3Y"},
-
-  {rank:91,title:"Smells Like Teen Spirit",artist:"Nirvana",views:"2.2B",video:"hTWKbfoikeg"},
-  {rank:92,title:"What's Up",artist:"4 Non Blondes",views:"2.2B",video:"6NXnxTNIWkc"},
-  {rank:93,title:"Just The Way You Are",artist:"Bruno Mars",views:"2.2B",video:"LjhCEhWiKxk"},
-  {rank:94,title:"Titanium",artist:"David Guetta ft. Sia",views:"2.1B",video:"JRfuAukYTKg"},
-  {rank:95,title:"Save Your Tears",artist:"The Weeknd",views:"2.1B",video:"LIIDh-qI9oI"},
-  {rank:96,title:"Hotline Bling",artist:"Drake",views:"2.1B",video:"uxpDa-c-4Mc"},
-  {rank:97,title:"Billie Jean",artist:"Michael Jackson",views:"2.1B",video:"Zi_XLOBDo_Y"},
-  {rank:98,title:"Bang Bang",artist:"Jessie J, Ariana Grande, Nicki Minaj",views:"2.1B",video:"0HDdjwpPM3Y"},
-  {rank:99,title:"Dura",artist:"Daddy Yankee",views:"2.1B",video:"PXdh0wSMFSM"},
-  {rank:100,title:"Dynamite",artist:"BTS",views:"2.1B",video:"gdZLi9oWNZg"},
-
-  {rank:101,title:"Una Lady Como Tú",artist:"Manuel Turizo",views:"2.1B",video:"7_VYFrjVhHA"},
-  {rank:102,title:"Not Afraid",artist:"Eminem",views:"2.1B",video:"j5-yKhDd64s"},
-  {rank:103,title:"El Farsante Remix",artist:"Ozuna, Romeo Santos",views:"2.1B",video:"V5P3OlANDgQ"},
-  {rank:104,title:"Paradise",artist:"Coldplay",views:"2.1B",video:"e9XDh2DzrOE"},
-  {rank:105,title:"Bohemian Rhapsody",artist:"Queen",views:"2.1B",video:"fJ9rUzIMcZQ"},
-  {rank:106,title:"Bad Romance",artist:"Lady Gaga",views:"2.0B",video:"qrO4YZeyl0I"},
-  {rank:107,title:"Just Give Me A Reason",artist:"P!nk ft. Nate Ruess",views:"2.0B",video:"OpQFFLBMEPI"},
-  {rank:108,title:"Gangsta's Paradise",artist:"Coolio ft. L.V.",views:"2.0B",video:"fPO76Jlnz6c"},
-  {rank:109,title:"Let Me Love You",artist:"DJ Snake ft. Justin Bieber",views:"2.0B",video:"FG1NrQYXjLU"},
-  {rank:110,title:"Señorita",artist:"Shawn Mendes, Camila Cabello",views:"2.0B",video:"Pkh8UtuejGw"},
-
-  {rank:111,title:"CAN'T STOP THE FEELING!",artist:"Justin Timberlake",views:"2.0B",video:"ru0K8uYEZWw"},
-  {rank:112,title:"Andas En Mi Cabeza",artist:"Chino y Nacho ft. Daddy Yankee",views:"2.0B",video:"jZOywn1qArI"},
-  {rank:113,title:"Sweet Child O' Mine",artist:"Guns N' Roses",views:"1.9B",video:"1w7OgIMMRc4"},
-  {rank:114,title:"Boy With Luv",artist:"BTS ft. Halsey",views:"1.9B",video:"XsX3ATc3FbA"},
-  {rank:115,title:"Unforgettable",artist:"French Montana ft. Swae Lee",views:"1.9B",video:"OVjOICTH54I"},
-  {rank:116,title:"Se Preparó",artist:"Ozuna",views:"1.9B",video:"TODHCRTeLVM"},
-  {rank:117,title:"I'm The One",artist:"DJ Khaled ft. Justin Bieber, Quavo, Chance the Rapper, Lil Wayne",views:"1.9B",video:"weeI1G46q0o"},
-  {rank:118,title:"I Will Always Love You",artist:"Whitney Houston",views:"1.9B",video:"3JWTaaS7LdU"},
-  {rank:119,title:"BOOMBAYAH",artist:"BLACKPINK",views:"1.9B",video:"bwmSjveL3Lc"},
-  {rank:120,title:"Do I Wanna Know?",artist:"Arctic Monkeys",views:"1.9B",video:"bpOSxM0rNPM"},
-
-  {rank:121,title:"Swalla",artist:"Jason Derulo ft. Nicki Minaj, Ty Dolla $ign",views:"1.9B",video:"TYMMOjBUPMM"},
-  {rank:122,title:"Animals",artist:"Martin Garrix",views:"1.9B",video:"gCYcHz2k5x0"},
-  {rank:123,title:"Say You Won't Let Go",artist:"James Arthur",views:"1.9B",video:"0yW7w8F2TVA"},
-  {rank:124,title:"Shallow",artist:"Lady Gaga, Bradley Cooper",views:"1.9B",video:"bo_efYhYU2A"},
-  {rank:125,title:"Call Me Maybe",artist:"Carly Rae Jepsen",views:"1.8B",video:"fWNaR-rxAic"},
-
-  {rank:126,title:"Zombie",artist:"The Cranberries",views:"1.8B",video:"6Ejga4kJUts"},
-  {rank:127,title:"Love Yourself",artist:"Justin Bieber",views:"1.8B",video:"oyEuk8j8imI"},
-  {rank:128,title:"Dilemma",artist:"Nelly ft. Kelly Rowland",views:"1.8B",video:"QV5MFWJMEM"},
-  {rank:129,title:"Hips Don't Lie",artist:"Shakira ft. Wyclef Jean",views:"1.8B",video:"DUT5rEU6pqM"},
-  {rank:130,title:"Halo",artist:"Beyoncé",views:"1.8B",video:"bnVUHWCynig"},
-
-  {rank:131,title:"La Bicicleta",artist:"Carlos Vives, Shakira",views:"1.8B",video:"kDHhlLV6sGM"},
-  {rank:132,title:"24K Magic",artist:"Bruno Mars",views:"1.8B",video:"UqyT8IEBkvY"},
-  {rank:133,title:"Escápate Conmigo",artist:"Wisin ft. Ozuna",views:"1.8B",video:"7UCiNgaVbKc"},
-  {rank:134,title:"Attention",artist:"Charlie Puth",views:"1.8B",video:"nfs8NYg7yQM"},
-  {rank:135,title:"Taste",artist:"Tyga ft. Offset",views:"1.8B",video:"wgkna3pSoZo"},
-
-  {rank:136,title:"Shaky Shaky",artist:"Daddy Yankee",views:"1.8B",video:"l1OHkqH1cKI"},
-  {rank:137,title:"Summer",artist:"Calvin Harris",views:"1.8B",video:"ebXbLfLACGM"},
-  {rank:138,title:"I'm Not The Only One",artist:"Sam Smith",views:"1.8B",video:"nCkpzqqog4k"},
-  {rank:139,title:"Never Gonna Give You Up",artist:"Rick Astley",views:"1.8B",video:"dQw4w9WgXcQ"},
-  {rank:140,title:"7 Years",artist:"Lukas Graham",views:"1.8B",video:"LHCob76kigA"},
-
-  {rank:141,title:"Corazón",artist:"Maluma ft. Nego do Borel",views:"1.8B",video:"gJubXxJCiCk"},
-  {rank:142,title:"Si Se Da Remix",artist:"Myke Towers, Farruko, Arcangel, Sech, Zion",views:"1.8B",video:"k-mFkNFJ2BM"},
-  {rank:143,title:"DÁKITI",artist:"Bad Bunny, Jhay Cortez",views:"1.7B",video:"cVnggZajovI"},
-  {rank:144,title:"I Want It That Way",artist:"Backstreet Boys",views:"1.7B",video:"4fndeDfaWCg"},
-  {rank:145,title:"You Belong With Me",artist:"Taylor Swift",views:"1.7B",video:"VuNIsY6JdUw"},
-
-  {rank:146,title:"La Gozadera",artist:"Gente de Zona ft. Marc Anthony",views:"1.7B",video:"0-EF60neguk"},
-  {rank:147,title:"GENTLEMAN",artist:"PSY",views:"1.7B",video:"ASOzypdnsQ"},
-  {rank:148,title:"I Like It",artist:"Cardi B, Bad Bunny, J Balvin",views:"1.7B",video:"HoAJ3MZbWZg"},
-  {rank:149,title:"Adventure Of A Lifetime",artist:"Coldplay",views:"1.7B",video:"QtDmMFBiDaI"},
-  {rank:150,title:"Poker Face",artist:"Lady Gaga",views:"1.7B",video:"bESGLojNYSo"},
-
-  {rank:151,title:"Hey Mama",artist:"David Guetta ft. Nicki Minaj, Bebe Rexha, Afrojack",views:"1.7B",video:"3OnnDqH6Wj8"},
-  {rank:152,title:"Thunderstruck",artist:"AC/DC",views:"1.7B",video:"v2AC41dglnM"},
-  {rank:153,title:"Bring Me To Life",artist:"Evanescence ft. Paul McCoy",views:"1.7B",video:"3YxaaGgTQYM"},
-  {rank:154,title:"Congratulations",artist:"Post Malone ft. Quavo",views:"1.7B",video:"SC4xMk98Pdc"},
-  {rank:155,title:"Stitches",artist:"Shawn Mendes",views:"1.7B",video:"VbfpW0pbvaU"},
-
-  {rank:156,title:"Still D.R.E.",artist:"Dr. Dre ft. Snoop Dogg",views:"1.7B",video:"QZG3cxCy3E4"},
-  {rank:157,title:"Barbie Girl",artist:"Aqua",views:"1.7B",video:"ZyhrYis509A"},
-  {rank:158,title:"How Deep Is Your Love",artist:"Calvin Harris, Disciples",views:"1.7B",video:"VsB5TYBCkZI"},
-  {rank:159,title:"What Makes You Beautiful",artist:"One Direction",views:"1.7B",video:"QJO3ROT-A4E"},
-  {rank:160,title:"Danza Kuduro",artist:"Don Omar ft. Lucenzo",views:"1.7B",video:"7zij6ZdOHKQ"},
-
-  {rank:161,title:"God's Plan",artist:"Drake",views:"1.7B",video:"xpVfcZ0ZcFM"},
-  {rank:162,title:"Secreto",artist:"Anuel AA, KAROL G",views:"1.7B",video:"TnhAHWKBFKc"},
-  {rank:163,title:"Girls Just Want To Have Fun",artist:"Cyndi Lauper",views:"1.7B",video:"PIb6AZdTr-A"},
-  {rank:164,title:"MIA",artist:"Bad Bunny, Drake",views:"1.7B",video:"Nt4A8S6bS5s"},
-  {rank:165,title:"Hasta el Amanecer",artist:"Nicky Jam",views:"1.7B",video:"CkMNzRpuPuM"},
-
-  {rank:166,title:"Bad Blood",artist:"Taylor Swift ft. Kendrick Lamar",views:"1.7B",video:"QcIy9NiNbmo"},
-  {rank:167,title:"Die With A Smile",artist:"Lady Gaga, Bruno Mars",views:"1.7B",video:"kPa7bsKwL-c"},
-  {rank:168,title:"Adiós Amor",artist:"Christian Nodal",views:"1.7B",video:"rFjGFPHNqQk"},
-  {rank:169,title:"Every Breath You Take",artist:"The Police",views:"1.7B",video:"OMOGaugKpzs"},
-  {rank:170,title:"Burn",artist:"Ellie Goulding",views:"1.7B",video:"CGyEd0aKWZE"},
-
-  {rank:171,title:"Ride",artist:"twenty one pilots",views:"1.7B",video:"Pw-0pbY9JeU"},
-  {rank:172,title:"DNA",artist:"BTS",views:"1.7B",video:"MBdVXkSdhwU"},
-  {rank:173,title:"BEBE",artist:"6ix9ine ft. Anuel AA",views:"1.6B",video:"yJg-Y5byMMw"},
-  {rank:174,title:"TUSA",artist:"KAROL G, Nicki Minaj",views:"1.6B",video:"E7dJBGjd7C8"},
-  {rank:175,title:"Nothing Else Matters",artist:"Metallica",views:"1.6B",video:"tAGnKpE4NCI"},
-
-  {rank:176,title:"No Me Acuerdo",artist:"Thalía, NATTI NATASHA",views:"1.6B",video:"hgqGi3Nm4BE"},
-  {rank:177,title:"Smack That",artist:"Akon ft. Eminem",views:"1.6B",video:"C6QInSEBCGs"},
-  {rank:178,title:"Darte un Beso",artist:"Prince Royce",views:"1.6B",video:"kfYvvzGEWJ4"},
-  {rank:179,title:"SUBEME LA RADIO",artist:"Enrique Iglesias ft. Descemer Bueno, Zion & Lennox",views:"1.6B",video:"9801DgM4Qo4"},
-  {rank:180,title:"It's My Life",artist:"Bon Jovi",views:"1.6B",video:"vx2u5uUu3DE"},
-
-  {rank:181,title:"Timber",artist:"Pitbull ft. Ke$ha",views:"1.6B",video:"hHUbLv4ThOo"},
-  {rank:182,title:"7 rings",artist:"Ariana Grande",views:"1.6B",video:"QYh6mYIJG2Y"},
-  {rank:183,title:"Last Friday Night (T.G.I.F.)",artist:"Katy Perry",views:"1.6B",video:"KlyXNRrsk4A"},
-  {rank:184,title:"Too Good At Goodbyes",artist:"Sam Smith",views:"1.6B",video:"Jub7Etch2A"},
-  {rank:185,title:"Look What You Made Me Do",artist:"Taylor Swift",views:"1.6B",video:"3tmd-ClpJxA"},
-
-  {rank:186,title:"Firework",artist:"Katy Perry",views:"1.6B",video:"QGJuMBdaqIw"},
-  {rank:187,title:"Rap God",artist:"Eminem",views:"1.6B",video:"XbGs_qK2PQA"},
-  {rank:188,title:"Radioactive",artist:"Imagine Dragons",views:"1.6B",video:"ktvTqknDobU"},
-  {rank:189,title:"Chop Suey!",artist:"System Of A Down",views:"1.6B",video:"CSvFpBOe8eY"},
-  {rank:190,title:"Loyal",artist:"Chris Brown ft. Lil Wayne, Tyga",views:"1.6B",video:"noRa8GnxoE"},
-
-  {rank:191,title:"Careless Whisper",artist:"George Michael",views:"1.6B",video:"izGwDsrQ1eQ"},
-  {rank:192,title:"When I Was Your Man",artist:"Bruno Mars",views:"1.5B",video:"ekzHIouo8Q4"},
-  {rank:193,title:"Sign of the Times",artist:"Harry Styles",views:"1.5B",video:"qN4ooNx77u0"},
-  {rank:194,title:"Beautiful Girls",artist:"Sean Kingston",views:"1.5B",video:"LKnKIGvK-kk"},
-  {rank:195,title:"Happy",artist:"Pharrell Williams",views:"1.5B",video:"ZbZSe6N_BXs"},
-
-  {rank:196,title:"Can't Feel My Face",artist:"The Weeknd",views:"1.5B",video:"KEI4qSrkPAs"},
-  {rank:197,title:"El Perdedor Pop",artist:"Enrique Iglesias ft. Marco Antonio Solís",views:"1.5B",video:"1yRHMrGMkms"},
-  {rank:198,title:"AS IF IT'S YOUR LAST",artist:"BLACKPINK",views:"1.5B",video:"Amq-qlqbjYA"},
-  {rank:199,title:"Like a Stone",artist:"Audioslave",views:"1.5B",video:"jsH0yBBBnEc"},
-  {rank:200,title:"El Perdón",artist:"Nicky Jam, Enrique Iglesias",views:"1.5B",video:"TfdVZXqMdEU"},
-
-  {rank:201,title:"Adan y Eva",artist:"Paulo Londra",views:"1.5B",video:"pEeJVqBrxC8"},
-  {rank:202,title:"TQG",artist:"KAROL G, Shakira",views:"1.5B",video:"ne2XKDR8AY"},
-  {rank:203,title:"Tu No Vive Así",artist:"Arcangel, Bad Bunny ft. DJ Luian, Mambo Kingz",views:"1.5B",video:"B7LHPxJwRww"},
-  {rank:204,title:"Mockingbird",artist:"Eminem",views:"1.5B",video:"S9bCLPwzSC0"},
-  {rank:205,title:"Photograph",artist:"Ed Sheeran",views:"1.5B",video:"mt-0oIBEHn8"},
-
-  {rank:206,title:"Work",artist:"Rihanna ft. Drake",views:"1.5B",video:"HL1UzIK-flA"},
-  {rank:207,title:"El Amante",artist:"Nicky Jam",views:"1.5B",video:"MhBvnf1CfA"},
-  {rank:208,title:"Alone",artist:"Alan Walker",views:"1.5B",video:"8jLOx1hD3o"},
-  {rank:209,title:"Ahora Dice",artist:"Chris Jedi ft. J. Balvin, Ozuna, Arcángel",views:"1.5B",video:"TXiWN1yfXL0"},
-  {rank:210,title:"Old Town Road",artist:"Lil Nas X ft. Billy Ray Cyrus",views:"1.5B",video:"w2Ov5jzm3j8"},
-
-  {rank:211,title:"Fuiste Tú",artist:"Ricardo Arjona ft. Gaby Moreno",views:"1.5B",video:"5oV-9IxGMVQ"},
-  {rank:212,title:"Otra Vez",artist:"Zion & Lennox ft. J Balvin",views:"1.5B",video:"C31dK6Ld4l4"},
-  {rank:213,title:"Limbo",artist:"Daddy Yankee",views:"1.5B",video:"Ynumslvs5XY"},
-  {rank:214,title:"Problem",artist:"Ariana Grande ft. Iggy Azalea",views:"1.5B",video:"iS1g8GNkI0"},
-  {rank:215,title:"No Lie",artist:"Sean Paul ft. Dua Lipa",views:"1.5B",video:"DCoKLXiohus"},
-
-  {rank:216,title:"BICHOTA",artist:"KAROL G",views:"1.5B",video:"LIlMUg5tUk"},
-  {rank:217,title:"Creep",artist:"Radiohead",views:"1.5B",video:"XFkzRNyygfk"},
-  {rank:218,title:"Rain Over Me",artist:"Pitbull ft. Marc Anthony",views:"1.5B",video:"r0JKZN-KOY"},
-  {rank:219,title:"Symphony",artist:"Clean Bandit ft. Zara Larsson",views:"1.5B",video:"e-x9nHQ64NQ"},
-  {rank:220,title:"Back To Black",artist:"Amy Winehouse",views:"1.5B",video:"TJAfLE39ZZ8"},
-
-  {rank:221,title:"Livin On A Prayer",artist:"Bon Jovi",views:"1.4B",video:"lDK9QqIzhwk"},
-  {rank:222,title:"Cheerleader",artist:"OMI",views:"1.4B",video:"jlMnGaC9mCk"},
-  {rank:223,title:"Mirrors",artist:"Justin Timberlake",views:"1.4B",video:"uuZE9ioULRQ"},
-  {rank:224,title:"There's Nothing Holdin' Me Back",artist:"Shawn Mendes",views:"1.4B",video:"bpZQzQkGVk"},
-  {rank:225,title:"Losing My Religion",artist:"R.E.M.",views:"1.4B",video:"xwtdhWltSIg"},
-
-  {rank:226,title:"I Feel It Coming",artist:"The Weeknd ft. Daft Punk",views:"1.4B",video:"qFLhGq0060w"},
-  {rank:227,title:"Dernière Danse",artist:"Indila",views:"1.4B",video:"gkDS4PsKST8"},
-  {rank:228,title:"The Final Countdown",artist:"Europe",views:"1.4B",video:"9jK-NcRmVcw"},
-  {rank:229,title:"Bon Appétit",artist:"Katy Perry ft. Migos",views:"1.4B",video:"dkHqPFbxmOU"},
-  {rank:230,title:"Can't Remember to Forget You",artist:"Shakira ft. Rihanna",views:"1.4B",video:"EhG6T0IpfK4"},
-
-  {rank:231,title:"La La La",artist:"Naughty Boy ft. Sam Smith",views:"1.4B",video:"LnUJLkoJpnA"},
-  {rank:232,title:"Elastic Heart",artist:"Sia ft. Shia LaBeouf, Maddie Ziegler",views:"1.4B",video:"KRvv0QdruMQ"},
-  {rank:233,title:"MOONLIGHT",artist:"XXXTENTACION",views:"1.4B",video:"gYsC6WXYORY"},
-  {rank:234,title:"Never Say Never",artist:"Justin Bieber ft. Jaden",views:"1.4B",video:"wSFzgSzJXU"},
-  {rank:235,title:"IDOL",artist:"BTS",views:"1.4B",video:"pSudEWBAYRE"},
-
-  {rank:236,title:"SICKO MODE",artist:"Travis Scott ft. Drake",views:"1.4B",video:"6ONRf7h3Mdk"},
-  {rank:237,title:"Happier",artist:"Marshmello ft. Bastille",views:"1.4B",video:"m7Bc3pLyij0"},
-  {rank:238,title:"FAKE LOVE",artist:"BTS",views:"1.4B",video:"7C2z4GqqS5E"},
-  {rank:239,title:"Californication",artist:"Red Hot Chili Peppers",views:"1.4B",video:"-4QWCnf9-zU"},
-  {rank:240,title:"Calm Down",artist:"Rema, Selena Gomez",views:"1.4B",video:"NMZjkRVOD3c"},
-
-  {rank:241,title:"Bad and Boujee",artist:"Migos ft. Lil Uzi Vert",views:"1.4B",video:"YnwfTHpnGLY"},
-  {rank:242,title:"How You Like That",artist:"BLACKPINK",views:"1.4B",video:"ioNng23DkIM"},
-  {rank:243,title:"Safari",artist:"J Balvin ft. Pharrell Williams, BIA, Sky",views:"1.4B",video:"wgkna3pSoZo"},
-  {rank:244,title:"You Are The Reason",artist:"Calum Scott",views:"1.4B",video:"RO8BHLG9Uxo"},
-  {rank:245,title:"La La La Brazil 2014",artist:"Shakira ft. Carlinhos Brown",views:"1.4B",video:"ic0hAjf0GUQ"},
-  {rank:246,title:"Provenza",artist:"KAROL G",views:"1.4B",video:"91oc4K4-gMs"},
-  {rank:247,title:"La Bebe Remix",artist:"Yng Lvcas, Peso Pluma",views:"1.4B",video:"qbhJ2nYsL8"},
-  {rank:248,title:"Hot N Cold",artist:"Katy Perry",views:"1.4B",video:"kTHNpusq654"},
-  {rank:249,title:"The Scientist",artist:"Coldplay",views:"1.3B",video:"RB-RcX5DS5A"},
-  {rank:250,title:"Give Me Everything",artist:"Pitbull ft. Ne-Yo, Afrojack, Nayer",views:"1.3B",video:"Bm5iA4Zupek"}
-];
-
-const els = {
-  grid: document.getElementById('songGrid'),
-  search: document.getElementById('search'),
-  sort: document.getElementById('sort'),
-  filter: document.getElementById('filter'),
-  reset: document.getElementById('reset'),
-  empty: document.getElementById('emptyState'),
-  shownCount: document.getElementById('shownCount'),
-  drawer: document.getElementById('drawer'),
-  overlay: document.getElementById('overlay'),
-  drawerTitle: document.getElementById('drawerTitle'),
-  drawerMeta: document.getElementById('drawerMeta'),
-  videoFrame: document.getElementById('videoFrame'),
-  commentName: document.getElementById('commentName'),
-  commentText: document.getElementById('commentText'),
-  commentList: document.getElementById('commentList'),
-  postComment: document.getElementById('postComment'),
-  clearSongComments: document.getElementById('clearSongComments'),
-  openYoutube: document.getElementById('openYoutube'),
-  closeDrawer: document.getElementById('closeDrawer')
-};
-
-let activeSong = null;
-
-function parseViews(v){
-  if(!v) return 0;
-  const n = parseFloat(v);
-  return v.includes('B') ? n*1e9 : n;
+   function thumbHQ(song){
+  return `https://i.ytimg.com/vi/${song.video}/hqdefault.jpg`;
 }
 
-function commentKey(song){
-  return `song_comments_${song.rank}`;
-}
+    function thumbFallback(song){
+      return `https://img.youtube.com/vi/${song.video}/0.jpg`;
+    }
 
-function loadComments(song){
-  return JSON.parse(localStorage.getItem(commentKey(song)) || '[]');
-}
+    async function fetchComments(song){
+      try{
+        const res = await fetch(`/api/music-comments/${song.rank}`);
+        if(!res.ok) return [];
+        return await res.json();
+      }catch(e){
+        console.error('fetchComments error', e);
+        return [];
+      }
+    }
 
-function saveComments(song, comments){
-  localStorage.setItem(commentKey(song), JSON.stringify(comments));
-}
+    async function postCommentToServer(song, name, text){
+      const res = await fetch(`/api/music-comments/${song.rank}`, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({ name, text, videoId: song.video || '' })
+      });
+      if(!res.ok) throw new Error('Failed to post comment');
+      return res.json();
+    }
 
-function renderComments(song){
-  const list = loadComments(song);
-  els.commentList.innerHTML = '';
-  if(!list.length){
-    els.commentList.innerHTML = '<div class="comment">No comments yet. Start the thread.</div>';
-    return;
-  }
-  list.slice().reverse().forEach(c => {
-    const div = document.createElement('div');
-    div.className = 'comment';
-    div.innerHTML = `<div><span class="who">${escapeHtml(c.name || 'Guest')}</span><span class="when">${new Date(c.time).toLocaleString()}</span></div><div style="margin-top:8px;">${escapeHtml(c.text)}</div>`;
-    els.commentList.appendChild(div);
-  });
-}
+    function renderComments(song, list){
+      els.commentList.innerHTML = '';
+      if(!list || !list.length){
+        els.commentList.innerHTML = '<div class="comment">No comments yet. Start the thread.</div>';
+        return;
+      }
 
-function escapeHtml(str){
-  return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-}
+      list.forEach(c => {
+        const div = document.createElement('div');
+        div.className = 'comment';
+        div.innerHTML = `
+          <div>
+            <span class="who">${escapeHtml(c.name || 'Guest')}</span>
+            <span class="when">${new Date(c.createdAt || c.time || Date.now()).toLocaleString()}</span>
+          </div>
+          <div style="margin-top:8px;">${escapeHtml(c.text || '')}</div>
+        `;
+        els.commentList.appendChild(div);
+      });
 
-function openDrawer(song){
-  activeSong = song;
-  els.drawerTitle.textContent = `${song.rank}. ${song.title}`;
-  els.drawerMeta.innerHTML = `
-    <span class="badge">${song.artist}</span>
-    <span class="badge">${song.views} views</span>
-  `;
-  els.videoFrame.src = song.video ? `https://www.youtube.com/embed/${song.video}?autoplay=1&rel=0` : '';
-  els.openYoutube.onclick = () => {
-    if(song.video) window.open(`https://www.youtube.com/watch?v=${song.video}`, '_blank', 'noopener');
-  };
-  renderComments(song);
-  els.drawer.classList.add('open');
-  els.overlay.classList.add('open');
-  els.drawer.setAttribute('aria-hidden', 'false');
-}
+      els.commentList.scrollTop = els.commentList.scrollHeight;
+    }
 
-function closeDrawer(){
-  els.drawer.classList.remove('open');
-  els.overlay.classList.remove('open');
-  els.drawer.setAttribute('aria-hidden', 'true');
-  els.videoFrame.src = '';
-  activeSong = null;
-}
+    async function openDrawer(song){
+      activeSong = song;
+      els.drawerTitle.textContent = `${song.rank}. ${song.title}`;
+      els.drawerMeta.innerHTML = `
+        <span class="badge">${escapeHtml(song.artist)}</span>
+        <span class="badge">${song.views} views</span>
+      `;
 
-function render(){
+      // Clear any previous fallback notice and timer
+      const prevNotice = document.getElementById('vevo-fallback-notice');
+      if(prevNotice) prevNotice.remove();
+      if(window._vevoFallbackTimer) clearTimeout(window._vevoFallbackTimer);
+
+      // Set Open YouTube button
+      els.openYoutube.textContent = 'Open YouTube';
+      els.openYoutube.onclick = () => {
+        if(song.video) window.open(`https://www.youtube.com/watch?v=${song.video}`, '_blank', 'noopener');
+      };
+
+      if(song.video){
+        els.videoFrame.src = `https://www.youtube.com/embed/${song.video}?autoplay=1&rel=0&enablejsapi=1`;
+
+        let videoConfirmed = false;
+
+        function onYTMessage(e){
+          try{
+            const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+            if(data && (data.event === 'infoDelivery' || data.event === 'onReady' || data.event === 'onStateChange')){
+              videoConfirmed = true;
+              window.removeEventListener('message', onYTMessage);
+              clearTimeout(window._vevoFallbackTimer);
+            }
+          }catch(_){}
+        }
+        window.addEventListener('message', onYTMessage);
+
+        window._vevoFallbackTimer = setTimeout(async () => {
+          window.removeEventListener('message', onYTMessage);
+          if(!videoConfirmed){
+            const notice = document.createElement('div');
+            notice.id = 'vevo-fallback-notice';
+            notice.style = 'color:var(--muted);font-size:13px;margin-top:10px;text-align:center;padding:10px;background:rgba(255,122,24,.08);border-radius:12px;border:1px solid rgba(255,122,24,.2);';
+            notice.textContent = '⏳ Video unavailable, searching for an alternative...';
+            els.videoFrame.insertAdjacentElement('afterend', notice);
+
+            const rawQuery = song.artist + ' ' + song.title + ' official video';
+            const proxies = [
+              `https://corsproxy.io/?url=${encodeURIComponent('https://inv.nadeko.net/api/v1/search?q=' + encodeURIComponent(rawQuery) + '&type=video&page=1')}`,
+              `https://api.allorigins.win/raw?url=${encodeURIComponent('https://inv.nadeko.net/api/v1/search?q=' + encodeURIComponent(rawQuery) + '&type=video&page=1')}`,
+              `https://inv.tux.pizza/api/v1/search?q=${encodeURIComponent(rawQuery)}&type=video&page=1`
+            ];
+
+            let results = null;
+            for(const url of proxies){
+              try{
+                const res = await fetch(url);
+                if(!res.ok) continue;
+                const data = await res.json();
+                if(Array.isArray(data) && data.length){ results = data; break; }
+              }catch(_){ continue; }
+            }
+
+            try{
+              if(!results) throw new Error('No results');
+              const match = results.find(v =>
+                v.type === 'video' && (
+                  /vevo/i.test(v.author) ||
+                  /official/i.test(v.title) ||
+                  v.author.toLowerCase().includes(song.artist.toLowerCase().split(' ')[0])
+                )
+              ) || results.find(v => v.type === 'video');
+
+              if(match && match.videoId){
+                els.videoFrame.src = `https://www.youtube.com/embed/${match.videoId}?autoplay=1&rel=0`;
+                notice.style.color = 'var(--orange2)';
+                notice.innerHTML = `🎬 Showing alternative: <strong style="color:#fff">${escapeHtml(match.title)}</strong> by ${escapeHtml(match.author)}`;
+                els.openYoutube.textContent = 'Open YouTube';
+                els.openYoutube.onclick = () => window.open(`https://www.youtube.com/watch?v=${match.videoId}`, '_blank', 'noopener');
+              } else {
+                throw new Error('No match');
+              }
+            } catch(err){
+              const vevoQuery = encodeURIComponent(rawQuery + ' vevo');
+              const vevoUrl = `https://www.youtube.com/results?search_query=${vevoQuery}`;
+              notice.style.color = 'var(--orange2)';
+              notice.innerHTML = `⚠️ Couldn't auto-load alternative. <a href="${vevoUrl}" target="_blank" rel="noopener" style="color:var(--orange);text-decoration:underline;font-weight:600;">Search on YouTube →</a>`;
+              els.openYoutube.textContent = '🎬 Find on Vevo';
+              els.openYoutube.onclick = () => window.open(vevoUrl, '_blank', 'noopener');
+            }
+          }
+        }, 6000);
+      } else {
+        els.videoFrame.src = '';
+      }
+
+      els.commentList.innerHTML = '<div class="comment" style="color:var(--muted)">Loading comments...</div>';
+      els.drawer.classList.add('open');
+      els.overlay.classList.add('open');
+      els.drawer.setAttribute('aria-hidden', 'false');
+
+      try{
+        const list = await fetchComments(song);
+        renderComments(song, list);
+      }catch(e){
+        els.commentList.innerHTML = '<div class="comment">Could not load comments.</div>';
+      }
+    }
+    function closeDrawer(){
+      els.drawer.classList.remove('open');
+      els.overlay.classList.remove('open');
+      els.drawer.setAttribute('aria-hidden', 'true');
+      els.videoFrame.src = '';
+      activeSong = null;
+
+      // Clean up fallback notice and timer
+      const notice = document.getElementById('vevo-fallback-notice');
+      if(notice) notice.remove();
+      if(window._vevoFallbackTimer) clearTimeout(window._vevoFallbackTimer);
+      els.openYoutube.textContent = 'Open YouTube';
+    }
+
+    function render(){
   let data = [...songs];
   const q = els.search.value.trim().toLowerCase();
 
@@ -924,7 +1165,7 @@ function render(){
   if(els.filter.value === 'withVideo') data = data.filter(s => s.video);
   if(els.filter.value === 'withoutVideo') data = data.filter(s => !s.video);
 
-  if(els.sort.value === 'views') data.sort((a,b) => parseViews(b.views)-parseViews(a.views));
+  if(els.sort.value === 'views') data.sort((a,b) => parseViews(b.views) - parseViews(a.views));
   if(els.sort.value === 'title') data.sort((a,b) => (a.title + a.artist).localeCompare(b.title + b.artist));
   if(els.sort.value === 'rank') data.sort((a,b) => a.rank - b.rank);
 
@@ -932,71 +1173,279 @@ function render(){
   els.empty.style.display = data.length ? 'none' : 'block';
   els.grid.innerHTML = '';
 
-  data.slice(0, 250).forEach(song => {
+  data.slice(0, 250).forEach((song, i) => {
     const card = document.createElement('article');
     card.className = 'song';
+
     card.innerHTML = `
       <div class="song-top">
         <div class="rank">${song.rank}</div>
-        <div class="song-info">
-          <h3 class="title">
-            <a href="${song.video ? `https://www.youtube.com/watch?v=${song.video}` : '#'}" target="_blank" rel="noopener">${escapeHtml(song.title)}</a>
-          </h3>
-          <div class="meta">
-            <span>${escapeHtml(song.artist)}</span>
-            <span>${song.views} views</span>
+
+        <div class="song-main">
+          <div class="song-thumb-wrap">
+            ${
+              song.video
+                ? `<img
+                    class="song-thumb"
+                    src="https://i.ytimg.com/vi/${song.video}/hqdefault.jpg"
+                    alt="${escapeHtml(song.title)} thumbnail"
+                    loading="${i < 6 ? 'eager' : 'lazy'}"
+                    data-fallback="0"
+                  />`
+                : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--muted);">No thumbnail</div>`
+            }
+          </div>
+
+          <div class="song-info">
+            <div>
+              <h3 class="title">
+                <a href="${song.video ? `https://www.youtube.com/watch?v=${song.video}` : '#'}" target="_blank" rel="noopener noreferrer">
+                  ${escapeHtml(song.title)}
+                </a>
+              </h3>
+
+              <div class="meta">
+                <span>${escapeHtml(song.artist)}</span>
+                <span>${song.views} views</span>
+              </div>
+            </div>
+
+            <div class="song-actions">
+              <button class="btn" data-open>Open song</button>
+              <button class="btn secondary" data-play ${song.video ? '' : 'disabled'}>${song.video ? 'Play video' : 'No video yet'}</button>
+              <button class="btn ghost" data-comments>Comments</button>
+            </div>
           </div>
         </div>
       </div>
-      <div class="song-actions">
-        <button class="btn" data-open>Open song</button>
-        <button class="btn secondary" data-play ${song.video ? '' : 'disabled'}>${song.video ? 'Play video' : 'No video yet'}</button>
-        <button class="btn ghost" data-comments>Comments</button>
-      </div>
     `;
+
+    const img = card.querySelector('.song-thumb');
+    if(img && song.video){
+      img.addEventListener('error', async function(){
+        const state = parseInt(this.dataset.fallback || '0');
+        if(state === 0){
+          this.dataset.fallback = '1';
+          this.src = `https://i.ytimg.com/vi/${song.video}/mqdefault.jpg`;
+        } else if(state === 1){
+          this.dataset.fallback = '2';
+          this.src = `https://i.ytimg.com/vi/${song.video}/0.jpg`;
+        } else if(state === 2){
+          this.dataset.fallback = '3';
+          const imgEl = this;
+          try {
+            const rawQ = song.artist + ' ' + song.title + ' official video';
+            const thumbProxies = [
+              `https://corsproxy.io/?url=${encodeURIComponent('https://inv.nadeko.net/api/v1/search?q=' + encodeURIComponent(rawQ) + '&type=video&page=1')}`,
+              `https://api.allorigins.win/raw?url=${encodeURIComponent('https://inv.nadeko.net/api/v1/search?q=' + encodeURIComponent(rawQ) + '&type=video&page=1')}`,
+              `https://inv.tux.pizza/api/v1/search?q=${encodeURIComponent(rawQ)}&type=video&page=1`
+            ];
+            let results = null;
+            for(const url of thumbProxies){
+              try{ const r = await fetch(url); if(!r.ok) continue; const d = await r.json(); if(Array.isArray(d) && d.length){ results = d; break; } }catch(_){ continue; }
+            }
+            if(!results) throw new Error();
+            const match = results.find(v =>
+              v.type === 'video' && (
+                /vevo/i.test(v.author) ||
+                /official/i.test(v.title) ||
+                v.author.toLowerCase().includes(song.artist.toLowerCase().split(' ')[0])
+              )
+            ) || results.find(v => v.type === 'video');
+            if(match && match.videoId){
+              imgEl.src = `https://i.ytimg.com/vi/${match.videoId}/hqdefault.jpg`;
+              imgEl.dataset.altVideoId = match.videoId;
+            } else {
+              throw new Error();
+            }
+          } catch(e) {
+            imgEl.replaceWith(document.createRange().createContextualFragment(
+              `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--muted);background:#0d0d12;">Thumbnail unavailable</div>`
+            ));
+          }
+        } else {
+          this.replaceWith(document.createRange().createContextualFragment(
+            `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--muted);background:#0d0d12;">Thumbnail unavailable</div>`
+          ));
+        }
+      });
+    }
+
     card.querySelector('[data-open]').addEventListener('click', () => openDrawer(song));
     card.querySelector('[data-comments]').addEventListener('click', () => openDrawer(song));
+
     const playBtn = card.querySelector('[data-play]');
     if(song.video){
       playBtn.addEventListener('click', () => openDrawer(song));
     }
+
+    card.addEventListener('dblclick', () => openDrawer(song));
+
     els.grid.appendChild(card);
   });
 }
 
-els.search.addEventListener('input', render);
-els.sort.addEventListener('change', render);
-els.filter.addEventListener('change', render);
-els.reset.addEventListener('click', () => {
-  els.search.value = '';
-  els.sort.value = 'rank';
-  els.filter.value = 'all';
-  render();
-});
+    els.search.addEventListener('input', render);
+    els.sort.addEventListener('change', render);
+    els.filter.addEventListener('change', render);
 
-els.overlay.addEventListener('click', closeDrawer);
-els.closeDrawer.addEventListener('click', closeDrawer);
+    els.reset.addEventListener('click', () => {
+      els.search.value = '';
+      els.sort.value = 'rank';
+      els.filter.value = 'all';
+      render();
+    });
 
-els.postComment.addEventListener('click', () => {
-  if(!activeSong) return;
-  const text = els.commentText.value.trim();
-  if(!text) return;
-  const name = els.commentName.value.trim() || 'Guest';
-  const comments = loadComments(activeSong);
-  comments.push({name, text, time: Date.now()});
-  saveComments(activeSong, comments);
-  els.commentText.value = '';
-  renderComments(activeSong);
-});
+    els.overlay.addEventListener('click', closeDrawer);
+    els.closeDrawer.addEventListener('click', closeDrawer);
 
-els.clearSongComments.addEventListener('click', () => {
-  if(!activeSong) return;
-  if(!confirm('Clear comments for this song?')) return;
-  localStorage.removeItem(commentKey(activeSong));
-  renderComments(activeSong);
-});
+    document.addEventListener('keydown', e => {
+      if(e.key === 'Escape') closeDrawer();
+    });
 
-render();
-</script>
+    els.postComment.addEventListener('click', async () => {
+      if(!activeSong) return;
+
+      const text = els.commentText.value.trim();
+      if(!text) return;
+
+      const name = (els.commentName.value.trim() || 'Guest').slice(0, 40);
+
+      els.postComment.disabled = true;
+      els.postComment.textContent = 'Posting...';
+
+      try{
+        await postCommentToServer(activeSong, name, text);
+        els.commentText.value = '';
+        const list = await fetchComments(activeSong);
+        renderComments(activeSong, list);
+      }catch(e){
+        alert('Could not post comment. Please try again.');
+      }finally{
+        els.postComment.disabled = false;
+        els.postComment.textContent = 'Post comment';
+      }
+    });
+
+    render();
+  </script>
+
+  <script>
+    (function(){
+      const canvas = document.getElementById('starfield-canvas');
+      if(!canvas) return;
+      const ctx = canvas.getContext('2d');
+
+      function resize(){
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = window.innerWidth * dpr;
+        canvas.height = window.innerHeight * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+
+      resize();
+      window.addEventListener('resize', resize);
+
+      const STAR_COUNT = 520;
+      const stars = [];
+
+      function resetStar(s, randomY){
+        s.x = Math.random() * window.innerWidth;
+        s.y = randomY ? Math.random() * window.innerHeight : -4;
+        s.r = 0.15 + Math.random() * 0.55;
+        s.speed = 0.012 + Math.random() * 0.035;
+        s.tw = 0.0012 + Math.random() * 0.0025;
+        s.base = 0.18 + Math.random() * 0.52;
+        s.a = s.base;
+        s.warm = Math.random() > 0.85;
+      }
+
+      for(let i = 0; i < STAR_COUNT; i++){
+        const s = {};
+        resetStar(s, true);
+        stars.push(s);
+      }
+
+      const shooters = [];
+
+      function maybeShooter(){
+        if(Math.random() < 0.006 && shooters.length < 1){
+          shooters.push({
+            x: Math.random() * window.innerWidth,
+            y: Math.random() * window.innerHeight * 0.35,
+            len: 100 + Math.random() * 100,
+            speed: 0.9 + Math.random() * 0.8,
+            angle: Math.PI * 0.72 + (Math.random() - 0.5) * 0.18,
+            a: 0.5
+          });
+        }
+      }
+
+      function draw(){
+        ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+
+        const bg = ctx.createRadialGradient(
+          window.innerWidth * 0.5, 0, 0,
+          window.innerWidth * 0.5, window.innerHeight * 0.5, window.innerHeight
+        );
+        bg.addColorStop(0, '#0b0b14');
+        bg.addColorStop(0.5, '#04040a');
+        bg.addColorStop(1, '#000000');
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
+
+        for(const s of stars){
+          s.y += s.speed;
+          s.a += (Math.random() - 0.5) * s.tw;
+          s.a = Math.max(0.07, Math.min(0.78, s.a));
+
+          if(s.y > window.innerHeight + 4) resetStar(s, false);
+
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+
+          if(s.warm){
+            ctx.fillStyle = `rgba(255,240,220,${s.a})`;
+          }else if(s.r < 0.25){
+            ctx.fillStyle = `rgba(200,220,255,${s.a})`;
+          }else{
+            ctx.fillStyle = `rgba(255,255,255,${s.a})`;
+          }
+          ctx.fill();
+        }
+
+        for(let i = shooters.length - 1; i >= 0; i--){
+          const s = shooters[i];
+          s.x += Math.cos(s.angle) * s.speed;
+          s.y += Math.sin(s.angle) * s.speed;
+          s.a -= 0.0025;
+
+          const tx = s.x - Math.cos(s.angle) * s.len;
+          const ty = s.y - Math.sin(s.angle) * s.len;
+          const g = ctx.createLinearGradient(s.x, s.y, tx, ty);
+
+          g.addColorStop(0, `rgba(255,200,130,${s.a})`);
+          g.addColorStop(0.4, `rgba(255,200,130,${s.a * 0.3})`);
+          g.addColorStop(1, 'rgba(255,200,130,0)');
+
+          ctx.beginPath();
+          ctx.moveTo(s.x, s.y);
+          ctx.lineTo(tx, ty);
+          ctx.strokeStyle = g;
+          ctx.lineWidth = 1.0;
+          ctx.stroke();
+
+          if(s.a <= 0 || s.x < -300 || s.y > window.innerHeight + 200){
+            shooters.splice(i, 1);
+          }
+        }
+
+        maybeShooter();
+        requestAnimationFrame(draw);
+      }
+
+      draw();
+    })();
+  </script>
 </body>
 </html>
