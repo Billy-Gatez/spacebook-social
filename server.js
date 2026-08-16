@@ -2183,9 +2183,10 @@ app.get("/profile", requireLogin, async (req, res) => {
       </div>
 
       <script>
-        const CURRENT_USER_ID = "${currentUserId}";
-        let profileGalleryAlbumId = null;
-        let profileGalleryPhotoIndex = null;
+     const CURRENT_USER_ID = "${currentUserId}";
+const PROFILE_OWNER_ID = "${user._id}";
+let profileGalleryAlbumId = null;
+let profileGalleryPhotoIndex = null;
 
         async function loadOwnGallery() {
           const albums = await fetch("/api/albums", { credentials: "include" }).then(r => r.json()).catch(() => []);
@@ -2400,6 +2401,133 @@ async function loadPostReactions(postId) {
         document.addEventListener("keydown", function(e) { if (e.key === "Escape") closeProfileGallery(); });
         document.querySelectorAll(".post-card").forEach(function(card) { const id = card.dataset.postId; if (id) loadPostReactions(id); });
         loadOwnGallery();
+
+function escapeProfileCommentHtml(value) {
+  const element = document.createElement("div");
+  element.textContent = value || "";
+  return element.innerHTML;
+}
+
+function profileCommentTimeAgo(date) {
+  const diff = Date.now() - new Date(date).getTime();
+  const mins = Math.floor(diff / 60000);
+
+  if (mins < 1) return "just now";
+  if (mins < 60) return mins + "m ago";
+
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return hours + "h ago";
+
+  return Math.floor(hours / 24) + "d ago";
+}
+
+async function loadProfilePageComments() {
+  const list = document.getElementById("profile-page-comment-list");
+
+  if (!list) return;
+
+  list.innerHTML =
+    "<p style='color:#888;font-size:13px;'>Loading comments...</p>";
+
+  try {
+    const response = await fetch(
+      "/api/profiles/" + PROFILE_OWNER_ID + "/comments",
+      { credentials: "include" }
+    );
+
+    if (!response.ok) {
+      throw new Error("Could not load profile comments.");
+    }
+
+    const comments = await response.json();
+
+    if (!comments.length) {
+      list.innerHTML =
+        "<p style='color:#888;font-size:13px;'>No profile comments yet. Be the first to leave one.</p>";
+      return;
+    }
+
+    list.innerHTML = comments.map(function(comment) {
+      const name = escapeProfileCommentHtml(comment.userName);
+      const text = escapeProfileCommentHtml(comment.text);
+      const avatar = escapeProfileCommentHtml(
+        comment.userPic || "/assets/img/default-avatar.png"
+      );
+
+      return (
+        '<div class="comment-item">' +
+          '<img class="comment-avatar" src="' + avatar + '">' +
+          '<div style="flex:1;min-width:0;">' +
+            '<div class="comment-name">' + name + '</div>' +
+            '<div class="comment-text">' + text + '</div>' +
+            '<div class="comment-time">' +
+              profileCommentTimeAgo(comment.createdAt) +
+            '</div>' +
+          '</div>' +
+        '</div>'
+      );
+    }).join("");
+  } catch (err) {
+    console.error("Profile comments load error:", err);
+
+    list.innerHTML =
+      "<p style='color:#ff9999;font-size:13px;'>Could not load profile comments.</p>";
+  }
+}
+
+async function submitProfilePageComment() {
+  const input = document.getElementById("profile-page-comment-input");
+  const button = document.getElementById("profile-page-comment-submit");
+
+  if (!input || !button) return;
+
+  const text = input.value.trim();
+
+  if (!text) return;
+
+  button.disabled = true;
+  button.textContent = "Posting...";
+
+  try {
+    const response = await fetch(
+      "/api/profiles/" + PROFILE_OWNER_ID + "/comments",
+      {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ text: text })
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Could not post profile comment.");
+    }
+
+    input.value = "";
+    await loadProfilePageComments();
+  } catch (err) {
+    console.error("Profile comment post error:", err);
+    alert("Could not post your comment. Please try again.");
+  } finally {
+    button.disabled = false;
+    button.textContent = "Post";
+  }
+}
+
+document.getElementById("profile-page-comment-submit")
+  .addEventListener("click", submitProfilePageComment);
+
+document.getElementById("profile-page-comment-input")
+  .addEventListener("keydown", function(event) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      submitProfilePageComment();
+    }
+  });
+
+loadProfilePageComments();
       </script>
     </body>
     </html>
