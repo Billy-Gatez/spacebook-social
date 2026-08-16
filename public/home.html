@@ -290,6 +290,16 @@
         <div id="bulletin-list">
           <p class="bulletin-message">Loading bulletins...</p>
         </div>
+
+<button
+  id="toggle-bulletins"
+  class="btn-primary"
+  type="button"
+  style="display:none; margin-top:12px;"
+>
+  Show all bulletins
+</button>
+
       </div>
 
       <div class="card">
@@ -315,63 +325,92 @@
       return element.innerHTML;
     }
 
-    async function loadBulletins() {
-      var list = document.getElementById("bulletin-list");
+  var allBulletins = [];
+var bulletinsExpanded = false;
+var collapsedBulletinCount = 5;
 
-      try {
-        var response = await fetch("/bulletins", {
-          credentials: "include"
-        });
+function renderBulletins() {
+  var list = document.getElementById("bulletin-list");
+  var toggleButton = document.getElementById("toggle-bulletins");
 
-        if (!response.ok) {
-          throw new Error("Could not load bulletins");
-        }
+  var visibleBulletins = bulletinsExpanded
+    ? allBulletins
+    : allBulletins.slice(0, collapsedBulletinCount);
 
-        var bulletins = await response.json();
+  list.innerHTML = visibleBulletins.map(function(bulletin) {
+    var id = encodeURIComponent(bulletin._id || "");
+    var name = escapeHtml(bulletin.userName || "Unknown user");
+    var title = escapeHtml(bulletin.title || "Untitled Bulletin");
+    var content = escapeHtml(bulletin.content || "");
+    var time = bulletin.createdAt
+      ? new Date(bulletin.createdAt).toLocaleString()
+      : "";
 
-        if (!Array.isArray(bulletins) || bulletins.length === 0) {
-          list.innerHTML =
-            '<p class="bulletin-message">No bulletins yet. Be the first to post one.</p>';
-          return;
-        }
+    var replyCount = Number(bulletin.replyCount || 0);
+    var replyLabel = replyCount === 1
+      ? "Open bulletin · 1 reply"
+      : "Open bulletin · " + replyCount + " replies";
 
-        list.innerHTML = bulletins.map(function(bulletin) {
-          var id = encodeURIComponent(bulletin._id || "");
-          var name = escapeHtml(bulletin.userName || "Unknown user");
-          var title = escapeHtml(bulletin.title || "Untitled Bulletin");
-          var content = escapeHtml(bulletin.content || "");
-          var time = bulletin.createdAt
-            ? new Date(bulletin.createdAt).toLocaleString()
-            : "";
+    return (
+      '<article class="bulletin">' +
+        '<div class="bulletin-header">' +
+          '<strong class="bulletin-author">' + name + '</strong>' +
+          '<small class="bulletin-time">' + time + '</small>' +
+        '</div>' +
+        '<strong class="bulletin-title">' + title + '</strong>' +
+        '<p class="bulletin-content">' + content + '</p>' +
+        '<a class="bulletin-open" href="/bulletins/' + id + '">' +
+          replyLabel +
+        '</a>' +
+      '</article>'
+    );
+  }).join("");
 
-          var replyCount = Number(bulletin.replyCount || 0);
-          var replyLabel = replyCount === 1
-            ? "Open bulletin · 1 reply"
-            : "Open bulletin · " + replyCount + " replies";
+  if (allBulletins.length > collapsedBulletinCount) {
+    toggleButton.style.display = "inline-block";
+    toggleButton.textContent = bulletinsExpanded
+      ? "Show fewer bulletins"
+      : "Show all bulletins";
+  } else {
+    toggleButton.style.display = "none";
+  }
+}
 
-          return (
-            '<article class="bulletin">' +
-              '<div class="bulletin-header">' +
-                '<strong class="bulletin-author">' + name + '</strong>' +
-                '<small class="bulletin-time">' + time + '</small>' +
-              '</div>' +
-              '<strong class="bulletin-title">' + title + '</strong>' +
-              '<p class="bulletin-content">' + content + '</p>' +
-              '<a class="bulletin-open" href="/bulletins/' + id + '">' +
-                replyLabel +
-              '</a>' +
-            '</article>'
-          );
-        }).join("");
-      } catch (error) {
-        console.error("Bulletin error:", error);
+async function loadBulletins() {
+  var list = document.getElementById("bulletin-list");
 
-        list.innerHTML =
-          '<p class="bulletin-message" style="color:#ff9999;">Could not load bulletins.</p>';
-      }
+  try {
+    var response = await fetch("/bulletins", {
+      credentials: "include"
+    });
+
+    if (!response.ok) {
+      throw new Error("Could not load bulletins");
     }
 
-    loadBulletins();
+    allBulletins = await response.json();
+
+    if (!Array.isArray(allBulletins) || allBulletins.length === 0) {
+      list.innerHTML =
+        '<p class="bulletin-message">No bulletins yet. Be the first to post one.</p>';
+      return;
+    }
+
+    renderBulletins();
+  } catch (error) {
+    console.error("Bulletin error:", error);
+
+    list.innerHTML =
+      '<p class="bulletin-message" style="color:#ff9999;">Could not load bulletins.</p>';
+  }
+}
+
+document.getElementById("toggle-bulletins").addEventListener("click", function() {
+  bulletinsExpanded = !bulletinsExpanded;
+  renderBulletins();
+});
+
+loadBulletins();
   </script>
 
 </body>
