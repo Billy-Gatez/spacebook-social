@@ -689,12 +689,21 @@ app.get("/home", requireLogin, async (req, res) => {
       <div class="card">
         <h3 style="color:#ff6a00;margin-bottom:10px;">📢 Bulletins</h3>
 
-        <form action="/bulletins/post" method="post">
-          <textarea
-            name="content"
-            maxlength="500"
-            required
-            placeholder="Write a bulletin..."
+       <form action="/bulletins/post" method="post">
+  <input
+    type="text"
+    name="title"
+    maxlength="100"
+    placeholder="Bulletin title"
+    required
+    style="width:100%;box-sizing:border-box;margin-bottom:8px;background:rgba(255,255,255,0.06);border:1px solid #444;border-radius:8px;color:#fff;padding:10px;font-size:14px;"
+  >
+
+  <textarea
+    name="content"
+    maxlength="1000"
+    required
+    placeholder="Write your bulletin..."
             style="width:100%;min-height:80px;background:rgba(255,255,255,0.06);border:1px solid #444;border-radius:8px;color:#fff;padding:10px;font-size:14px;resize:vertical;box-sizing:border-box;"
           ></textarea>
 
