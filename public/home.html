@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Home – Spacebook</title>
   <link rel="stylesheet" href="/assets/css/styles.css">
 
@@ -22,6 +23,7 @@
       justify-content: space-between;
       align-items: center;
       background: transparent !important;
+      box-sizing: border-box;
     }
 
     .navbar a {
@@ -37,16 +39,17 @@
       display: flex;
       gap: 30px;
       padding: 40px;
+      box-sizing: border-box;
       background: transparent !important;
     }
 
     .sidebar .card {
       width: 220px;
       padding: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
       border-radius: 12px;
       background: rgba(0, 0, 0, 0.45) !important;
       backdrop-filter: blur(8px);
-      border: 1px solid rgba(255, 255, 255, 0.15);
     }
 
     .sidebar a {
@@ -54,47 +57,69 @@
       text-decoration: none;
     }
 
-    .feed { flex: 1; }
+    .feed {
+      flex: 1;
+      min-width: 0;
+    }
 
     .feed .card {
       padding: 25px;
+      margin-bottom: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
       border-radius: 12px;
       background: rgba(0, 0, 0, 0.45) !important;
       backdrop-filter: blur(8px);
-      border: 1px solid rgba(255, 255, 255, 0.15);
     }
 
     .btn-primary {
       display: inline-block;
       padding: 10px 16px;
-      background: #ff6a00;
       color: #000;
-      border-radius: 6px;
-      text-decoration: none;
       font-weight: bold;
+      text-decoration: none;
+      background: #ff6a00;
+      border: 0;
+      border-radius: 6px;
+      cursor: pointer;
       transition: 0.2s;
     }
 
-    .btn-primary:hover { background: #ff8c32; }
+    .btn-primary:hover {
+      background: #ff8c32;
+    }
 
-    hr { border: none; border-top: 1px solid rgba(255,255,255,0.2); }
+    hr {
+      border: none;
+      border-top: 1px solid rgba(255,255,255,0.2);
+    }
 
-    .sidebar ul li { margin-bottom: 10px; }
+    .sidebar ul li {
+      margin-bottom: 10px;
+    }
 
+    .bulletin-form input[type="text"],
     .bulletin-form textarea {
       width: 100%;
-      min-height: 85px;
       box-sizing: border-box;
       padding: 10px;
       color: #fff;
       font-family: Arial, sans-serif;
       font-size: 14px;
-      resize: vertical;
       background: rgba(255, 255, 255, 0.06);
       border: 1px solid #444;
       border-radius: 8px;
     }
 
+    .bulletin-form input[type="text"] {
+      margin-bottom: 10px;
+    }
+
+    .bulletin-form textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    .bulletin-form input[type="text"]:focus,
     .bulletin-form textarea:focus {
       outline: none;
       border-color: #ff6a00;
@@ -102,8 +127,6 @@
 
     .bulletin-form button {
       margin-top: 10px;
-      border: none;
-      cursor: pointer;
     }
 
     .bulletin {
@@ -119,6 +142,7 @@
       display: flex;
       justify-content: space-between;
       gap: 10px;
+      align-items: flex-start;
     }
 
     .bulletin-author {
@@ -128,6 +152,14 @@
     .bulletin-time {
       color: #888;
       font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .bulletin-title {
+      display: block;
+      margin-top: 8px;
+      color: #fff;
+      font-size: 17px;
     }
 
     .bulletin-content {
@@ -136,11 +168,55 @@
       white-space: pre-wrap;
     }
 
+    .bulletin-open {
+      display: inline-block;
+      margin-top: 10px;
+      color: #ff6a00;
+      font-size: 13px;
+      font-weight: bold;
+      text-decoration: none;
+    }
+
+    .bulletin-open:hover {
+      text-decoration: underline;
+    }
+
     .bulletin-message {
       color: #aaa;
       font-size: 14px;
     }
 
+    @media (max-width: 700px) {
+      .navbar {
+        gap: 12px;
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .nav-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .navbar a {
+        margin-left: 0;
+      }
+
+      .page {
+        flex-direction: column;
+        padding: 16px;
+      }
+
+      .sidebar .card {
+        width: auto;
+      }
+
+      .bulletin-header {
+        flex-direction: column;
+        gap: 4px;
+      }
+    }
   </style>
 </head>
 
@@ -148,9 +224,11 @@
 
   <div class="navbar">
     <div class="logo">
-      <a href="/feed">Spacebook</a>
+      <a href="/home">Spacebook</a>
     </div>
+
     <div class="nav-links">
+      <a href="/bulletins">Bulletins</a>
       <a href="/feed">Feed</a>
       <a href="/profile">Profile</a>
       <a href="/messages">Messages</a>
@@ -168,8 +246,10 @@
     <aside class="sidebar">
       <div class="card">
         <strong style="color:#ff6a00;">Navigation</strong>
+
         <ul style="list-style:none; margin-top:10px; font-size:14px; padding-left:0;">
           <li><a href="/profile">👤 Your Profile</a></li>
+          <li><a href="/bulletins">📢 Bulletins</a></li>
           <li><a href="/feed">📰 Feed</a></li>
           <li><a href="/messages">💬 Messages</a></li>
           <li><a href="/stories">⚡ Stories</a></li>
@@ -182,24 +262,23 @@
     </aside>
 
     <main class="feed">
-      <div class="card">
-        <h2 style="color:#ff6a00; margin-bottom:10px;">Welcome to Spacebook</h2>
-        <p style="color:#ccc; font-size:14px;">
-          Use the navigation on the left to visit your profile, check your feed, and explore your universe.
-        </p>
-        <p style="margin-top:10px;">
-          <a href="/feed" class="btn-primary">Go to your Feed</a>
-        </p>
-      </div>
 
-      <div class="card" style="margin-top:20px;">
+      <div class="card">
         <h2 style="color:#ff6a00; margin-bottom:10px;">📢 Bulletins</h2>
 
         <form class="bulletin-form" action="/bulletins/post" method="POST">
+          <input
+            type="text"
+            name="title"
+            maxlength="100"
+            placeholder="Bulletin title"
+            required
+          >
+
           <textarea
             name="content"
-            maxlength="500"
-            placeholder="Write a bulletin..."
+            maxlength="1000"
+            placeholder="Write your bulletin..."
             required
           ></textarea>
 
@@ -213,64 +292,87 @@
         </div>
       </div>
 
+      <div class="card">
+        <h2 style="color:#ff6a00; margin-bottom:10px;">Welcome to Spacebook</h2>
+
+        <p style="color:#ccc; font-size:14px;">
+          Use the navigation on the left to visit your profile, check your feed, and explore your universe.
+        </p>
+
+        <p style="margin-top:10px;">
+          <a href="/feed" class="btn-primary">Go to your Feed</a>
+        </p>
+      </div>
+
     </main>
 
   </div>
 
-<script>
-  function escapeHtml(value) {
-    var element = document.createElement("div");
-    element.textContent = value || "";
-    return element.innerHTML;
-  }
-
-  async function loadBulletins() {
-    var list = document.getElementById("bulletin-list");
-
-    try {
-      var response = await fetch("/bulletins", {
-        credentials: "include"
-      });
-
-      if (!response.ok) {
-        throw new Error("Could not load bulletins");
-      }
-
-      var bulletins = await response.json();
-
-      if (!Array.isArray(bulletins) || bulletins.length === 0) {
-        list.innerHTML =
-          '<p class="bulletin-message">No bulletins yet. Be the first to post one.</p>';
-        return;
-      }
-
-      list.innerHTML = bulletins.map(function(bulletin) {
-        var name = escapeHtml(bulletin.userName || "Unknown user");
-        var content = escapeHtml(bulletin.content || "");
-        var time = bulletin.createdAt
-          ? new Date(bulletin.createdAt).toLocaleString()
-          : "";
-
-        return (
-          '<article class="bulletin">' +
-            '<div class="bulletin-header">' +
-              '<strong class="bulletin-author">' + name + '</strong>' +
-              '<small class="bulletin-time">' + time + '</small>' +
-            '</div>' +
-            '<p class="bulletin-content">' + content + '</p>' +
-          '</article>'
-        );
-      }).join("");
-    } catch (error) {
-      console.error("Bulletin error:", error);
-
-      list.innerHTML =
-        '<p class="bulletin-message" style="color:#ff9999;">Could not load bulletins.</p>';
+  <script>
+    function escapeHtml(value) {
+      var element = document.createElement("div");
+      element.textContent = value || "";
+      return element.innerHTML;
     }
-  }
 
-  loadBulletins();
-</script>
+    async function loadBulletins() {
+      var list = document.getElementById("bulletin-list");
+
+      try {
+        var response = await fetch("/bulletins", {
+          credentials: "include"
+        });
+
+        if (!response.ok) {
+          throw new Error("Could not load bulletins");
+        }
+
+        var bulletins = await response.json();
+
+        if (!Array.isArray(bulletins) || bulletins.length === 0) {
+          list.innerHTML =
+            '<p class="bulletin-message">No bulletins yet. Be the first to post one.</p>';
+          return;
+        }
+
+        list.innerHTML = bulletins.map(function(bulletin) {
+          var id = encodeURIComponent(bulletin._id || "");
+          var name = escapeHtml(bulletin.userName || "Unknown user");
+          var title = escapeHtml(bulletin.title || "Untitled Bulletin");
+          var content = escapeHtml(bulletin.content || "");
+          var time = bulletin.createdAt
+            ? new Date(bulletin.createdAt).toLocaleString()
+            : "";
+
+          var replyCount = Number(bulletin.replyCount || 0);
+          var replyLabel = replyCount === 1
+            ? "Open bulletin · 1 reply"
+            : "Open bulletin · " + replyCount + " replies";
+
+          return (
+            '<article class="bulletin">' +
+              '<div class="bulletin-header">' +
+                '<strong class="bulletin-author">' + name + '</strong>' +
+                '<small class="bulletin-time">' + time + '</small>' +
+              '</div>' +
+              '<strong class="bulletin-title">' + title + '</strong>' +
+              '<p class="bulletin-content">' + content + '</p>' +
+              '<a class="bulletin-open" href="/bulletins/' + id + '">' +
+                replyLabel +
+              '</a>' +
+            '</article>'
+          );
+        }).join("");
+      } catch (error) {
+        console.error("Bulletin error:", error);
+
+        list.innerHTML =
+          '<p class="bulletin-message" style="color:#ff9999;">Could not load bulletins.</p>';
+      }
+    }
+
+    loadBulletins();
+  </script>
 
 </body>
 </html>

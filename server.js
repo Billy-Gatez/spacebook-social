@@ -187,8 +187,43 @@ const musicCommentSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 const MusicComment = mongoose.model('MusicComment', musicCommentSchema);
-
+// ====== BULLETINS ======
 const bulletinSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true
+  },
+  userName: {
+    type: String,
+    required: true
+  },
+  title: {
+    type: String,
+    required: true,
+    maxlength: 100
+  },
+  content: {
+    type: String,
+    required: true,
+    maxlength: 1000
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  expiresAt: {
+    type: Date,
+    default: () => new Date(Date.now() + 10 * 24 * 60 * 60 * 1000)
+  }
+});
+
+const bulletinReplySchema = new mongoose.Schema({
+  bulletinId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Bulletin",
+    required: true
+  },
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
@@ -206,14 +241,11 @@ const bulletinSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now
-  },
-  expiresAt: {
-    type: Date,
-    default: () => new Date(Date.now() + 10 * 24 * 60 * 60 * 1000)
   }
 });
 
 const Bulletin = mongoose.model("Bulletin", bulletinSchema);
+const BulletinReply = mongoose.model("BulletinReply", bulletinReplySchema);
 
 // ====== ELO ======
 function updateElo(rA, rB, scoreA, k = 32) {
@@ -830,23 +862,26 @@ async function loadPostReactions(postId) {
 });
 
 
+// ====== BULLETIN ROUTES ======
 
 app.post("/bulletins/post", requireLogin, async (req, res) => {
   try {
     const user = await User.findById(req.session.userId);
+    const title = (req.body.title || "").trim();
     const content = (req.body.content || "").trim();
 
-    if (!user || !content) {
+    if (!user || !title || !content) {
       return res.redirect("/home");
     }
 
-    await Bulletin.create({
+    const bulletin = await Bulletin.create({
       userId: user._id,
       userName: user.name,
-      content: content
+      title: title.slice(0, 100),
+      content: content.slice(0, 1000)
     });
 
-    res.redirect("/home");
+    res.redirect("/bulletins/" + bulletin._id);
   } catch (err) {
     console.error("Bulletin post error:", err);
     res.status(500).send("Error posting bulletin.");
@@ -861,10 +896,136 @@ app.get("/bulletins", requireLogin, async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(50);
 
-    res.json(bulletins);
+    const items = await Promise.all(
+      bulletins.map(async function(bulletin) {
+        const replyCount = await BulletinReply.countDocuments({
+          bulletinId: bulletin._id
+        });
+
+        return {
+          _id: bulletin._id,
+          userName: bulletin.userName,
+          title: bulletin.title,
+          content: bulletin.content,
+          createdAt: bulletin.createdAt,
+          replyCount: replyCount
+        };
+      })
+    );
+
+    res.json(items);
   } catch (err) {
-    console.error("Bulletin load error:", err);
+    console.error("Bulletin list error:", err);
     res.status(500).json({ error: "Could not load bulletins." });
+  }
+});
+
+app.get("/bulletins/:id", requireLogin, async (req, res) => {
+  try {
+    const bulletin = await Bulletin.findById(req.params.id);
+
+    if (!bulletin) {
+      return res.status(404).send("Bulletin not found.");
+    }
+
+    const replies = await BulletinReply.find({
+      bulletinId: bulletin._id
+    }).sort({ createdAt: 1 });
+
+    function safe(value) {
+      return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    const repliesHtml = replies.length
+      ? replies.map(function(reply) {
+          return (
+            '<article style="margin-top:12px;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:8px;">' +
+              '<div style="display:flex;justify-content:space-between;gap:10px;">' +
+                '<strong style="color:#ff6a00;">' + safe(reply.userName) + '</strong>' +
+                '<small style="color:#777;">' + reply.createdAt.toLocaleString() + '</small>' +
+              '</div>' +
+              '<p style="margin:8px 0 0;color:#eee;white-space:pre-wrap;">' +
+                safe(reply.content) +
+              '</p>' +
+            '</article>'
+          );
+        }).join("")
+      : '<p style="color:#888;font-size:14px;">No replies yet. Be the first to reply.</p>';
+
+    res.send(
+      '<!DOCTYPE html>' +
+      '<html lang="en">' +
+      '<head>' +
+        '<meta charset="UTF-8">' +
+        '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
+        '<title>' + safe(bulletin.title) + ' – Spacebook</title>' +
+        '<style>' +
+          'body{margin:0;min-height:100vh;color:#fff;font-family:Arial,sans-serif;background:#000;}' +
+          '.nav{padding:16px 24px;background:rgba(0,0,0,.7);border-bottom:1px solid rgba(255,255,255,.15);}' +
+          '.nav a{color:#ff6a00;font-weight:bold;text-decoration:none;}' +
+          '.page{width:min(860px,calc(100% - 32px));margin:30px auto;}' +
+          '.card{padding:22px;margin-bottom:18px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);border-radius:12px;}' +
+          'textarea{width:100%;min-height:90px;box-sizing:border-box;padding:10px;resize:vertical;color:#fff;font:inherit;background:rgba(255,255,255,.06);border:1px solid #444;border-radius:8px;}' +
+          '.btn{margin-top:10px;padding:9px 14px;color:#000;font-weight:bold;background:#ff6a00;border:0;border-radius:6px;cursor:pointer;}' +
+        '</style>' +
+      '</head>' +
+      '<body>' +
+        '<nav class="nav"><a href="/home">← Back to Home</a></nav>' +
+        '<main class="page">' +
+          '<article class="card">' +
+            '<h1 style="margin-top:0;color:#ff6a00;">' + safe(bulletin.title) + '</h1>' +
+            '<div style="color:#aaa;font-size:13px;">Posted by ' +
+              safe(bulletin.userName) + ' · ' +
+              bulletin.createdAt.toLocaleString() +
+            '</div>' +
+            '<p style="white-space:pre-wrap;line-height:1.5;color:#eee;">' +
+              safe(bulletin.content) +
+            '</p>' +
+          '</article>' +
+          '<section class="card">' +
+            '<h2 style="margin-top:0;color:#ff6a00;">Replies</h2>' +
+            '<form action="/bulletins/' + bulletin._id + '/replies" method="post">' +
+              '<textarea name="content" maxlength="500" placeholder="Write a reply..." required></textarea>' +
+              '<button class="btn" type="submit">Post Reply</button>' +
+            '</form>' +
+            '<div style="margin-top:18px;">' + repliesHtml + '</div>' +
+          '</section>' +
+        '</main>' +
+      '</body>' +
+      '</html>'
+    );
+  } catch (err) {
+    console.error("Bulletin page error:", err);
+    res.status(500).send("Could not load bulletin.");
+  }
+});
+
+app.post("/bulletins/:id/replies", requireLogin, async (req, res) => {
+  try {
+    const user = await User.findById(req.session.userId);
+    const bulletin = await Bulletin.findById(req.params.id);
+    const content = (req.body.content || "").trim();
+
+    if (!user || !bulletin || !content) {
+      return res.redirect("/home");
+    }
+
+    await BulletinReply.create({
+      bulletinId: bulletin._id,
+      userId: user._id,
+      userName: user.name,
+      content: content.slice(0, 500)
+    });
+
+    res.redirect("/bulletins/" + bulletin._id);
+  } catch (err) {
+    console.error("Bulletin reply error:", err);
+    res.status(500).send("Error posting reply.");
   }
 });
 
