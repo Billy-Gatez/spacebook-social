@@ -840,101 +840,126 @@ async function loadPostReactions(postId) {
     });
 
      // ====== BULLETINS ======
-     function escapeBulletinHtml(value) {
-      var element = document.createElement("div");
-      element.textContent = value || "";
-      return element.innerHTML;
-    }
+function escapeBulletinHtml(value) {
+  var element = document.createElement("div");
+  element.textContent = value || "";
+  return element.innerHTML;
+}
 
-    var allBulletins = [];
-    var bulletinsExpanded = false;
-    var collapsedBulletinCount = 5;
+var allBulletins = [];
+var bulletinDisplayCount = 5;
 
-    function renderBulletins() {
-      var list = document.getElementById("bulletin-list");
-      var toggleButton = document.getElementById("toggle-bulletins");
+function renderBulletins() {
+  var list = document.getElementById("bulletin-list");
+  var buttons = document.getElementById("bulletin-buttons");
+  var showFiftyButton = document.getElementById("show-fifty-bulletins");
+  var showAllButton = document.getElementById("show-all-bulletins");
+  var showFewerButton = document.getElementById("show-fewer-bulletins");
 
-      var visibleBulletins = bulletinsExpanded
-        ? allBulletins
-        : allBulletins.slice(0, collapsedBulletinCount);
+  var visibleBulletins = allBulletins.slice(0, bulletinDisplayCount);
 
-      list.innerHTML = visibleBulletins.map(function(bulletin) {
-        var id = encodeURIComponent(bulletin._id || "");
-        var name = escapeBulletinHtml(bulletin.userName || "Unknown user");
-        var title = escapeBulletinHtml(bulletin.title || "Untitled Bulletin");
-        var content = escapeBulletinHtml(bulletin.content || "");
-        var createdAt = bulletin.createdAt
-          ? new Date(bulletin.createdAt).toLocaleString()
-          : "";
+  list.innerHTML = visibleBulletins.map(function(bulletin) {
+    var id = encodeURIComponent(bulletin._id || "");
+    var name = escapeBulletinHtml(bulletin.userName || "Unknown user");
+    var title = escapeBulletinHtml(bulletin.title || "Untitled Bulletin");
+    var content = escapeBulletinHtml(bulletin.content || "");
+    var createdAt = bulletin.createdAt
+      ? new Date(bulletin.createdAt).toLocaleString()
+      : "";
 
-        var replyCount = Number(bulletin.replyCount || 0);
-        var replyLabel = replyCount === 1
-          ? "Open bulletin · 1 reply"
-          : "Open bulletin · " + replyCount + " replies";
+    var replyCount = Number(bulletin.replyCount || 0);
+    var replyLabel = replyCount === 1
+      ? "Open bulletin · 1 reply"
+      : "Open bulletin · " + replyCount + " replies";
 
-        return (
-          '<div style="margin-top:10px;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:8px;overflow-wrap:anywhere;">' +
-            '<div style="display:flex;justify-content:space-between;gap:10px;">' +
-              '<strong style="color:#ff6a00;">' + name + '</strong>' +
-              '<small style="color:#777;white-space:nowrap;">' + createdAt + '</small>' +
-            '</div>' +
-            '<div style="margin-top:8px;color:#fff;font-weight:bold;">' + title + '</div>' +
-            '<div style="margin-top:8px;color:#eee;white-space:pre-wrap;">' + content + '</div>' +
-            '<a href="/bulletins/' + id + '" style="display:inline-block;margin-top:10px;color:#ff6a00;font-size:13px;font-weight:bold;text-decoration:none;">' + replyLabel + '</a>' +
-          '</div>'
-        );
-      }).join("");
+    return (
+      '<div style="margin-top:10px;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:8px;overflow-wrap:anywhere;">' +
+        '<div style="display:flex;justify-content:space-between;gap:10px;">' +
+          '<strong style="color:#ff6a00;">' + name + '</strong>' +
+          '<small style="color:#777;white-space:nowrap;">' + createdAt + '</small>' +
+        '</div>' +
+        '<div style="margin-top:8px;color:#fff;font-weight:bold;">' + title + '</div>' +
+        '<div style="margin-top:8px;color:#eee;white-space:pre-wrap;">' + content + '</div>' +
+        '<a href="/bulletins/' + id + '" style="display:inline-block;margin-top:10px;color:#ff6a00;font-size:13px;font-weight:bold;text-decoration:none;">' +
+          replyLabel +
+        '</a>' +
+      '</div>'
+    );
+  }).join("");
 
-      if (allBulletins.length > collapsedBulletinCount) {
-        toggleButton.style.display = "inline-block";
-        toggleButton.textContent = bulletinsExpanded
-          ? "Show fewer bulletins"
-          : "Show all bulletins";
-      } else {
-        toggleButton.style.display = "none";
-      }
-    }
+  if (allBulletins.length <= 5) {
+    buttons.style.display = "none";
+    return;
+  }
 
-    async function loadBulletins() {
-      var list = document.getElementById("bulletin-list");
-      var toggleButton = document.getElementById("toggle-bulletins");
+  buttons.style.display = "flex";
 
-      try {
-        var response = await fetch("/bulletins", {
-          credentials: "include"
-        });
+  showFiftyButton.style.display =
+    bulletinDisplayCount < 50 && allBulletins.length > 5
+      ? "inline-block"
+      : "none";
 
-        if (!response.ok) {
-          throw new Error("Could not load bulletins");
-        }
+  showAllButton.style.display =
+    bulletinDisplayCount < allBulletins.length
+      ? "inline-block"
+      : "none";
 
-        allBulletins = await response.json();
+  showFewerButton.style.display =
+    bulletinDisplayCount > 5
+      ? "inline-block"
+      : "none";
+}
 
-        if (!Array.isArray(allBulletins) || allBulletins.length === 0) {
-          list.innerHTML =
-            '<p style="color:#888;font-size:13px;">No bulletins yet. Be the first to post one.</p>';
+async function loadBulletins() {
+  var list = document.getElementById("bulletin-list");
+  var buttons = document.getElementById("bulletin-buttons");
 
-          toggleButton.style.display = "none";
-          return;
-        }
-
-        renderBulletins();
-      } catch (error) {
-        console.error("Bulletin error:", error);
-
-        list.innerHTML =
-          '<p style="color:#ff9999;font-size:13px;">Could not load bulletins.</p>';
-
-        toggleButton.style.display = "none";
-      }
-    }
-
-    document.getElementById("toggle-bulletins").addEventListener("click", function() {
-      bulletinsExpanded = !bulletinsExpanded;
-      renderBulletins();
+  try {
+    var response = await fetch("/bulletins", {
+      credentials: "include"
     });
 
-    loadBulletins();
+    if (!response.ok) {
+      throw new Error("Could not load bulletins");
+    }
+
+    allBulletins = await response.json();
+
+    if (!Array.isArray(allBulletins) || allBulletins.length === 0) {
+      list.innerHTML =
+        '<p style="color:#888;font-size:13px;">No bulletins yet. Be the first to post one.</p>';
+
+      buttons.style.display = "none";
+      return;
+    }
+
+    renderBulletins();
+  } catch (error) {
+    console.error("Bulletin error:", error);
+
+    list.innerHTML =
+      '<p style="color:#ff9999;font-size:13px;">Could not load bulletins.</p>';
+
+    buttons.style.display = "none";
+  }
+}
+
+document.getElementById("show-fifty-bulletins").addEventListener("click", function() {
+  bulletinDisplayCount = Math.min(50, allBulletins.length);
+  renderBulletins();
+});
+
+document.getElementById("show-all-bulletins").addEventListener("click", function() {
+  bulletinDisplayCount = allBulletins.length;
+  renderBulletins();
+});
+
+document.getElementById("show-fewer-bulletins").addEventListener("click", function() {
+  bulletinDisplayCount = 5;
+  renderBulletins();
+});
+
+loadBulletins();
   </script>
 </body>
 </html>`);
