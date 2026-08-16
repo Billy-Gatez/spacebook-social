@@ -142,6 +142,36 @@ const postCommentSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
+const profileCommentSchema = new mongoose.Schema({
+  profileUserId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true
+  },
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true
+  },
+  userName: {
+    type: String,
+    required: true
+  },
+  userPic: {
+    type: String,
+    default: "/assets/img/default-avatar.png"
+  },
+  text: {
+    type: String,
+    required: true,
+    maxlength: 300
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
+});
+
 const postReactionSchema = new mongoose.Schema({
   postId: { type: mongoose.Schema.Types.ObjectId, ref: "Post" },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
@@ -174,6 +204,10 @@ const playerSchema = new mongoose.Schema({
 const User = mongoose.model("User", userSchema);
 const Post = mongoose.model("Post", postSchema);
 const PostComment = mongoose.model("PostComment", postCommentSchema);
+const ProfileComment = mongoose.model(
+  "ProfileComment",
+  profileCommentSchema
+);
 const PostReaction = mongoose.model("PostReaction", postReactionSchema);
 const Notification = mongoose.model("Notification", notificationSchema);
 const Player = mongoose.model("Player", playerSchema);
@@ -813,6 +847,56 @@ async function loadPostReactions(postId) {
       if (hrs < 24) return hrs + "h ago";
       return Math.floor(hrs/24) + "d ago";
     }
+
+// ====== PROFILE COMMENTS API ======
+app.get("/api/profiles/:profileUserId/comments", requireLogin, async (req, res) => {
+  try {
+    const comments = await ProfileComment.find({
+      profileUserId: req.params.profileUserId
+    })
+      .sort({ createdAt: -1 })
+      .limit(100);
+
+    res.json(comments);
+  } catch (err) {
+    console.error("Profile comment list error:", err);
+    res.status(500).json({ error: "Could not load profile comments." });
+  }
+});
+
+app.post("/api/profiles/:profileUserId/comments", requireLogin, async (req, res) => {
+  try {
+    const text = String(req.body.text || "").trim();
+
+    if (!text) {
+      return res.status(400).json({ error: "Comment cannot be empty." });
+    }
+
+    const profileOwner = await User.findById(req.params.profileUserId);
+    const commenter = await User.findById(req.session.userId);
+
+    if (!profileOwner) {
+      return res.status(404).json({ error: "Profile not found." });
+    }
+
+    if (!commenter) {
+      return res.status(401).json({ error: "Not logged in." });
+    }
+
+    const comment = await ProfileComment.create({
+      profileUserId: profileOwner._id,
+      userId: commenter._id,
+      userName: commenter.name,
+      userPic: commenter.profilePic || "/assets/img/default-avatar.png",
+      text: text.slice(0, 300)
+    });
+
+    res.status(201).json(comment);
+  } catch (err) {
+    console.error("Profile comment create error:", err);
+    res.status(500).json({ error: "Could not post profile comment." });
+  }
+});
 
     // ====== CLICK HANDLER ======
     document.addEventListener("click", async function(e) {
@@ -1601,6 +1685,7 @@ app.post("/api/posts/:postId/comments", requireLogin, async (req, res) => {
   try {
     const user = await User.findById(req.session.userId);
     if (!user) return res.status(401).json({ error: "Not logged in" });
+
     const comment = await PostComment.create({
       postId: req.params.postId,
       userId: user._id,
@@ -1608,19 +1693,77 @@ app.post("/api/posts/:postId/comments", requireLogin, async (req, res) => {
       userPic: user.profilePic || "",
       text: req.body.text
     });
+
     const post = await Post.findById(req.params.postId);
+
     if (post && post.userId.toString() !== user._id.toString()) {
       await Notification.create({
-        toUserId: post.userId, fromUserId: user._id, fromUserName: user.name,
-        type: "comment", postId: post._id,
+        toUserId: post.userId,
+        fromUserId: user._id,
+        fromUserName: user.name,
+        type: "comment",
+        postId: post._id,
         text: "commented on your post: \"" + (req.body.text || "").slice(0, 60) + "\""
       });
     }
+
     res.json(comment);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
+
+// ====== PROFILE COMMENTS API ======
+app.get("/api/profiles/:profileUserId/comments", requireLogin, async (req, res) => {
+  try {
+    const comments = await ProfileComment.find({
+      profileUserId: req.params.profileUserId
+    })
+      .sort({ createdAt: -1 })
+      .limit(100);
+
+    res.json(comments);
+  } catch (err) {
+    console.error("Profile comment list error:", err);
+    res.status(500).json({ error: "Could not load profile comments." });
+  }
+});
+
+app.post("/api/profiles/:profileUserId/comments", requireLogin, async (req, res) => {
+  try {
+    const text = String(req.body.text || "").trim();
+
+    if (!text) {
+      return res.status(400).json({ error: "Comment cannot be empty." });
+    }
+
+    const profileOwner = await User.findById(req.params.profileUserId);
+    const commenter = await User.findById(req.session.userId);
+
+    if (!profileOwner) {
+      return res.status(404).json({ error: "Profile not found." });
+    }
+
+    if (!commenter) {
+      return res.status(401).json({ error: "Not logged in." });
+    }
+
+    const comment = await ProfileComment.create({
+      profileUserId: profileOwner._id,
+      userId: commenter._id,
+      userName: commenter.name,
+      userPic: commenter.profilePic || "/assets/img/default-avatar.png",
+      text: text.slice(0, 300)
+    });
+
+    res.status(201).json(comment);
+  } catch (err) {
+    console.error("Profile comment create error:", err);
+    res.status(500).json({ error: "Could not post profile comment." });
+  }
+});
+
+// ====== MUSIC HUB COMMENTS API ======
 
 // MUSIC HUB COMMENTS API
 app.get('/api/music-comments/:rank', async (req, res) => {
@@ -1947,11 +2090,41 @@ app.get("/profile", requireLogin, async (req, res) => {
         </div>
 
         <div class="col-mid">
-          <div class="card">
-            <h3 style="color:#ff6a00;margin-bottom:10px;">📝 Your Posts</h3>
-            ${postsHtml || "<p style='color:#ccc;font-size:13px;'>You haven't posted yet.</p>"}
-          </div>
-        </div>
+  <div class="card">
+    <h3 style="color:#ff6a00;margin-bottom:10px;">📝 Your Posts</h3>
+    ${postsHtml || "<p style='color:#ccc;font-size:13px;'>You haven't posted yet.</p>"}
+  </div>
+
+  <div class="card">
+    <h3 style="color:#ff6a00;margin-bottom:10px;">💬 Profile Comments</h3>
+
+    <div
+      id="profile-page-comment-list"
+      style="display:flex;flex-direction:column;gap:8px;max-height:420px;overflow-y:auto;margin-bottom:12px;"
+    >
+      <p style="color:#888;font-size:13px;">Loading comments...</p>
+    </div>
+
+    <div class="comment-input-row">
+      <input
+        id="profile-page-comment-input"
+        type="text"
+        maxlength="300"
+        placeholder="Leave a comment..."
+        style="background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;"
+      >
+
+      <button
+        id="profile-page-comment-submit"
+        class="btn-primary"
+        type="button"
+        style="height:44px;padding:0 16px;white-space:nowrap;"
+      >
+        Post
+      </button>
+    </div>
+  </div>
+</div>
 
         <div class="col-right">
           <div class="card">
@@ -2411,11 +2584,44 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
         </div>
 
         <div class="col-mid">
-          <div class="card">
-            <h3 style="color:#ff6a00;margin-bottom:10px;">📝 ${target.name}'s Posts</h3>
-            ${postsHtml || "<p style='color:#ccc;font-size:13px;'>No posts yet.</p>"}
-          </div>
-        </div>
+  <div class="card">
+    <h3 style="color:#ff6a00;margin-bottom:10px;">
+      ${target.name}'s Posts
+    </h3>
+
+    ${postsHtml || "<p style='color:#ccc;font-size:13px;'>No posts yet.</p>"}
+  </div>
+
+  <div class="card">
+    <h3 style="color:#ff6a00;margin-bottom:10px;">💬 Profile Comments</h3>
+
+    <div
+      id="profile-page-comment-list"
+      style="display:flex;flex-direction:column;gap:8px;max-height:420px;overflow-y:auto;margin-bottom:12px;"
+    >
+      <p style="color:#888;font-size:13px;">Loading comments...</p>
+    </div>
+
+    <div class="comment-input-row">
+      <input
+        id="profile-page-comment-input"
+        type="text"
+        maxlength="300"
+        placeholder="Leave a comment for ${target.name}..."
+        style="background:rgba(255,255,255,0.07);border:1px solid #444;border-radius:8px;color:#fff;padding:10px 14px;font-size:14px;height:44px;"
+      >
+
+      <button
+        id="profile-page-comment-submit"
+        class="btn-primary"
+        type="button"
+        style="height:44px;padding:0 16px;white-space:nowrap;"
+      >
+        Post
+      </button>
+    </div>
+  </div>
+</div>
 
         <div class="col-right">
           <div class="card">
@@ -2467,9 +2673,10 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
       </div>
 
       <script>
-        const CURRENT_USER_ID = "${currentUserId}";
-        let profileGalleryAlbumId = null;
-        let profileGalleryPhotoIndex = null;
+       const CURRENT_USER_ID = "${currentUserId}";
+const PROFILE_OWNER_ID = "${user._id}";
+let profileGalleryAlbumId = null;
+let profileGalleryPhotoIndex = null;
 
         async function loadTargetGallery() {
           const albums = await fetch("/api/albums/user/${target._id}", { credentials: "include" }).then(r => r.json()).catch(() => []);
@@ -2635,6 +2842,120 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
         document.addEventListener("keydown", function(e) { if (e.key === "Escape") closeProfileGallery(); });
         document.querySelectorAll(".post-card").forEach(function(card) { const id = card.dataset.postId; if (id) loadPostReactions(id); });
         loadTargetGallery();
+
+function escapeProfileCommentHtml(value) {
+  const element = document.createElement("div");
+  element.textContent = value || "";
+  return element.innerHTML;
+}
+
+function profileCommentTimeAgo(date) {
+  const diff = Date.now() - new Date(date).getTime();
+  const mins = Math.floor(diff / 60000);
+
+  if (mins < 1) return "just now";
+  if (mins < 60) return mins + "m ago";
+
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return hours + "h ago";
+
+  return Math.floor(hours / 24) + "d ago";
+}
+
+async function loadProfilePageComments() {
+  const list = document.getElementById("profile-page-comment-list");
+
+  try {
+    const response = await fetch(
+      "/api/profiles/" + PROFILE_OWNER_ID + "/comments",
+      { credentials: "include" }
+    );
+
+    if (!response.ok) {
+      throw new Error("Could not load comments");
+    }
+
+    const comments = await response.json();
+
+    if (!comments.length) {
+      list.innerHTML =
+        "<p style='color:#888;font-size:13px;'>No profile comments yet. Be the first to leave one.</p>";
+      return;
+    }
+
+    list.innerHTML = comments.map(function(comment) {
+      const name = escapeProfileCommentHtml(comment.userName);
+      const text = escapeProfileCommentHtml(comment.text);
+      const avatar = escapeProfileCommentHtml(
+        comment.userPic || "/assets/img/default-avatar.png"
+      );
+
+      return (
+        "<div class='comment-item'>" +
+          "<img class='comment-avatar' src='" + avatar + "'" +
+          " onerror=\"this.src='/assets/img/default-avatar.png'\">" +
+          "<div style='flex:1;min-width:0;'>" +
+            "<div class='comment-name'>" + name + "</div>" +
+            "<div class='comment-text'>" + text + "</div>" +
+            "<div class='comment-time'>" +
+              profileCommentTimeAgo(comment.createdAt) +
+            "</div>" +
+          "</div>" +
+        "</div>"
+      );
+    }).join("");
+  } catch (err) {
+    console.error("Profile comments error:", err);
+
+    list.innerHTML =
+      "<p style='color:#ff9999;font-size:13px;'>Could not load profile comments.</p>";
+  }
+}
+
+async function submitProfilePageComment() {
+  const input = document.getElementById("profile-page-comment-input");
+  const text = input.value.trim();
+
+  if (!text) return;
+
+  try {
+    const response = await fetch(
+      "/api/profiles/" + PROFILE_OWNER_ID + "/comments",
+      {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ text: text })
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Could not post comment");
+    }
+
+    input.value = "";
+    await loadProfilePageComments();
+  } catch (err) {
+    console.error("Profile comment post error:", err);
+    alert("Could not post your comment. Please try again.");
+  }
+}
+
+document.getElementById("profile-page-comment-submit")
+  .addEventListener("click", submitProfilePageComment);
+
+document.getElementById("profile-page-comment-input")
+  .addEventListener("keydown", function(event) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      submitProfilePageComment();
+    }
+  });
+
+loadProfilePageComments();
+
       </script>
     </body>
     </html>
