@@ -836,10 +836,17 @@ async function loadPostReactions(postId) {
           return;
         }
 
-        list.innerHTML = bulletins.map(function(bulletin) {
+            list.innerHTML = bulletins.map(function(bulletin) {
+          var id = encodeURIComponent(bulletin._id || "");
           var name = escapeBulletinHtml(bulletin.userName || "Unknown user");
+          var title = escapeBulletinHtml(bulletin.title || "Untitled Bulletin");
           var content = escapeBulletinHtml(bulletin.content || "");
           var createdAt = new Date(bulletin.createdAt).toLocaleString();
+
+          var replyCount = Number(bulletin.replyCount || 0);
+          var replyLabel = replyCount === 1
+            ? "Open bulletin · 1 reply"
+            : "Open bulletin · " + replyCount + " replies";
 
           return (
             '<div style="margin-top:10px;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:8px;overflow-wrap:anywhere;">' +
@@ -847,7 +854,9 @@ async function loadPostReactions(postId) {
                 '<strong style="color:#ff6a00;">' + name + '</strong>' +
                 '<small style="color:#777;white-space:nowrap;">' + createdAt + '</small>' +
               '</div>' +
+              '<div style="margin-top:8px;color:#fff;font-weight:bold;">' + title + '</div>' +
               '<div style="margin-top:8px;color:#eee;white-space:pre-wrap;">' + content + '</div>' +
+              '<a href="/bulletins/' + id + '" style="display:inline-block;margin-top:10px;color:#ff6a00;font-size:13px;font-weight:bold;text-decoration:none;">' + replyLabel + '</a>' +
             '</div>'
           );
         }).join("");
