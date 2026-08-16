@@ -708,7 +708,7 @@ app.get("/home", requireLogin, async (req, res) => {
     class="btn-primary"
     type="button"
   >
-    Show 50 bulletins
+    Show more bulletins
   </button>
 
   <button
@@ -998,7 +998,7 @@ app.get("/bulletins", requireLogin, async (req, res) => {
       expiresAt: { $gt: new Date() }
     })
       .sort({ createdAt: -1 })
-      .limit(9999);
+      
 
     const items = await Promise.all(
       bulletins.map(async function(bulletin) {
