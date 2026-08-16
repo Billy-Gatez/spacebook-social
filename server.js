@@ -2673,8 +2673,8 @@ app.get("/profile/:id", requireLogin, async (req, res) => {
       </div>
 
       <script>
-       const CURRENT_USER_ID = "${currentUserId}";
-const PROFILE_OWNER_ID = "${user._id}";
+const CURRENT_USER_ID = "${currentUserId}";
+const PROFILE_OWNER_ID = "${target._id}";
 let profileGalleryAlbumId = null;
 let profileGalleryPhotoIndex = null;
 
