@@ -2920,7 +2920,9 @@ async function loadProfilePageComments() {
       "<p style='color:#ff9999;font-size:13px;'>Could not load profile comments.</p>";
   }
 }
-);async function submitProfilePageComment() {
+
+
+async function submitProfilePageComment() {
   const input = document.getElementById("profile-page-comment-input");
   const text = input.value.trim();
 
