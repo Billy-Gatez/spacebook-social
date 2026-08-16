@@ -122,7 +122,7 @@
 
     <main class="feed">
 
-     
+  
       <div class="card" style="margin-bottom:20px;">
         <h3 style="color:#ff6a00; margin-bottom:10px;">Bulletins</h3>
 
@@ -138,10 +138,10 @@
 
         <!-- Bulletin Feed -->
         <div id="bulletin-feed">
-          <!-- Bulletins will be inserted here by your backend -->
+          <!-- Bulletins will load here -->
         </div>
       </div>
-    
+  
 
       <div class="card">
         <h2 style="color:#ff6a00; margin-bottom:10px;">Welcome to Spacebook</h2>
@@ -157,33 +157,32 @@
 
   </div>
 
-<script>
-async function loadBulletins() {
-  const res = await fetch("/bulletins");
-  const bulletins = await res.json();
 
-  const feed = document.getElementById("bulletin-feed");
-  feed.innerHTML = "";
+  <script>
+    async function loadBulletins() {
+      const res = await fetch("/bulletins");
+      const bulletins = await res.json();
 
-  bulletins.forEach(b => {
-    const div = document.createElement("div");
-    div.className = "card";
-    div.style.marginTop = "10px";
+      const feed = document.getElementById("bulletin-feed");
+      feed.innerHTML = "";
 
-    div.innerHTML = `
-      <strong style="color:#ff6a00;">${b.title || "Untitled Bulletin"}</strong>
-      <p style="margin-top:6px; color:#ccc;">${b.content.substring(0, 120)}...</p>
-      <a href="/bulletins/${b._id}" style="color:#ff6a00;">Read more</a>
-    `;
+      bulletins.forEach(b => {
+        const div = document.createElement("div");
+        div.className = "card";
+        div.style.marginTop = "10px";
 
-    feed.appendChild(div);
-  });
-}
+        div.innerHTML = `
+          <strong style="color:#ff6a00;">${b.title || "Untitled Bulletin"}</strong>
+          <p style="margin-top:6px; color:#ccc;">${b.content.substring(0, 120)}...</p>
+          <a href="/bulletins/${b._id}" style="color:#ff6a00;">Read more</a>
+        `;
 
-loadBulletins();
-</script>
+        feed.appendChild(div);
+      });
+    }
 
+    loadBulletins();
+  </script>
 
 </body>
 </html>
-y
