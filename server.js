@@ -195,18 +195,6 @@ function updateElo(rA, rB, scoreA, k = 32) {
   return Math.round(newA);
 }
 
-
-const bulletinSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-  userName: String,
-  content: String,
-  createdAt: { type: Date, default: Date.now },
-  expiresAt: { type: Date, default: () => Date.now() + 10*24*60*60*1000 } // 10 days
-});
-
-const Bulletin = mongoose.model("Bulletin", bulletinSchema);
-
-
 // ====== MIDDLEWARE ======
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
@@ -239,9 +227,6 @@ function requireLogin(req, res, next) {
   }
   next();
 }
-
-
-
 
 // ====== CLOUDINARY MULTER STORAGE ======
 const storage = new CloudinaryStorage({
@@ -295,31 +280,6 @@ app.post("/signup", async (req, res) => {
     res.send("Error creating user.");
   }
 });
-
-
-app.get("/home", requireLogin, (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "home.html"));
-});
-
-
-
-app.post("/bulletins/post", requireLogin, async (req, res) => {
-  try {
-    const user = await User.findById(req.session.userId);
-
-    await Bulletin.create({
-      userId: user._id,
-      userName: user.name,
-      content: req.body.content
-    });
-
-    res.redirect("/home");
-  } catch (err) {
-    console.error(err);
-    res.send("Error posting bulletin.");
-  }
-});
-
 
 // Login handler
 app.post("/login", async (req, res) => {
