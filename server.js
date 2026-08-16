@@ -781,7 +781,7 @@ app.get("/home", requireLogin, async (req, res) => {
       </div>
 
       
-      </div>
+      
     </main>
 
   <script>
@@ -848,55 +848,8 @@ async function loadPostReactions(postId) {
       return Math.floor(hrs/24) + "d ago";
     }
 
-// ====== PROFILE COMMENTS API ======
-app.get("/api/profiles/:profileUserId/comments", requireLogin, async (req, res) => {
-  try {
-    const comments = await ProfileComment.find({
-      profileUserId: req.params.profileUserId
-    })
-      .sort({ createdAt: -1 })
-      .limit(100);
 
-    res.json(comments);
-  } catch (err) {
-    console.error("Profile comment list error:", err);
-    res.status(500).json({ error: "Could not load profile comments." });
-  }
-});
 
-app.post("/api/profiles/:profileUserId/comments", requireLogin, async (req, res) => {
-  try {
-    const text = String(req.body.text || "").trim();
-
-    if (!text) {
-      return res.status(400).json({ error: "Comment cannot be empty." });
-    }
-
-    const profileOwner = await User.findById(req.params.profileUserId);
-    const commenter = await User.findById(req.session.userId);
-
-    if (!profileOwner) {
-      return res.status(404).json({ error: "Profile not found." });
-    }
-
-    if (!commenter) {
-      return res.status(401).json({ error: "Not logged in." });
-    }
-
-    const comment = await ProfileComment.create({
-      profileUserId: profileOwner._id,
-      userId: commenter._id,
-      userName: commenter.name,
-      userPic: commenter.profilePic || "/assets/img/default-avatar.png",
-      text: text.slice(0, 300)
-    });
-
-    res.status(201).json(comment);
-  } catch (err) {
-    console.error("Profile comment create error:", err);
-    res.status(500).json({ error: "Could not post profile comment." });
-  }
-});
 
     // ====== CLICK HANDLER ======
     document.addEventListener("click", async function(e) {
@@ -1762,6 +1715,8 @@ app.post("/api/profiles/:profileUserId/comments", requireLogin, async (req, res)
     res.status(500).json({ error: "Could not post profile comment." });
   }
 });
+
+
 
 // ====== MUSIC HUB COMMENTS API ======
 
