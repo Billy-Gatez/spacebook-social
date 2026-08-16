@@ -157,6 +157,33 @@
 
   </div>
 
+<script>
+async function loadBulletins() {
+  const res = await fetch("/bulletins");
+  const bulletins = await res.json();
+
+  const feed = document.getElementById("bulletin-feed");
+  feed.innerHTML = "";
+
+  bulletins.forEach(b => {
+    const div = document.createElement("div");
+    div.className = "card";
+    div.style.marginTop = "10px";
+
+    div.innerHTML = `
+      <strong style="color:#ff6a00;">${b.title || "Untitled Bulletin"}</strong>
+      <p style="margin-top:6px; color:#ccc;">${b.content.substring(0, 120)}...</p>
+      <a href="/bulletins/${b._id}" style="color:#ff6a00;">Read more</a>
+    `;
+
+    feed.appendChild(div);
+  });
+}
+
+loadBulletins();
+</script>
+
+
 </body>
 </html>
 y
