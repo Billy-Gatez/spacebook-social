@@ -188,6 +188,34 @@ const musicCommentSchema = new mongoose.Schema({
 });
 const MusicComment = mongoose.model('MusicComment', musicCommentSchema);
 
+// ====== BULLETINS ======
+const bulletinSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true
+  },
+  userName: {
+    type: String,
+    required: true
+  },
+  content: {
+    type: String,
+    required: true,
+    maxlength: 500
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  expiresAt: {
+    type: Date,
+    default: () => new Date(Date.now() + 10 * 24 * 60 * 60 * 1000)
+  }
+});
+
+const Bulletin = mongoose.model("Bulletin", bulletinSchema);
+
 // ====== ELO ======
 function updateElo(rA, rB, scoreA, k = 32) {
   const expectedA = 1 / (1 + Math.pow(10, (rB - rA) / 400));
@@ -629,6 +657,28 @@ app.get("/home", requireLogin, async (req, res) => {
     </main>
   </div>
 
+      <div class="card">
+        <h3 style="color:#ff6a00;margin-bottom:10px;">📢 Bulletins</h3>
+
+        <form action="/bulletins/post" method="post">
+          <textarea
+            name="content"
+            maxlength="500"
+            required
+            placeholder="Write a bulletin..."
+            style="width:100%;min-height:80px;background:rgba(255,255,255,0.06);border:1px solid #444;border-radius:8px;color:#fff;padding:10px;font-size:14px;resize:vertical;box-sizing:border-box;"
+          ></textarea>
+
+          <button class="btn-primary" type="submit" style="margin-top:10px;">
+            Post Bulletin
+          </button>
+        </form>
+
+        <div id="bulletin-list" style="margin-top:16px;">
+          <p style="color:#888;font-size:13px;">Loading bulletins...</p>
+        </div>
+      </div>
+
   <script>
     // ====== STARFIELD ======
     const canvas = document.getElementById("starfield");
@@ -718,13 +768,107 @@ async function loadPostReactions(postId) {
       }
     });
 
+    // ====== BULLETINS ======
+    async function loadBulletins() {
+      const list = document.getElementById("bulletin-list");
+
+      if (!list) return;
+
+      try {
+        const response = await fetch("/bulletins", {
+          credentials: "include"
+        });
+
+        if (!response.ok) {
+          throw new Error("Could not load bulletins");
+        }
+
+        const bulletins = await response.json();
+
+        if (!bulletins.length) {
+          list.innerHTML = `
+            <p style="color:#888;font-size:13px;">
+              No bulletins yet. Be the first to post one.
+            </p>
+          `;
+          return;
+        }
+
+        list.innerHTML = bulletins.map(function(bulletin) {
+          const safeName = document.createElement("div");
+          safeName.textContent = bulletin.userName || "Unknown user";
+
+          const safeContent = document.createElement("div");
+          safeContent.textContent = bulletin.content || "";
+
+          return `
+            <div style="margin-top:10px;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:8px;">
+              <div style="display:flex;justify-content:space-between;gap:10px;">
+                <strong style="color:#ff6a00;">${safeName.innerHTML}</strong>
+                <small style="color:#777;">${new Date(bulletin.createdAt).toLocaleString()}</small>
+              </div>
+
+              <div style="margin-top:8px;color:#eee;white-space:pre-wrap;">
+                ${safeContent.innerHTML}
+              </div>
+            </div>
+          `;
+        }).join("");
+      } catch (error) {
+        console.error("Bulletin error:", error);
+
+        list.innerHTML = `
+          <p style="color:#ff9999;font-size:13px;">
+            Could not load bulletins.
+          </p>
+        `;
+      }
+    }
+
     // ====== INIT ======
     document.querySelectorAll(".post-card").forEach(function(card) {
       if (card.dataset.postId) loadPostReactions(card.dataset.postId);
     });
-  </script>
-</body>
-</html>`);
+
+    loadBulletins();
+
+// ====== BULLETINS ======
+
+app.post("/bulletins/post", requireLogin, async (req, res) => {
+  try {
+    const user = await User.findById(req.session.userId);
+    const content = (req.body.content || "").trim();
+
+    if (!user || !content) {
+      return res.redirect("/home");
+    }
+
+    await Bulletin.create({
+      userId: user._id,
+      userName: user.name,
+      content
+    });
+
+    res.redirect("/home");
+  } catch (err) {
+    console.error("Bulletin post error:", err);
+    res.status(500).send("Error posting bulletin.");
+  }
+});
+
+app.get("/bulletins", requireLogin, async (req, res) => {
+  try {
+    const bulletins = await Bulletin.find({
+      expiresAt: { $gt: new Date() }
+    })
+      .sort({ createdAt: -1 })
+      .limit(50);
+
+    res.json(bulletins);
+  } catch (err) {
+    console.error("Bulletin load error:", err);
+    res.status(500).json({ error: "Could not load bulletins." });
+  }
 });
 
 // ====== FEED ======
