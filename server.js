@@ -698,9 +698,19 @@ app.get("/home", requireLogin, async (req, res) => {
           </button>
         </form>
 
-        <div id="bulletin-list" style="margin-top:16px;">
+               <div id="bulletin-list" style="margin-top:16px;">
           <p style="color:#888;font-size:13px;">Loading bulletins...</p>
         </div>
+
+        <button
+          id="toggle-bulletins"
+          class="btn-primary"
+          type="button"
+          style="display:none;margin-top:12px;"
+        >
+          Show all bulletins
+        </button>
+      </div>
 
       <div class="card">
         <h2 style="color:#ff6a00;margin-bottom:10px;">Welcome back, ${user.name} 👋</h2>
