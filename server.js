@@ -649,12 +649,33 @@ app.get("/home", requireLogin, async (req, res) => {
           <button class="btn-primary" style="margin-top:10px;">Post</button>
         </form>
       </div>
-      <div class="card">
+        <div class="card">
         <h3 style="color:#ff6a00;margin-bottom:10px;">Latest from your universe</h3>
         ${latestPostsHtml || "<p style='color:#ccc;font-size:13px;'>No posts yet.</p>"}
       </div>
+
+      <div class="card">
+        <h3 style="color:#ff6a00;margin-bottom:10px;">📢 Bulletins</h3>
+
+        <form action="/bulletins/post" method="post">
+          <textarea
+            name="content"
+            maxlength="500"
+            required
+            placeholder="Write a bulletin..."
+            style="width:100%;min-height:80px;background:rgba(255,255,255,0.06);border:1px solid #444;border-radius:8px;color:#fff;padding:10px;font-size:14px;resize:vertical;box-sizing:border-box;"
+          ></textarea>
+
+          <button class="btn-primary" type="submit" style="margin-top:10px;">
+            Post Bulletin
+          </button>
+        </form>
+
+        <div id="bulletin-list" style="margin-top:16px;">
+          <p style="color:#888;font-size:13px;">Loading bulletins...</p>
+        </div>
+      </div>
     </main>
-  </div>
 
   <script>
     // ====== STARFIELD ======
@@ -745,10 +766,64 @@ async function loadPostReactions(postId) {
       }
     });
 
+     // ====== BULLETINS ======
+    function escapeBulletinHtml(value) {
+      var element = document.createElement("div");
+      element.textContent = value || "";
+      return element.innerHTML;
+    }
+
+    async function loadBulletins() {
+      var list = document.getElementById("bulletin-list");
+
+      if (!list) return;
+
+      try {
+        var response = await fetch("/bulletins", {
+          credentials: "include"
+        });
+
+        if (!response.ok) {
+          throw new Error("Could not load bulletins");
+        }
+
+        var bulletins = await response.json();
+
+        if (!bulletins.length) {
+          list.innerHTML =
+            '<p style="color:#888;font-size:13px;">No bulletins yet. Be the first to post one.</p>';
+          return;
+        }
+
+        list.innerHTML = bulletins.map(function(bulletin) {
+          var name = escapeBulletinHtml(bulletin.userName || "Unknown user");
+          var content = escapeBulletinHtml(bulletin.content || "");
+          var createdAt = new Date(bulletin.createdAt).toLocaleString();
+
+          return (
+            '<div style="margin-top:10px;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:8px;overflow-wrap:anywhere;">' +
+              '<div style="display:flex;justify-content:space-between;gap:10px;">' +
+                '<strong style="color:#ff6a00;">' + name + '</strong>' +
+                '<small style="color:#777;white-space:nowrap;">' + createdAt + '</small>' +
+              '</div>' +
+              '<div style="margin-top:8px;color:#eee;white-space:pre-wrap;">' + content + '</div>' +
+            '</div>'
+          );
+        }).join("");
+      } catch (error) {
+        console.error("Bulletin error:", error);
+
+        list.innerHTML =
+          '<p style="color:#ff9999;font-size:13px;">Could not load bulletins.</p>';
+      }
+    }
+
     // ====== INIT ======
     document.querySelectorAll(".post-card").forEach(function(card) {
       if (card.dataset.postId) loadPostReactions(card.dataset.postId);
     });
+
+    loadBulletins();
   </script>
 </body>
 </html>`);
