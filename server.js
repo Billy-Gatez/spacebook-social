@@ -698,17 +698,34 @@ app.get("/home", requireLogin, async (req, res) => {
     </button>
   </form>
 
-  <div id="bulletin-list" style="margin-top:16px;">
-    <p style="color:#888;font-size:13px;">Loading bulletins...</p>
-  </div>
+ <div id="bulletin-list" style="margin-top:16px;">
+  <p style="color:#888;font-size:13px;">Loading bulletins...</p>
+</div>
 
+<div id="bulletin-buttons" style="display:none;gap:10px;flex-wrap:wrap;margin-top:12px;">
   <button
-    id="toggle-bulletins"
+    id="show-fifty-bulletins"
     class="btn-primary"
     type="button"
-    style="display:none;margin-top:12px;"
+  >
+    Show 50 bulletins
+  </button>
+
+  <button
+    id="show-all-bulletins"
+    class="btn-primary"
+    type="button"
   >
     Show all bulletins
+  </button>
+
+  <button
+    id="show-fewer-bulletins"
+    class="btn-primary"
+    type="button"
+    style="display:none;"
+  >
+    Show fewer bulletins
   </button>
 </div>
       <div class="card">
@@ -953,7 +970,7 @@ app.get("/bulletins", requireLogin, async (req, res) => {
       expiresAt: { $gt: new Date() }
     })
       .sort({ createdAt: -1 })
-      .limit(50);
+     
 
     const items = await Promise.all(
       bulletins.map(async function(bulletin) {
