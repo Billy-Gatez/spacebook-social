@@ -2862,57 +2862,19 @@ function profileCommentTimeAgo(date) {
   return Math.floor(hours / 24) + "d ago";
 }
 
-async function loadProfilePageComments() {
-  const list = document.getElementById("profile-page-comment-list");
-
-  try {
-    const response = await fetch(
-      "/api/profiles/" + PROFILE_OWNER_ID + "/comments",
-      { credentials: "include" }
-    );
-
-    if (!response.ok) {
-      throw new Error("Could not load comments");
-    }
-
-    const comments = await response.json();
-
-    if (!comments.length) {
-      list.innerHTML =
-        "<p style='color:#888;font-size:13px;'>No profile comments yet. Be the first to leave one.</p>";
-      return;
-    }
-
-    list.innerHTML = comments.map(function(comment) {
-      const name = escapeProfileCommentHtml(comment.userName);
-      const text = escapeProfileCommentHtml(comment.text);
-      const avatar = escapeProfileCommentHtml(
-        comment.userPic || "/assets/img/default-avatar.png"
-      );
-
-      return (
-        "<div class='comment-item'>" +
-          "<img class='comment-avatar' src='" + avatar + "'" +
-          " onerror=\"this.src='/assets/img/default-avatar.png'\">" +
-          "<div style='flex:1;min-width:0;'>" +
-            "<div class='comment-name'>" + name + "</div>" +
-            "<div class='comment-text'>" + text + "</div>" +
-            "<div class='comment-time'>" +
-              profileCommentTimeAgo(comment.createdAt) +
-            "</div>" +
-          "</div>" +
-        "</div>"
-      );
-    }).join("");
-  } catch (err) {
-    console.error("Profile comments error:", err);
-
-    list.innerHTML =
-      "<p style='color:#ff9999;font-size:13px;'>Could not load profile comments.</p>";
-  }
-}
-
-async function submitProfilePageComment() {
+return (
+  '<div class="comment-item">' +
+    '<img class="comment-avatar" src="' + avatar + '"' +
+      ' onerror="this.src=\\'/assets/img/default-avatar.png\\'">' +
+    '<div style="flex:1;min-width:0;">' +
+      '<div class="comment-name">' + name + '</div>' +
+      '<div class="comment-text">' + text + '</div>' +
+      '<div class="comment-time">' +
+        profileCommentTimeAgo(comment.createdAt) +
+      '</div>' +
+    '</div>' +
+  '</div>'
+);async function submitProfilePageComment() {
   const input = document.getElementById("profile-page-comment-input");
   const text = input.value.trim();
 
