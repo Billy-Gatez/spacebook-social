@@ -296,6 +296,25 @@ app.post("/signup", async (req, res) => {
   }
 });
 
+
+app.post("/bulletins/post", requireLogin, async (req, res) => {
+  try {
+    const user = await User.findById(req.session.userId);
+
+    await Bulletin.create({
+      userId: user._id,
+      userName: user.name,
+      content: req.body.content
+    });
+
+    res.redirect("/home");
+  } catch (err) {
+    console.error(err);
+    res.send("Error posting bulletin.");
+  }
+});
+
+
 // Login handler
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
