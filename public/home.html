@@ -390,11 +390,13 @@ async function loadBulletins() {
 
     allBulletins = await response.json();
 
-    if (!Array.isArray(allBulletins) || allBulletins.length === 0) {
-      list.innerHTML =
-        '<p class="bulletin-message">No bulletins yet. Be the first to post one.</p>';
-      return;
-    }
+   if (!Array.isArray(allBulletins) || allBulletins.length === 0) {
+  list.innerHTML =
+    '<p class="bulletin-message">No bulletins yet. Be the first to post one.</p>';
+
+  document.getElementById("toggle-bulletins").style.display = "none";
+  return;
+}
 
     renderBulletins();
   } catch (error) {
