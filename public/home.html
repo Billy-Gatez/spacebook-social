@@ -80,6 +80,67 @@
     hr { border: none; border-top: 1px solid rgba(255,255,255,0.2); }
 
     .sidebar ul li { margin-bottom: 10px; }
+
+    .bulletin-form textarea {
+      width: 100%;
+      min-height: 85px;
+      box-sizing: border-box;
+      padding: 10px;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+      resize: vertical;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid #444;
+      border-radius: 8px;
+    }
+
+    .bulletin-form textarea:focus {
+      outline: none;
+      border-color: #ff6a00;
+    }
+
+    .bulletin-form button {
+      margin-top: 10px;
+      border: none;
+      cursor: pointer;
+    }
+
+    .bulletin {
+      margin-top: 12px;
+      padding: 12px;
+      overflow-wrap: anywhere;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+    }
+
+    .bulletin-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .bulletin-author {
+      color: #ff6a00;
+    }
+
+    .bulletin-time {
+      color: #888;
+      font-size: 12px;
+    }
+
+    .bulletin-content {
+      margin: 8px 0 0;
+      color: #eee;
+      white-space: pre-wrap;
+    }
+
+    .bulletin-message {
+      color: #aaa;
+      font-size: 14px;
+    }
+
   </style>
 </head>
 
@@ -130,9 +191,86 @@
           <a href="/feed" class="btn-primary">Go to your Feed</a>
         </p>
       </div>
+
+      <div class="card" style="margin-top:20px;">
+        <h2 style="color:#ff6a00; margin-bottom:10px;">📢 Bulletins</h2>
+
+        <form class="bulletin-form" action="/bulletins/post" method="POST">
+          <textarea
+            name="content"
+            maxlength="500"
+            placeholder="Write a bulletin..."
+            required
+          ></textarea>
+
+          <button class="btn-primary" type="submit">
+            Post Bulletin
+          </button>
+        </form>
+
+        <div id="bulletin-list">
+          <p class="bulletin-message">Loading bulletins...</p>
+        </div>
+      </div>
+
     </main>
 
   </div>
+
+<script>
+  function escapeHtml(value) {
+    var element = document.createElement("div");
+    element.textContent = value || "";
+    return element.innerHTML;
+  }
+
+  async function loadBulletins() {
+    var list = document.getElementById("bulletin-list");
+
+    try {
+      var response = await fetch("/bulletins", {
+        credentials: "include"
+      });
+
+      if (!response.ok) {
+        throw new Error("Could not load bulletins");
+      }
+
+      var bulletins = await response.json();
+
+      if (!Array.isArray(bulletins) || bulletins.length === 0) {
+        list.innerHTML =
+          '<p class="bulletin-message">No bulletins yet. Be the first to post one.</p>';
+        return;
+      }
+
+      list.innerHTML = bulletins.map(function(bulletin) {
+        var name = escapeHtml(bulletin.userName || "Unknown user");
+        var content = escapeHtml(bulletin.content || "");
+        var time = bulletin.createdAt
+          ? new Date(bulletin.createdAt).toLocaleString()
+          : "";
+
+        return (
+          '<article class="bulletin">' +
+            '<div class="bulletin-header">' +
+              '<strong class="bulletin-author">' + name + '</strong>' +
+              '<small class="bulletin-time">' + time + '</small>' +
+            '</div>' +
+            '<p class="bulletin-content">' + content + '</p>' +
+          '</article>'
+        );
+      }).join("");
+    } catch (error) {
+      console.error("Bulletin error:", error);
+
+      list.innerHTML =
+        '<p class="bulletin-message" style="color:#ff9999;">Could not load bulletins.</p>';
+    }
+  }
+
+  loadBulletins();
+</script>
 
 </body>
 </html>
