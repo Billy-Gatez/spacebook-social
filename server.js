@@ -297,6 +297,12 @@ app.post("/signup", async (req, res) => {
 });
 
 
+app.get("/home", requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "home.html"));
+});
+
+
+
 app.post("/bulletins/post", requireLogin, async (req, res) => {
   try {
     const user = await User.findById(req.session.userId);
