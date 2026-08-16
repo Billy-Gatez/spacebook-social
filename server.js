@@ -673,45 +673,44 @@ app.get("/home", requireLogin, async (req, res) => {
     <main class="feed">
 
 <div class="card">
-        <h3 style="color:#ff6a00;margin-bottom:10px;">📢 Bulletins</h3>
+  <h3 style="color:#ff6a00;margin-bottom:10px;">📢 Bulletins</h3>
 
-       <form action="/bulletins/post" method="post">
-  <input
-    type="text"
-    name="title"
-    maxlength="100"
-    placeholder="Bulletin title"
-    required
-    style="width:100%;box-sizing:border-box;margin-bottom:8px;background:rgba(255,255,255,0.06);border:1px solid #444;border-radius:8px;color:#fff;padding:10px;font-size:14px;"
+  <form action="/bulletins/post" method="post">
+    <input
+      type="text"
+      name="title"
+      maxlength="100"
+      placeholder="Bulletin title"
+      required
+      style="width:100%;box-sizing:border-box;margin-bottom:8px;background:rgba(255,255,255,0.06);border:1px solid #444;border-radius:8px;color:#fff;padding:10px;font-size:14px;"
+    >
+
+    <textarea
+      name="content"
+      maxlength="1000"
+      required
+      placeholder="Write your bulletin..."
+      style="width:100%;min-height:80px;background:rgba(255,255,255,0.06);border:1px solid #444;border-radius:8px;color:#fff;padding:10px;font-size:14px;resize:vertical;box-sizing:border-box;"
+    ></textarea>
+
+    <button class="btn-primary" type="submit" style="margin-top:10px;">
+      Post Bulletin
+    </button>
+  </form>
+
+  <div id="bulletin-list" style="margin-top:16px;">
+    <p style="color:#888;font-size:13px;">Loading bulletins...</p>
+  </div>
+
+  <button
+    id="toggle-bulletins"
+    class="btn-primary"
+    type="button"
+    style="display:none;margin-top:12px;"
   >
-
-  <textarea
-    name="content"
-    maxlength="1000"
-    required
-    placeholder="Write your bulletin..."
-            style="width:100%;min-height:80px;background:rgba(255,255,255,0.06);border:1px solid #444;border-radius:8px;color:#fff;padding:10px;font-size:14px;resize:vertical;box-sizing:border-box;"
-          ></textarea>
-
-          <button class="btn-primary" type="submit" style="margin-top:10px;">
-            Post Bulletin
-          </button>
-        </form>
-
-               <div id="bulletin-list" style="margin-top:16px;">
-          <p style="color:#888;font-size:13px;">Loading bulletins...</p>
-        </div>
-
-        <button
-          id="toggle-bulletins"
-          class="btn-primary"
-          type="button"
-          style="display:none;margin-top:12px;"
-        >
-          Show all bulletins
-        </button>
-      </div>
-
+    Show all bulletins
+  </button>
+</div>
       <div class="card">
         <h2 style="color:#ff6a00;margin-bottom:10px;">Welcome back, ${user.name} 👋</h2>
         <p style="color:#ccc;font-size:14px;">Share what's happening in your universe.</p>
@@ -821,16 +820,64 @@ async function loadPostReactions(postId) {
     });
 
      // ====== BULLETINS ======
-    function escapeBulletinHtml(value) {
+     function escapeBulletinHtml(value) {
       var element = document.createElement("div");
       element.textContent = value || "";
       return element.innerHTML;
     }
 
+    var allBulletins = [];
+    var bulletinsExpanded = false;
+    var collapsedBulletinCount = 5;
+
+    function renderBulletins() {
+      var list = document.getElementById("bulletin-list");
+      var toggleButton = document.getElementById("toggle-bulletins");
+
+      var visibleBulletins = bulletinsExpanded
+        ? allBulletins
+        : allBulletins.slice(0, collapsedBulletinCount);
+
+      list.innerHTML = visibleBulletins.map(function(bulletin) {
+        var id = encodeURIComponent(bulletin._id || "");
+        var name = escapeBulletinHtml(bulletin.userName || "Unknown user");
+        var title = escapeBulletinHtml(bulletin.title || "Untitled Bulletin");
+        var content = escapeBulletinHtml(bulletin.content || "");
+        var createdAt = bulletin.createdAt
+          ? new Date(bulletin.createdAt).toLocaleString()
+          : "";
+
+        var replyCount = Number(bulletin.replyCount || 0);
+        var replyLabel = replyCount === 1
+          ? "Open bulletin · 1 reply"
+          : "Open bulletin · " + replyCount + " replies";
+
+        return (
+          '<div style="margin-top:10px;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:8px;overflow-wrap:anywhere;">' +
+            '<div style="display:flex;justify-content:space-between;gap:10px;">' +
+              '<strong style="color:#ff6a00;">' + name + '</strong>' +
+              '<small style="color:#777;white-space:nowrap;">' + createdAt + '</small>' +
+            '</div>' +
+            '<div style="margin-top:8px;color:#fff;font-weight:bold;">' + title + '</div>' +
+            '<div style="margin-top:8px;color:#eee;white-space:pre-wrap;">' + content + '</div>' +
+            '<a href="/bulletins/' + id + '" style="display:inline-block;margin-top:10px;color:#ff6a00;font-size:13px;font-weight:bold;text-decoration:none;">' + replyLabel + '</a>' +
+          '</div>'
+        );
+      }).join("");
+
+      if (allBulletins.length > collapsedBulletinCount) {
+        toggleButton.style.display = "inline-block";
+        toggleButton.textContent = bulletinsExpanded
+          ? "Show fewer bulletins"
+          : "Show all bulletins";
+      } else {
+        toggleButton.style.display = "none";
+      }
+    }
+
     async function loadBulletins() {
       var list = document.getElementById("bulletin-list");
-
-      if (!list) return;
+      var toggleButton = document.getElementById("toggle-bulletins");
 
       try {
         var response = await fetch("/bulletins", {
@@ -841,49 +888,30 @@ async function loadPostReactions(postId) {
           throw new Error("Could not load bulletins");
         }
 
-        var bulletins = await response.json();
+        allBulletins = await response.json();
 
-        if (!bulletins.length) {
+        if (!Array.isArray(allBulletins) || allBulletins.length === 0) {
           list.innerHTML =
             '<p style="color:#888;font-size:13px;">No bulletins yet. Be the first to post one.</p>';
+
+          toggleButton.style.display = "none";
           return;
         }
 
-            list.innerHTML = bulletins.map(function(bulletin) {
-          var id = encodeURIComponent(bulletin._id || "");
-          var name = escapeBulletinHtml(bulletin.userName || "Unknown user");
-          var title = escapeBulletinHtml(bulletin.title || "Untitled Bulletin");
-          var content = escapeBulletinHtml(bulletin.content || "");
-          var createdAt = new Date(bulletin.createdAt).toLocaleString();
-
-          var replyCount = Number(bulletin.replyCount || 0);
-          var replyLabel = replyCount === 1
-            ? "Open bulletin · 1 reply"
-            : "Open bulletin · " + replyCount + " replies";
-
-          return (
-            '<div style="margin-top:10px;padding:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:8px;overflow-wrap:anywhere;">' +
-              '<div style="display:flex;justify-content:space-between;gap:10px;">' +
-                '<strong style="color:#ff6a00;">' + name + '</strong>' +
-                '<small style="color:#777;white-space:nowrap;">' + createdAt + '</small>' +
-              '</div>' +
-              '<div style="margin-top:8px;color:#fff;font-weight:bold;">' + title + '</div>' +
-              '<div style="margin-top:8px;color:#eee;white-space:pre-wrap;">' + content + '</div>' +
-              '<a href="/bulletins/' + id + '" style="display:inline-block;margin-top:10px;color:#ff6a00;font-size:13px;font-weight:bold;text-decoration:none;">' + replyLabel + '</a>' +
-            '</div>'
-          );
-        }).join("");
+        renderBulletins();
       } catch (error) {
         console.error("Bulletin error:", error);
 
         list.innerHTML =
           '<p style="color:#ff9999;font-size:13px;">Could not load bulletins.</p>';
+
+        toggleButton.style.display = "none";
       }
     }
 
-    // ====== INIT ======
-    document.querySelectorAll(".post-card").forEach(function(card) {
-      if (card.dataset.postId) loadPostReactions(card.dataset.postId);
+    document.getElementById("toggle-bulletins").addEventListener("click", function() {
+      bulletinsExpanded = !bulletinsExpanded;
+      renderBulletins();
     });
 
     loadBulletins();
