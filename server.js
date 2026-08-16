@@ -698,9 +698,9 @@ app.get("/home", requireLogin, async (req, res) => {
     </button>
   </form>
 
-<div id="bulletin-list" style="margin-top:16px;">
-  <p style="color:#888;font-size:13px;">Loading bulletins...</p>
-</div>
+  <div id="bulletin-list" style="margin-top:16px;">
+    <p style="color:#888;font-size:13px;">Loading bulletins...</p>
+  </div>
 
 <div id="bulletin-buttons" style="display:none;gap:10px;flex-wrap:wrap;margin-top:12px;">
   <button
@@ -729,34 +729,23 @@ app.get("/home", requireLogin, async (req, res) => {
   </button>
 </div>
 
+
 </div>
+      <div class="card">
+        <h2 style="color:#ff6a00;margin-bottom:10px;">Welcome back, ${user.name} 👋</h2>
+        <p style="color:#ccc;font-size:14px;">Share what's happening in your universe.</p>
+        <form action="/post" method="post" enctype="multipart/form-data" style="margin-top:10px;">
+          <textarea name="content" placeholder="What's happening in your universe?" style="width:100%;min-height:80px;background:rgba(255,255,255,0.06);border:1px solid #444;border-radius:8px;color:#fff;padding:10px;font-size:14px;resize:vertical;box-sizing:border-box;"></textarea>
+          <label style="color:#ccc;font-size:14px;margin-top:6px;display:block;">Upload an image (optional)</label>
+          <input type="file" name="image" accept="image/*">
+          <button class="btn-primary" style="margin-top:10px;">Post</button>
+        </form>
+      </div>
+        <div class="card">
+        <h3 style="color:#ff6a00;margin-bottom:10px;">Latest from your universe</h3>
+        ${latestPostsHtml || "<p style='color:#ccc;font-size:13px;'>No posts yet.</p>"}
+      </div>
 
-<div class="card">
-  <h2 style="color:#ff6a00;margin-bottom:10px;">Welcome back, ${user.name} 👋</h2>
-
-  <p style="color:#ccc;font-size:14px;">Share what's happening in your universe.</p>
-
-  <form action="/post" method="post" enctype="multipart/form-data" style="margin-top:10px;">
-    <textarea
-      name="content"
-      placeholder="What's happening in your universe?"
-      style="width:100%;min-height:80px;background:rgba(255,255,255,0.06);border:1px solid #444;border-radius:8px;color:#fff;padding:10px;font-size:14px;resize:vertical;box-sizing:border-box;"
-    ></textarea>
-
-    <label style="color:#ccc;font-size:14px;margin-top:6px;display:block;">
-      Upload an image (optional)
-    </label>
-
-    <input type="file" name="image" accept="image/*">
-
-    <button class="btn-primary" style="margin-top:10px;">Post</button>
-  </form>
-</div>
-
-<div class="card">
-  <h3 style="color:#ff6a00;margin-bottom:10px;">Latest from your universe</h3>
-  ${latestPostsHtml || "<p style='color:#ccc;font-size:13px;'>No posts yet.</p>"}
-</div>
       
       </div>
     </main>
@@ -984,7 +973,7 @@ app.get("/bulletins", requireLogin, async (req, res) => {
       expiresAt: { $gt: new Date() }
     })
       .sort({ createdAt: -1 })
-     
+      .limit(999999);
 
     const items = await Promise.all(
       bulletins.map(async function(bulletin) {
